@@ -132,22 +132,23 @@ export default function AdminServices() {
       return;
     }
 
-    const basePrice = parseFloat(formData.basePrice.trim());
-    const offerPrice = formData.offerPrice !== "" ? parseFloat(formData.offerPrice.trim()) : null;
+    const priceRegex = /^\d+(\.\d{1,2})?$/;
+    const basePriceTrimmed = formData.basePrice.trim();
+    const offerPriceTrimmed = formData.offerPrice.trim();
 
-    if (Number.isNaN(basePrice) || basePrice < 0) {
+    if (!priceRegex.test(basePriceTrimmed)) {
       toast({
         title: "Validation Error",
-        description: "Base price must be a valid positive number",
+        description: "Base price must be a valid number (e.g., 100 or 99.99)",
         variant: "destructive",
       });
       return;
     }
 
-    if (offerPrice !== null && (Number.isNaN(offerPrice) || offerPrice < 0)) {
+    if (offerPriceTrimmed !== "" && !priceRegex.test(offerPriceTrimmed)) {
       toast({
         title: "Validation Error",
-        description: "Offer price must be a valid positive number",
+        description: "Offer price must be a valid number (e.g., 100 or 99.99)",
         variant: "destructive",
       });
       return;
@@ -158,8 +159,8 @@ export default function AdminServices() {
         title: formData.title,
         description: formData.description,
         category: formData.category,
-        basePrice,
-        offerPrice,
+        basePrice: basePriceTrimmed,
+        offerPrice: offerPriceTrimmed !== "" ? offerPriceTrimmed : null,
         detectiveId: formData.detectiveId,
         isActive: true,
       };
