@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
-import type { User, Detective, Service, Review, Order, InsertDetective, InsertService, InsertReview, InsertOrder } from "@shared/schema";
+import type { User, Detective, Service, Review, Order, DetectiveApplication, ProfileClaim, InsertDetective, InsertService, InsertReview, InsertOrder } from "@shared/schema";
 
 export function useAuth() {
   return useQuery({
@@ -306,6 +306,44 @@ export function useUpdateUser() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["users", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["auth"] });
+    },
+  });
+}
+
+export function useApplications() {
+  return useQuery({
+    queryKey: ["applications"],
+    queryFn: () => api.applications.getAll(),
+  });
+}
+
+export function useUpdateApplicationStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: "approved" | "rejected" }) =>
+      api.applications.updateStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: ["detectives"] });
+    },
+  });
+}
+
+export function useClaims() {
+  return useQuery({
+    queryKey: ["claims"],
+    queryFn: () => api.claims.getAll(),
+  });
+}
+
+export function useUpdateClaimStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: "approved" | "rejected" }) =>
+      api.claims.updateStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["claims"] });
+      queryClient.invalidateQueries({ queryKey: ["detectives"] });
     },
   });
 }

@@ -21,15 +21,66 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useDetectives } from "@/lib/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 import type { Detective } from "@shared/schema";
+import { useState } from "react";
+import { format } from "date-fns";
+import { api } from "@/lib/api";
 
 export default function AdminDetectives() {
   const { data: detectivesData, isLoading } = useDetectives(100);
   const detectives = detectivesData?.detectives || [];
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const [selectedDetective, setSelectedDetective] = useState<Detective | null>(null);
+  const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
+
+  const handleViewProfile = async (detective: Detective) => {
+    try {
+      const { services } = await api.services.getByDetective(detective.id);
+      
+      if (services && services.length > 0) {
+        setLocation(`/service/${services[0].id}`);
+      } else {
+        toast({
+          title: "No Services",
+          description: "This detective hasn't created any services yet.",
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch detective services.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleViewSubscriptions = (detective: Detective) => {
+    setSelectedDetective(detective);
+    setShowSubscriptionDialog(true);
+  };
+
+  const handleSuspendAccount = (detective: Detective) => {
+    toast({
+      title: "Feature Coming Soon",
+      description: "Account suspension functionality will be available soon.",
+      variant: "default",
+    });
+  };
+
   return (
     <DashboardLayout role="admin">
       <div className="space-y-6">
@@ -131,10 +182,24 @@ export default function AdminDetectives() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>View Profile</DropdownMenuItem>
-                            <DropdownMenuItem>View Subscriptions</DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleViewProfile(detective)}
+                              data-testid={`menuitem-view-profile-${detective.id}`}
+                            >
+                              View Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleViewSubscriptions(detective)}
+                              data-testid={`menuitem-view-subscriptions-${detective.id}`}
+                            >
+                              View Subscriptions
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => handleSuspendAccount(detective)}
+                              data-testid={`menuitem-suspend-account-${detective.id}`}
+                            >
                               <Ban className="mr-2 h-4 w-4" /> Suspend Account
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -147,6 +212,44 @@ export default function AdminDetectives() {
             </Table>
           </CardContent>
         </Card>
+
+        <Dialog open={showSubscriptionDialog} onOpenChange={setShowSubscriptionDialog}>
+          <DialogContent data-testid="dialog-subscription-details">
+            <DialogHeader>
+              <DialogTitle>Subscription Details</DialogTitle>
+              <DialogDescription>
+                {selectedDetective?.businessName || "Detective"}'s subscription information
+              </DialogDescription>
+            </DialogHeader>
+            {selectedDetective && (
+              <div className="space-y-4" data-testid="subscription-info">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Plan</p>
+                    <p className="text-lg font-semibold capitalize" data-testid="text-plan">
+                      {selectedDetective.subscriptionPlan}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Status</p>
+                    <Badge 
+                      className={selectedDetective.status === "active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}
+                      data-testid="badge-subscription-status"
+                    >
+                      {selectedDetective.status}
+                    </Badge>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-sm font-medium text-gray-500">Member Since</p>
+                    <p className="text-lg font-semibold" data-testid="text-member-since">
+                      {format(new Date(selectedDetective.memberSince), "MMMM d, yyyy")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

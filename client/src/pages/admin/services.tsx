@@ -1,11 +1,8 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { 
   Table, 
   TableBody, 
@@ -14,95 +11,50 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Search, Plus, Edit2, Trash2, Layers, FileText } from "lucide-react";
-
-const INITIAL_SERVICES = [
-  { id: 1, name: "Surveillance", description: "Physical observation of subjects", status: "Active", count: 145 },
-  { id: 2, name: "Background Checks", description: "Criminal, financial, and social history", status: "Active", count: 320 },
-  { id: 3, name: "Missing Persons", description: "Locating individuals who have disappeared", status: "Active", count: 89 },
-  { id: 4, name: "Cyber Investigation", description: "Digital forensics and online harassment", status: "Active", count: 210 },
-  { id: 5, name: "Infidelity", description: "Matrimonial and partner investigations", status: "Active", count: 180 },
-];
+import { Skeleton } from "@/components/ui/skeleton";
+import { Search, Eye, Briefcase } from "lucide-react";
+import { useServices } from "@/lib/hooks";
+import { Link } from "wouter";
+import type { Service } from "@shared/schema";
+import { useState } from "react";
 
 export default function AdminServices() {
+  const { data: servicesData, isLoading } = useServices(100);
+  const services = servicesData?.services || [];
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredServices = services.filter((service: Service) =>
+    service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    service.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <DashboardLayout role="admin">
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold font-heading text-gray-900">Service Categories</h2>
-            <p className="text-gray-500">Manage the master list of services detectives can offer.</p>
+            <h2 className="text-3xl font-bold font-heading text-gray-900">Detective Services</h2>
+            <p className="text-gray-500">Manage all services offered by detectives on the platform.</p>
           </div>
-          
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="bg-green-600 hover:bg-green-700">
-                <Plus className="mr-2 h-4 w-4" /> Add New Service
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[525px]">
-              <DialogHeader>
-                <DialogTitle>Add Service Category</DialogTitle>
-                <DialogDescription>
-                  Create a new service category for the platform. Detectives will be able to select this when creating their profile.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">Service Name</Label>
-                  <Input id="name" placeholder="e.g. Asset Recovery" />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea id="description" placeholder="Brief description of this service category..." />
-                </div>
-                <div className="flex items-center justify-between border rounded-md p-3">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Active Status</Label>
-                    <p className="text-sm text-gray-500">Immediately available for signups</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label>Signup Form Requirements</Label>
-                  <div className="border rounded-md p-4 space-y-3 bg-gray-50">
-                    <p className="text-sm font-medium mb-2">Required documents for this service:</p>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="req-license" defaultChecked />
-                      <Label htmlFor="req-license">PI License</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="req-cert" />
-                      <Label htmlFor="req-cert">Specialized Certification</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="req-insurance" />
-                      <Label htmlFor="req-insurance">Liability Insurance</Label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" className="bg-green-600 hover:bg-green-700">Create Category</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </div>
 
         <div className="flex items-center gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input placeholder="Search categories..." className="pl-9" />
+            <Input 
+              placeholder="Search services..." 
+              className="pl-9"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              data-testid="input-search-services"
+            />
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <div className="flex items-center gap-1">
+              <Briefcase className="h-4 w-4 text-gray-400" />
+              <span className="font-semibold">{services.length}</span>
+              <span className="text-gray-500">Total Services</span>
+            </div>
           </div>
         </div>
 
@@ -111,46 +63,80 @@ export default function AdminServices() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Service Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Active Detectives</TableHead>
+                  <TableHead>Service Title</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Views</TableHead>
+                  <TableHead>Orders</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {INITIAL_SERVICES.map((service) => (
-                  <TableRow key={service.id}>
-                    <TableCell className="font-bold text-gray-900 flex items-center gap-2">
-                      <Layers className="h-4 w-4 text-gray-400" />
-                      {service.name}
-                    </TableCell>
-                    <TableCell className="text-gray-500">{service.description}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-gray-100">
-                        {service.count} Detectives
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className="bg-green-100 text-green-700 hover:bg-green-200">
-                        {service.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="ghost" title="Edit Form Requirements">
-                          <FileText className="h-4 w-4 text-gray-500" />
-                        </Button>
-                        <Button size="sm" variant="ghost" title="Edit Category">
-                          <Edit2 className="h-4 w-4 text-gray-500" />
-                        </Button>
-                        <Button size="sm" variant="ghost" title="Delete">
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredServices.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      {searchTerm ? "No services found matching your search" : "No services available yet"}
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredServices.map((service: Service) => (
+                    <TableRow key={service.id} data-testid={`row-service-${service.id}`}>
+                      <TableCell className="font-medium text-gray-900 max-w-xs truncate" data-testid={`text-title-${service.id}`}>
+                        {service.title}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize" data-testid={`badge-category-${service.id}`}>
+                          {service.category}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono" data-testid={`text-price-${service.id}`}>
+                        ${service.offerPrice || service.basePrice}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-3 w-3 text-gray-400" />
+                          <span data-testid={`text-views-${service.id}`}>{service.viewCount}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell data-testid={`text-orders-${service.id}`}>
+                        {service.orderCount}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          className={service.isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}
+                          data-testid={`badge-status-${service.id}`}
+                        >
+                          {service.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Link href={`/service/${service.id}`}>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            data-testid={`button-view-${service.id}`}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>

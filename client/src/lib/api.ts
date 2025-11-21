@@ -1,4 +1,4 @@
-import type { User, Detective, Service, Review, Order, InsertDetective, InsertService, InsertReview, InsertOrder } from "@shared/schema";
+import type { User, Detective, Service, Review, Order, DetectiveApplication, ProfileClaim, InsertDetective, InsertService, InsertReview, InsertOrder } from "@shared/schema";
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -307,6 +307,44 @@ export const api = {
     remove: async (userId: string, detectiveId: string): Promise<{ message: string }> => {
       const response = await fetch(`/api/favorites/${userId}/${detectiveId}`, {
         method: "DELETE",
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+  },
+
+  applications: {
+    getAll: async (): Promise<{ applications: DetectiveApplication[] }> => {
+      const response = await fetch("/api/applications", {
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+
+    updateStatus: async (id: string, status: "approved" | "rejected"): Promise<{ application: DetectiveApplication }> => {
+      const response = await fetch(`/api/applications/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+  },
+
+  claims: {
+    getAll: async (): Promise<{ claims: ProfileClaim[] }> => {
+      const response = await fetch("/api/claims", {
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+
+    updateStatus: async (id: string, status: "approved" | "rejected"): Promise<{ claim: ProfileClaim }> => {
+      const response = await fetch(`/api/claims/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
         credentials: "include",
       });
       return handleResponse(response);
