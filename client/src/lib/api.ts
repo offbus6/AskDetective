@@ -130,7 +130,7 @@ export const api = {
       return handleResponse(response);
     },
 
-    getById: async (id: string): Promise<{ service: Service }> => {
+    getById: async (id: string): Promise<{ service: Service; detective: Detective; avgRating: number; reviewCount: number }> => {
       const response = await fetch(`/api/services/${id}`, {
         credentials: "include",
       });

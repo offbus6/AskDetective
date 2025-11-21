@@ -269,7 +269,10 @@ export class DatabaseStorage implements IStorage {
     maxPrice?: number;
   }, limit: number = 50, offset: number = 0, sortBy: string = 'recent'): Promise<Array<Service & { detective: Detective, avgRating: number, reviewCount: number }>> {
     
-    const conditions = [eq(services.isActive, true)];
+    const conditions = [
+      eq(services.isActive, true),
+      eq(detectives.status, 'active')
+    ];
     
     if (filters.category) {
       conditions.push(ilike(services.category, `%${filters.category}%`));
@@ -293,7 +296,7 @@ export class DatabaseStorage implements IStorage {
       reviewCount: count(reviews.id).as('review_count'),
     })
     .from(services)
-    .leftJoin(detectives, eq(services.detectiveId, detectives.id))
+    .innerJoin(detectives, eq(services.detectiveId, detectives.id))
     .leftJoin(reviews, and(eq(reviews.serviceId, services.id), eq(reviews.isPublished, true)))
     .where(and(...conditions))
     .groupBy(services.id, detectives.id);
