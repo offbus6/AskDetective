@@ -2,7 +2,8 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserCheck, AlertTriangle, TrendingUp, MoreHorizontal, CheckCircle, XCircle } from "lucide-react";
+import { Users, UserCheck, AlertTriangle, TrendingUp, MoreHorizontal, CheckCircle, XCircle, Plus } from "lucide-react";
+import { Link } from "wouter";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -29,7 +30,11 @@ export default function AdminDashboard() {
           <h2 className="text-3xl font-bold font-heading text-gray-900">Dashboard Overview</h2>
           <div className="flex gap-2">
              <Button variant="outline">Download Report</Button>
-             <Button className="bg-green-600 hover:bg-green-700">Invite User</Button>
+             <Link href="/admin/detectives/add">
+               <Button className="bg-green-600 hover:bg-green-700 gap-2">
+                 <Plus className="h-4 w-4" /> Add Detective
+               </Button>
+             </Link>
           </div>
         </div>
 

@@ -53,7 +53,12 @@ const PACKAGES: { basic: PackageDetails, standard: PackageDetails, premium: Pack
   }
 };
 
+import { AlertTriangle } from "lucide-react";
+
 export default function DetectiveProfile() {
+  const params = new URLSearchParams(window.location.search);
+  const isUnclaimed = params.get("unclaimed") === "true"; // Determine if profile is unclaimed based on URL for now
+
   // Mock subscription tier for demo - change this to 'free' or 'agency' to test other views
   const detectiveTier = 'agency' as 'free' | 'pro' | 'agency';
   const { formatPrice } = useCurrency();
@@ -83,12 +88,31 @@ export default function DetectiveProfile() {
       setIsSubmitting(false);
     }, 500);
   };
-
+  
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900">
       <Navbar />
       
       <main className="container mx-auto px-6 md:px-12 lg:px-24 py-8 mt-20">
+        {isUnclaimed && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+             <div className="flex items-start gap-4">
+               <div className="bg-blue-100 p-2 rounded-full mt-1">
+                 <AlertTriangle className="h-6 w-6 text-blue-600" />
+               </div>
+               <div>
+                 <h2 className="text-lg font-bold text-blue-900">Is this your business?</h2>
+                 <p className="text-blue-700 max-w-xl">
+                   This profile is currently unclaimed. Claim it now to manage your details, respond to reviews, and access premium features.
+                 </p>
+               </div>
+             </div>
+             <Button className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap px-8 shadow-md">
+               Claim This Profile
+             </Button>
+          </div>
+        )}
+
         <div className="flex flex-col lg:flex-row gap-12">
           
           {/* Left Column - Main Content */}

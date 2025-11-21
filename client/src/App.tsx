@@ -16,6 +16,7 @@ import AdminDetectives from "@/pages/admin/detectives";
 import AdminServices from "@/pages/admin/services";
 import AdminSignupDetails from "@/pages/admin/signup-details";
 import AdminSubscriptions from "@/pages/admin/subscriptions";
+import AdminAddDetective from "@/pages/admin/add-detective";
 
 import DetectiveDashboard from "@/pages/detective/dashboard";
 import DetectiveProfileEdit from "@/pages/detective/profile-edit";
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/admin/signups" component={AdminSignups} />
       <Route path="/admin/signups/:id" component={AdminSignupDetails} />
       <Route path="/admin/detectives" component={AdminDetectives} />
+      <Route path="/admin/detectives/add" component={AdminAddDetective} />
       <Route path="/admin/services" component={AdminServices} />
       <Route path="/admin/subscriptions" component={AdminSubscriptions} />
       <Route path="/admin/settings" component={AdminDashboard} /> {/* Placeholder reused */}
