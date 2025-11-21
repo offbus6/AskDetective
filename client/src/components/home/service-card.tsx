@@ -31,7 +31,9 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
   const [isHovered, setIsHovered] = useState(false);
   const { formatPrice } = useCurrency();
 
-  const profileLink = isUnclaimed ? `/detective/profile?unclaimed=true` : `/service/${id}`;
+  // Always route to the public service profile page
+  // The unclaimed query param will trigger the "Claim this profile" banner
+  const profileLink = `/service/${id}${isUnclaimed ? '?unclaimed=true' : ''}`;
 
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
