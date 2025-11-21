@@ -79,6 +79,15 @@ export default function DetectiveProfileEdit() {
 
   const [newService, setNewService] = useState("");
   const [openService, setOpenService] = useState<string | null>(null);
+  
+  // Mock subscription tier for demo - change this to 'free', 'pro', or 'agency' to test
+  const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'pro' | 'agency'>('free');
+  
+  const [contactInfo, setContactInfo] = useState({
+    email: "james.bond@example.com",
+    phone: "",
+    whatsapp: ""
+  });
 
   const availableServices = ALL_SERVICES.filter(s => !services.find(existing => existing.name === s));
 
@@ -131,7 +140,21 @@ export default function DetectiveProfileEdit() {
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-3xl font-bold font-heading text-gray-900">My Profile</h2>
-          <Button variant="outline">View Public Profile</Button>
+          <div className="flex items-center gap-4">
+             <div className="flex items-center gap-2 text-sm bg-gray-100 px-3 py-1 rounded-full">
+               <span className="text-gray-500">Simulate Plan:</span>
+               <select 
+                  className="bg-transparent border-none text-gray-900 font-bold focus:outline-none cursor-pointer"
+                  value={subscriptionTier}
+                  onChange={(e) => setSubscriptionTier(e.target.value as any)}
+               >
+                 <option value="free">Free Plan</option>
+                 <option value="pro">Pro Plan</option>
+                 <option value="agency">Agency Plan</option>
+               </select>
+             </div>
+             <Button variant="outline">View Public Profile</Button>
+          </div>
         </div>
 
         <Tabs defaultValue="services" className="w-full">
@@ -216,6 +239,65 @@ export default function DetectiveProfileEdit() {
                     <div className="space-y-2">
                       <Label>Languages</Label>
                       <Input defaultValue="English, French, German" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-6 mt-6">
+                  <h3 className="font-bold mb-4">Contact Information</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                     These details will be displayed on your public profile based on your subscription plan.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label>Email Address</Label>
+                      <Input 
+                        value={contactInfo.email} 
+                        onChange={(e) => setContactInfo({...contactInfo, email: e.target.value})}
+                      />
+                      <p className="text-xs text-green-600 font-medium">✓ Visible on public profile</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Phone Number</Label>
+                      <div className="relative">
+                        <Input 
+                           value={contactInfo.phone} 
+                           onChange={(e) => setContactInfo({...contactInfo, phone: e.target.value})}
+                           placeholder="+1 (555) 000-0000"
+                           disabled={subscriptionTier === 'free'}
+                           className={subscriptionTier === 'free' ? "bg-gray-100 text-gray-400" : ""}
+                        />
+                        {subscriptionTier === 'free' && (
+                           <div className="absolute inset-0 flex items-center justify-center bg-gray-50/50 backdrop-blur-[1px] rounded-md">
+                              <span className="text-xs font-bold text-gray-500 bg-white px-2 py-1 rounded border shadow-sm">
+                                 (Upgrade package to make it visible and editable for public)
+                              </span>
+                           </div>
+                        )}
+                      </div>
+                      {subscriptionTier !== 'free' && <p className="text-xs text-green-600 font-medium">✓ Visible on public profile</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                       <Label>WhatsApp Number</Label>
+                       <div className="relative">
+                        <Input 
+                           value={contactInfo.whatsapp} 
+                           onChange={(e) => setContactInfo({...contactInfo, whatsapp: e.target.value})}
+                           placeholder="+1 (555) 000-0000"
+                           disabled={subscriptionTier === 'free'}
+                           className={subscriptionTier === 'free' ? "bg-gray-100 text-gray-400" : ""}
+                        />
+                        {subscriptionTier === 'free' && (
+                           <div className="absolute inset-0 flex items-center justify-center bg-gray-50/50 backdrop-blur-[1px] rounded-md">
+                              <span className="text-xs font-bold text-gray-500 bg-white px-2 py-1 rounded border shadow-sm">
+                                 (Upgrade package to make it visible and editable for public)
+                              </span>
+                           </div>
+                        )}
+                       </div>
+                       {subscriptionTier !== 'free' && <p className="text-xs text-green-600 font-medium">✓ Visible on public profile</p>}
                     </div>
                   </div>
                 </div>
