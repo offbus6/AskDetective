@@ -13,6 +13,7 @@ import SearchPage from "@/pages/search";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminSignups from "@/pages/admin/signups";
 import AdminDetectives from "@/pages/admin/detectives";
+import AdminServices from "@/pages/admin/services";
 
 import DetectiveDashboard from "@/pages/detective/dashboard";
 import DetectiveProfileEdit from "@/pages/detective/profile-edit";
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/signups" component={AdminSignups} />
       <Route path="/admin/detectives" component={AdminDetectives} />
+      <Route path="/admin/services" component={AdminServices} />
       <Route path="/admin/subscriptions" component={AdminDashboard} /> {/* Placeholder reused */}
       <Route path="/admin/settings" component={AdminDashboard} /> {/* Placeholder reused */}
       

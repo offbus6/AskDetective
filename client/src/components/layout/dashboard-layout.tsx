@@ -11,7 +11,8 @@ import {
   Bell,
   CreditCard,
   UserCheck,
-  Star
+  Star,
+  Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,6 +34,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
     { href: "/admin/dashboard", label: "Overview", icon: LayoutDashboard },
     { href: "/admin/signups", label: "New Signups", icon: UserCheck },
     { href: "/admin/detectives", label: "Detectives", icon: Users },
+    { href: "/admin/services", label: "Service Categories", icon: Layers },
     { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
     { href: "/admin/settings", label: "Settings", icon: Settings },
   ];
