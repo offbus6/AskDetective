@@ -27,6 +27,33 @@ import { useToast } from "@/hooks/use-toast";
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
 
+// Mock data for unclaimed vs claimed profile
+const CLAIMED_PROFILE = {
+  name: "James Bond",
+  avatar: maleAvatar,
+  title: "I will conduct a comprehensive background check for any individual",
+  description: "Need to know who you are really dealing with? I provide professional, discreet, and comprehensive background checks for individuals and businesses.",
+  location: "United Kingdom",
+  memberSince: "May 2018",
+  about: "Former MI6 operative turned private investigator. Specializing in high-stakes surveillance, asset recovery, and deep-dive background checks. I have access to databases that others don't. When you need the truth, I'm the one you call.",
+  rating: 5.0,
+  reviews: 1254,
+  tier: 'agency'
+};
+
+const UNCLAIMED_PROFILE = {
+  name: "Unknown Detective Agency",
+  avatar: "", // No avatar
+  title: "Professional Investigation Services - Agency Profile",
+  description: "This is a business listing for Unknown Detective Agency. We provide professional investigation services.",
+  location: "United States",
+  memberSince: "Jan 2024",
+  about: "This business profile is currently unclaimed. If you are the owner, you can claim this profile to manage your information and respond to customer inquiries.",
+  rating: 0,
+  reviews: 0,
+  tier: 'free'
+};
+
 interface PackageDetails {
   name: string;
   description: string;
@@ -68,9 +95,11 @@ import { AlertTriangle } from "lucide-react";
 export default function DetectiveProfile() {
   const params = new URLSearchParams(window.location.search);
   const isUnclaimed = params.get("unclaimed") === "true"; // Determine if profile is unclaimed based on URL for now
+  
+  const profileData = isUnclaimed ? UNCLAIMED_PROFILE : CLAIMED_PROFILE;
 
   // Mock subscription tier for demo - change this to 'free' or 'agency' to test other views
-  const detectiveTier = 'agency' as 'free' | 'pro' | 'agency';
+  const detectiveTier = profileData.tier as 'free' | 'pro' | 'agency';
   const { formatPrice } = useCurrency();
   const { toast } = useToast();
   const [isClaimDialogOpen, setIsClaimDialogOpen] = useState(false);
