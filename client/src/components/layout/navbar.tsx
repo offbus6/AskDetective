@@ -196,7 +196,31 @@ export function Navbar() {
         </div>
 
         {/* Mobile Menu */}
-        <div className="md:hidden">
+        <div className="md:hidden flex items-center gap-2">
+          {/* Mobile Country Display */}
+           <div className="flex items-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className={`gap-1 px-2 ${isScrolled || location !== '/' ? "text-black hover:bg-gray-100" : "text-white hover:bg-white/20"}`}>
+                    <span className="text-lg">{selectedCountry.flag}</span>
+                    <ChevronDown className="h-3 w-3 opacity-70" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {COUNTRIES.map((country) => (
+                    <DropdownMenuItem 
+                      key={country.code}
+                      onClick={() => handleCountrySelect(country)}
+                      className="gap-3 cursor-pointer"
+                    >
+                      <span className="text-lg">{country.flag}</span>
+                      <span>{country.name}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+           </div>
+
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className={isScrolled || location !== '/' ? "text-black" : "text-white"}>

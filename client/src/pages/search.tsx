@@ -1,11 +1,13 @@
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ServiceCard } from "@/components/home/service-card";
+import { ServiceCardSkeleton } from "@/components/home/service-card-skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
-import { Search, MapPin, Filter, ChevronDown, Star, Check } from "lucide-react";
+import { Search, MapPin, Filter, ChevronDown, Star, Check, Globe, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +19,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Link } from "wouter";
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
@@ -181,6 +184,15 @@ export default function SearchPage() {
   const searchParams = new URLSearchParams(window.location.search);
   const query = searchParams.get("q") || "All Services";
   const countryFilter = searchParams.get("country");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [query, countryFilter]);
 
   const filteredResults = RESULTS.filter(service => {
     if (countryFilter && service.country !== countryFilter) return false;
@@ -354,7 +366,7 @@ export default function SearchPage() {
                 <h1 className="text-3xl font-bold font-heading mb-2">Results for "{query}"</h1>
                 <div className="flex justify-between items-center">
                    <div className="flex items-center gap-2 text-gray-500 text-sm">
-                      <span className="font-semibold text-gray-900">2,451</span> services available
+                      <span className="font-semibold text-gray-900">{isLoading ? '...' : filteredResults.length}</span> services available
                    </div>
                    
                    <div className="flex items-center gap-2 text-sm">
@@ -375,28 +387,43 @@ export default function SearchPage() {
                 </div>
               </div>
 
-              {/* Active Filters (Example) */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                 {/* Can be dynamic later */}
-              </div>
-
               {/* Results Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredResults.length > 0 ? (
+                {isLoading ? (
+                  [1, 2, 3, 4, 5, 6].map((i) => (
+                    <ServiceCardSkeleton key={i} />
+                  ))
+                ) : filteredResults.length > 0 ? (
                   filteredResults.map((service) => (
                     <ServiceCard key={service.id} {...service} />
                   ))
                 ) : (
-                  <div className="col-span-full text-center py-12 text-gray-500">
-                    <p className="text-lg font-medium">No detectives found in this region.</p>
-                    <p>Try selecting "Global" or a different country.</p>
+                  <div className="col-span-full flex flex-col items-center justify-center py-16 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                      <Globe className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">No detectives found here</h3>
+                    <p className="text-gray-500 mb-6 text-center max-w-md">
+                      We couldn't find any detectives matching your filters in {countryFilter || "this region"}.
+                    </p>
+                    <Button 
+                      onClick={() => {
+                        // Clear filters logic could go here
+                        window.location.href = "/search"; 
+                      }}
+                      variant="outline"
+                    >
+                      Clear Filters & Search All
+                    </Button>
                   </div>
                 )}
               </div>
 
-               <div className="mt-12 flex justify-center">
-                 <Button variant="outline" className="px-8 border-black text-black hover:bg-gray-50">Load More</Button>
-               </div>
+               {!isLoading && filteredResults.length > 0 && (
+                 <div className="mt-12 flex justify-center">
+                   <Button variant="outline" className="px-8 border-black text-black hover:bg-gray-50">Load More</Button>
+                 </div>
+               )}
             </div>
           </div>
         </div>

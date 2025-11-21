@@ -2,12 +2,23 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { useUser } from "@/lib/user-context";
 import { ServiceCard } from "@/components/home/service-card";
-import { Heart, ArrowLeft } from "lucide-react";
+import { ServiceCardSkeleton } from "@/components/home/service-card-skeleton";
+import { Heart, ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
+import { useState, useEffect } from "react";
 
 export default function FavoritesPage() {
   const { favorites, user } = useUser();
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulate loading for skeleton demo
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (!user) {
     return (
@@ -50,7 +61,13 @@ export default function FavoritesPage() {
           </Link>
         </div>
 
-        {favorites.length > 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <ServiceCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : favorites.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {favorites.map((detective) => (
               <ServiceCard
@@ -70,17 +87,21 @@ export default function FavoritesPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-24 bg-white rounded-lg border border-dashed border-gray-300">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Heart className="h-8 w-8 text-gray-400" />
+          <div className="flex flex-col items-center justify-center py-24 bg-white rounded-xl border border-dashed border-gray-300 text-center px-4">
+            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-6">
+              <Heart className="h-10 w-10 text-red-400" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">No favorites yet</h3>
-            <p className="text-gray-500 max-w-md mx-auto mb-6">
-              Start exploring detectives and services, and click the heart icon to save them here for later.
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">No favorites yet</h3>
+            <p className="text-gray-500 max-w-md mx-auto mb-8 text-lg">
+              When you find a detective you like, tap the heart icon to save them here for easy access later.
             </p>
-            <Link href="/search">
-              <Button className="bg-green-600 hover:bg-green-700">Explore Detectives</Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/search">
+                <Button className="bg-green-600 hover:bg-green-700 px-8 h-12 text-base gap-2">
+                  <Search className="h-5 w-5" /> Browse Detectives
+                </Button>
+              </Link>
+            </div>
           </div>
         )}
       </main>
