@@ -29,290 +29,416 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Plus, Pencil, Trash2, Tag } from "lucide-react";
-import { useServiceCategories, useCreateServiceCategory, useUpdateServiceCategory, useDeleteServiceCategory } from "@/lib/hooks";
+import { Search, Eye, Briefcase, Plus, Pencil, Trash2 } from "lucide-react";
+import { useServices, useDetectives, useCreateService, useUpdateService, useDeleteService } from "@/lib/hooks";
 import { useToast } from "@/hooks/use-toast";
-import type { ServiceCategory } from "@shared/schema";
+import type { Service } from "@shared/schema";
 import { useState } from "react";
 
+const CATEGORIES = [
+  "Surveillance",
+  "Background Check",
+  "Missing Persons",
+  "Corporate Investigation",
+  "Forensic Analysis",
+  "Other"
+];
+
 export default function AdminServices() {
-  const { data: categoriesData, isLoading } = useServiceCategories();
-  const categories = categoriesData?.categories || [];
+  const { data: servicesData, isLoading } = useServices(100);
+  const { data: detectivesData } = useDetectives(100);
+  const services = servicesData?.services || [];
+  const detectives = detectivesData?.detectives || [];
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
-  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+  const [showServiceDialog, setShowServiceDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null);
-  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [deletingServiceId, setDeletingServiceId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    name: "",
+    title: "",
     description: "",
+    category: "",
+    basePrice: "",
+    offerPrice: "",
+    detectiveId: "",
   });
 
-  const createCategory = useCreateServiceCategory();
-  const updateCategory = useUpdateServiceCategory();
-  const deleteCategory = useDeleteServiceCategory();
+  const createService = useCreateService();
+  const updateService = useUpdateService();
+  const deleteService = useDeleteService();
 
-  const filteredCategories = categories.filter((category: ServiceCategory) =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredServices = services.filter((service: Service) =>
+    service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    service.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const resetForm = () => {
     setFormData({
-      name: "",
+      title: "",
       description: "",
+      category: "",
+      basePrice: "",
+      offerPrice: "",
+      detectiveId: "",
     });
-    setEditingCategory(null);
+    setEditingService(null);
   };
 
   const handleOpenAddDialog = () => {
     resetForm();
-    setShowCategoryDialog(true);
+    setShowServiceDialog(true);
   };
 
-  const handleOpenEditDialog = (category: ServiceCategory) => {
-    setEditingCategory(category);
+  const handleOpenEditDialog = (service: Service) => {
+    setEditingService(service);
     setFormData({
-      name: category.name,
-      description: category.description || "",
+      title: service.title,
+      description: service.description,
+      category: service.category,
+      basePrice: service.basePrice,
+      offerPrice: service.offerPrice || "",
+      detectiveId: service.detectiveId,
     });
-    setShowCategoryDialog(true);
+    setShowServiceDialog(true);
   };
 
-  const handleOpenDeleteDialog = (categoryId: string) => {
-    setDeletingCategoryId(categoryId);
+  const handleOpenDeleteDialog = (serviceId: string) => {
+    setDeletingServiceId(serviceId);
     setShowDeleteDialog(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim()) {
+    if (!formData.title || !formData.description || !formData.category || !formData.basePrice || !formData.detectiveId) {
       toast({
         title: "Validation Error",
-        description: "Category name is required",
+        description: "Please fill in all required fields",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const categoryData = {
-        name: formData.name.trim(),
-        description: formData.description.trim() || undefined,
+      const serviceData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        basePrice: formData.basePrice,
+        offerPrice: formData.offerPrice || null,
+        detectiveId: formData.detectiveId,
+        isActive: true,
       };
 
-      if (editingCategory) {
-        await updateCategory.mutateAsync({
-          id: editingCategory.id,
-          data: categoryData,
+      if (editingService) {
+        await updateService.mutateAsync({
+          id: editingService.id,
+          data: serviceData,
         });
         toast({
           title: "Success",
-          description: "Service category updated successfully",
+          description: "Service updated successfully",
         });
       } else {
-        await createCategory.mutateAsync(categoryData);
+        await createService.mutateAsync(serviceData);
         toast({
           title: "Success",
-          description: "Service category created successfully",
+          description: "Service created successfully",
         });
       }
 
-      setShowCategoryDialog(false);
+      setShowServiceDialog(false);
       resetForm();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to save service category",
+        description: editingService ? "Failed to update service" : "Failed to create service",
         variant: "destructive",
       });
     }
   };
 
   const handleDelete = async () => {
-    if (!deletingCategoryId) return;
+    if (!deletingServiceId) return;
 
     try {
-      await deleteCategory.mutateAsync(deletingCategoryId);
+      await deleteService.mutateAsync(deletingServiceId);
       toast({
         title: "Success",
-        description: "Service category deleted successfully",
+        description: "Service deleted successfully",
       });
       setShowDeleteDialog(false);
-      setDeletingCategoryId(null);
-    } catch (error: any) {
+      setDeletingServiceId(null);
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete service category",
+        description: "Failed to delete service",
         variant: "destructive",
       });
     }
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout role="admin">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight" data-testid="text-page-title">Service Categories</h1>
-          <p className="text-muted-foreground mt-2" data-testid="text-page-description">
-            Manage service category templates that detectives can choose from
-          </p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-3xl font-bold font-heading text-gray-900">Detective Services</h2>
+            <p className="text-gray-500">Manage all services offered by detectives on the platform.</p>
+          </div>
+          <Button 
+            onClick={handleOpenAddDialog}
+            className="bg-green-600 hover:bg-green-700 gap-2"
+            data-testid="button-add-service"
+          >
+            <Plus className="h-4 w-4" /> Add New Service
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input 
+              placeholder="Search services..." 
+              className="pl-9"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              data-testid="input-search-services"
+            />
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <div className="flex items-center gap-1">
+              <Briefcase className="h-4 w-4 text-gray-400" />
+              <span className="font-semibold">{services.length}</span>
+              <span className="text-gray-500">Total Services</span>
+            </div>
+          </div>
         </div>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search categories..."
-                  className="pl-9"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  data-testid="input-search-categories"
-                />
-              </div>
-              <Button onClick={handleOpenAddDialog} data-testid="button-add-category">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Category
-              </Button>
-            </div>
-
-            {isLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : filteredCategories.length === 0 ? (
-              <div className="text-center py-12">
-                <Tag className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">No categories found</h3>
-                <p className="text-muted-foreground mt-2">
-                  {searchTerm ? "Try adjusting your search" : "Get started by adding a new category"}
-                </p>
-              </div>
-            ) : (
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead data-testid="header-name">Name</TableHead>
-                      <TableHead data-testid="header-description">Description</TableHead>
-                      <TableHead data-testid="header-status">Status</TableHead>
-                      <TableHead className="text-right" data-testid="header-actions">Actions</TableHead>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Service Title</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Views</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredCategories.map((category: ServiceCategory) => (
-                      <TableRow key={category.id} data-testid={`row-category-${category.id}`}>
-                        <TableCell className="font-medium" data-testid={`text-category-name-${category.id}`}>
-                          {category.name}
-                        </TableCell>
-                        <TableCell className="max-w-md" data-testid={`text-category-description-${category.id}`}>
-                          <p className="truncate text-muted-foreground">
-                            {category.description || "—"}
-                          </p>
-                        </TableCell>
-                        <TableCell data-testid={`badge-category-status-${category.id}`}>
-                          <Badge variant={category.isActive ? "default" : "secondary"}>
-                            {category.isActive ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleOpenEditDialog(category)}
-                              data-testid={`button-edit-category-${category.id}`}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleOpenDeleteDialog(category.id)}
-                              data-testid={`button-delete-category-${category.id}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+                  ))
+                ) : filteredServices.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                      {searchTerm ? "No services found matching your search" : "No services available yet"}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredServices.map((service: Service) => (
+                    <TableRow key={service.id} data-testid={`row-service-${service.id}`}>
+                      <TableCell className="font-medium text-gray-900 max-w-xs truncate" data-testid={`text-title-${service.id}`}>
+                        {service.title}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize" data-testid={`badge-category-${service.id}`}>
+                          {service.category}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono" data-testid={`text-price-${service.id}`}>
+                        ${service.offerPrice || service.basePrice}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-3 w-3 text-gray-400" />
+                          <span data-testid={`text-views-${service.id}`}>{service.viewCount}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          className={service.isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}
+                          data-testid={`badge-status-${service.id}`}
+                        >
+                          {service.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => handleOpenEditDialog(service)}
+                            data-testid={`button-edit-${service.id}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleOpenDeleteDialog(service.id)}
+                            data-testid={`button-delete-${service.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </div>
 
-      <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
-        <DialogContent data-testid="dialog-category-form">
+      <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
+        <DialogContent className="max-w-2xl" data-testid="dialog-service-form">
           <DialogHeader>
-            <DialogTitle data-testid="text-dialog-title">
-              {editingCategory ? "Edit Service Category" : "Add Service Category"}
-            </DialogTitle>
-            <DialogDescription data-testid="text-dialog-description">
-              {editingCategory
-                ? "Update the service category template"
-                : "Create a new service category template that detectives can choose from"}
+            <DialogTitle>{editingService ? "Edit Service" : "Add New Service"}</DialogTitle>
+            <DialogDescription>
+              {editingService ? "Update the service details below" : "Create a new service for a detective"}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">
-                  Name <span className="text-destructive">*</span>
-                </Label>
+                <Label htmlFor="title">Title *</Label>
                 <Input
-                  id="name"
-                  placeholder="e.g., Surveillance, Background Checks"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Enter service title"
+                  data-testid="input-service-title"
                   required
-                  data-testid="input-category-name"
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Description *</Label>
                 <Textarea
                   id="description"
-                  placeholder="Optional description of this service category"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  data-testid="input-category-description"
+                  placeholder="Describe the service"
+                  rows={4}
+                  data-testid="input-service-description"
+                  required
                 />
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category *</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  >
+                    <SelectTrigger id="category" data-testid="select-service-category">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat} data-testid={`option-category-${cat}`}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="detective">Detective *</Label>
+                  <Select
+                    value={formData.detectiveId}
+                    onValueChange={(value) => setFormData({ ...formData, detectiveId: value })}
+                  >
+                    <SelectTrigger id="detective" data-testid="select-service-detective">
+                      <SelectValue placeholder="Select detective" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {detectives.map((detective) => (
+                        <SelectItem key={detective.id} value={detective.id} data-testid={`option-detective-${detective.id}`}>
+                          {detective.businessName || "Unknown"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="basePrice">Base Price ($) *</Label>
+                  <Input
+                    id="basePrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.basePrice}
+                    onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
+                    placeholder="0.00"
+                    data-testid="input-service-base-price"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="offerPrice">Offer Price ($)</Label>
+                  <Input
+                    id="offerPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.offerPrice}
+                    onChange={(e) => setFormData({ ...formData, offerPrice: e.target.value })}
+                    placeholder="0.00 (optional)"
+                    data-testid="input-service-offer-price"
+                  />
+                </div>
+              </div>
             </div>
+
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  setShowCategoryDialog(false);
-                  resetForm();
-                }}
-                data-testid="button-cancel"
+                onClick={() => setShowServiceDialog(false)}
+                data-testid="button-cancel-service"
               >
                 Cancel
               </Button>
-              <Button
+              <Button 
                 type="submit"
-                disabled={createCategory.isPending || updateCategory.isPending}
-                data-testid="button-save-category"
+                disabled={createService.isPending || updateService.isPending}
+                data-testid="button-submit-service"
               >
-                {editingCategory ? "Update" : "Create"}
+                {createService.isPending || updateService.isPending ? "Saving..." : (editingService ? "Update Service" : "Create Service")}
               </Button>
             </DialogFooter>
           </form>
@@ -320,23 +446,22 @@ export default function AdminServices() {
       </Dialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent data-testid="dialog-delete-confirm">
+        <AlertDialogContent data-testid="dialog-delete-service">
           <AlertDialogHeader>
-            <AlertDialogTitle data-testid="text-delete-title">Delete Service Category?</AlertDialogTitle>
-            <AlertDialogDescription data-testid="text-delete-description">
-              This will mark the category as inactive. Detectives won't be able to select it for new services.
-              This action can be reversed by editing the category.
+            <AlertDialogTitle>Delete Service</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this service? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteCategory.isPending}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteService.isPending}
               data-testid="button-confirm-delete"
             >
-              Delete
+              {deleteService.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
