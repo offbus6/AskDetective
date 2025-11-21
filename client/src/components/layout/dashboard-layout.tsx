@@ -13,7 +13,8 @@ import {
   UserCheck,
   Star,
   Layers,
-  Search
+  Search,
+  Receipt
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -45,6 +46,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
     { href: "/detective/profile", label: "My Profile", icon: Users },
     { href: "/detective/reviews", label: "Reviews", icon: Star },
     { href: "/detective/subscription", label: "Subscription", icon: CreditCard },
+    { href: "/detective/billing", label: "Billing", icon: Receipt },
     { href: "/detective/settings", label: "Settings", icon: Settings },
   ];
 
@@ -125,6 +127,19 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
           </div>
 
           <div className="flex items-center gap-4">
+             {role === 'detective' && (
+               <div className="hidden lg:flex items-center gap-6 text-sm mr-4 bg-gray-50 px-4 py-2 rounded-full border border-gray-200">
+                 <div className="flex flex-col items-end leading-tight">
+                   <span className="text-gray-500 text-xs font-medium">Next Renewal</span>
+                   <span className="font-bold text-gray-900">Dec 01, 2025</span>
+                 </div>
+                 <div className="h-8 w-px bg-gray-200"></div>
+                 <div className="flex flex-col items-end leading-tight">
+                   <span className="text-gray-500 text-xs font-medium">Amount Due</span>
+                   <span className="font-bold text-green-600">$29.00</span>
+                 </div>
+               </div>
+             )}
             <Button variant="ghost" size="icon" className="relative text-gray-500">
               <Bell className="h-5 w-5" />
               <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full border-2 border-white"></span>
