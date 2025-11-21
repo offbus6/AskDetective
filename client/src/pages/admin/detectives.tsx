@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, MoreHorizontal, Shield, Star, Ban } from "lucide-react";
+import { Search, MoreHorizontal, Shield, Star, Ban, Plus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+import { Link } from "wouter";
 
 const DETECTIVES = [
   { id: 1, name: "James Bond", email: "007@mi6.gov.uk", level: "Top Rated", plan: "Professional", status: "Active", earnings: "$15,240" },
@@ -39,7 +41,11 @@ export default function AdminDetectives() {
             <h2 className="text-3xl font-bold font-heading text-gray-900">Detectives Directory</h2>
             <p className="text-gray-500">Manage all approved detectives on the platform.</p>
           </div>
-          <Button>Add New Detective</Button>
+          <Link href="/admin/detectives/add">
+            <Button className="bg-green-600 hover:bg-green-700 gap-2">
+              <Plus className="h-4 w-4" /> Add Detective
+            </Button>
+          </Link>
         </div>
 
         <div className="flex items-center gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">

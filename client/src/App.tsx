@@ -42,8 +42,8 @@ function Router() {
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/signups" component={AdminSignups} />
       <Route path="/admin/signups/:id" component={AdminSignupDetails} />
-      <Route path="/admin/detectives" component={AdminDetectives} />
       <Route path="/admin/detectives/add" component={AdminAddDetective} />
+      <Route path="/admin/detectives" component={AdminDetectives} />
       <Route path="/admin/services" component={AdminServices} />
       <Route path="/admin/subscriptions" component={AdminSubscriptions} />
       <Route path="/admin/settings" component={AdminDashboard} /> {/* Placeholder reused */}
