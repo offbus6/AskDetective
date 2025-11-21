@@ -36,6 +36,7 @@ const RESULTS = [
     level: "Agency Verified",
     badges: ["verified", "recommended"],
     category: "Background Checks",
+    country: "US",
     title: "I will conduct a comprehensive background check for any individual",
     rating: 5.0,
     reviews: 1254,
@@ -53,6 +54,7 @@ const RESULTS = [
     level: "Pro Detective",
     badges: ["pro"],
     category: "Surveillance",
+    country: "UK",
     title: "I will perform discreet surveillance and provide video evidence",
     rating: 4.9,
     reviews: 843,
@@ -70,6 +72,7 @@ const RESULTS = [
     level: "Pro Detective",
     badges: ["pro"],
     category: "Missing Persons",
+    country: "US",
     title: "I will find missing persons and reconnect families",
     rating: 4.8,
     reviews: 420,
@@ -87,6 +90,7 @@ const RESULTS = [
     level: "Agency Verified",
     badges: ["verified", "recommended"],
     category: "Cyber Investigation",
+    country: "CA",
     title: "I will investigate cyber bullying and online harassment",
     rating: 5.0,
     reviews: 2100,
@@ -104,6 +108,7 @@ const RESULTS = [
     level: "Free Member",
     badges: [],
     category: "Corporate Fraud",
+    country: "US",
     title: "I will handle corporate fraud investigations and embezzlement",
     rating: 4.7,
     reviews: 156,
@@ -121,6 +126,7 @@ const RESULTS = [
     level: "Agency Verified",
     badges: ["verified"],
     category: "Asset Search",
+    country: "UK",
     title: "I will locate assets and hidden funds for divorce cases",
     rating: 4.9,
     reviews: 980,
@@ -145,6 +151,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 export default function SearchPage() {
   const searchParams = new URLSearchParams(window.location.search);
   const query = searchParams.get("q") || "All Services";
+  const countryFilter = searchParams.get("country");
+
+  const filteredResults = RESULTS.filter(service => {
+    if (countryFilter && service.country !== countryFilter) return false;
+    return true;
+  });
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-gray-900 bg-white">
@@ -317,9 +329,16 @@ export default function SearchPage() {
 
               {/* Results Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {RESULTS.map((service) => (
-                  <ServiceCard key={service.id} {...service} />
-                ))}
+                {filteredResults.length > 0 ? (
+                  filteredResults.map((service) => (
+                    <ServiceCard key={service.id} {...service} />
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-12 text-gray-500">
+                    <p className="text-lg font-medium">No detectives found in this region.</p>
+                    <p>Try selecting "Global" or a different country.</p>
+                  </div>
+                )}
               </div>
 
                <div className="mt-12 flex justify-center">
