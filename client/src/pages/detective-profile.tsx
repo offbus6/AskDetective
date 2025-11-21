@@ -684,7 +684,7 @@ export default function DetectiveProfile() {
                      <span className="font-bold">Contact via Email</span>
                    </Button>
                    
-                   {detectiveTier !== 'free' ? (
+                   {detectiveTier !== 'free' && (
                      <>
                        <Button className="w-full flex items-center justify-center gap-2 bg-white hover:bg-green-50 text-green-700 border border-green-200 shadow-sm h-12">
                          <Phone className="h-5 w-5" />
@@ -696,20 +696,6 @@ export default function DetectiveProfile() {
                          <span className="font-bold">WhatsApp</span>
                        </Button>
                      </>
-                   ) : (
-                     <div className="bg-yellow-50 border border-yellow-100 rounded-md p-3 text-center">
-                        <p className="text-xs text-yellow-800 font-medium mb-2">
-                          Phone & WhatsApp available on Pro plans
-                        </p>
-                        <div className="flex gap-2 opacity-50">
-                          <Button disabled className="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-200 shadow-sm h-10 text-gray-400">
-                             <Phone className="h-4 w-4" />
-                          </Button>
-                          <Button disabled className="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-200 shadow-sm h-10 text-gray-400">
-                             <MessageCircle className="h-4 w-4" />
-                          </Button>
-                        </div>
-                     </div>
                    )}
                 </div>
               </Card>
