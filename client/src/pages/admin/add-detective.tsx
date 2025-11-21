@@ -164,7 +164,7 @@ export default function AdminAddDetective() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="companyName">Company Name / Individual Name</Label>
+                <Label htmlFor="companyName">Company Name / Individual Name <span className="text-red-500">*</span></Label>
                 <Input id="companyName" placeholder="e.g. Sherlock Investigations Ltd. or John Doe" required />
               </div>
 
@@ -231,7 +231,7 @@ export default function AdminAddDetective() {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="title">Professional Title</Label>
-                <Input id="title" placeholder="e.g. Senior Private Investigator | Ex-Police" required />
+                <Input id="title" placeholder="e.g. Senior Private Investigator | Ex-Police" />
                 <p className="text-xs text-gray-500">This will appear under the name in search results.</p>
               </div>
 
@@ -269,7 +269,7 @@ export default function AdminAddDetective() {
                       </div>
                       <div className="flex items-center gap-2 w-full sm:w-auto">
                         <div className="flex flex-col flex-1 sm:flex-none">
-                          <span className="text-[10px] text-gray-500">Starting (Req)</span>
+                          <span className="text-[10px] text-gray-500">Starting</span>
                           <div className="flex items-center">
                             <span className="text-xs text-gray-500 mr-1">{currencySymbol}</span>
                             <Input type="number" className="w-full sm:w-20 h-8 text-sm" placeholder="100" disabled={!selectedServices.includes(spec)} />
