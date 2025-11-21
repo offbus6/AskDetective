@@ -1,4 +1,4 @@
-import { db } from "../db";
+import { db } from "@db";
 import { 
   users, detectives, services, servicePackages, reviews, orders, favorites, 
   detectiveApplications, profileClaims, billingHistory,
@@ -174,12 +174,13 @@ export class DatabaseStorage implements IStorage {
     if (filters.status) conditions.push(eq(detectives.status, filters.status as any));
     if (filters.plan) conditions.push(eq(detectives.subscriptionPlan, filters.plan as any));
     if (filters.searchQuery) {
-      conditions.push(
-        or(
-          ilike(detectives.businessName, `%${filters.searchQuery}%`),
-          ilike(detectives.bio, `%${filters.searchQuery}%`)
-        )
+      const searchCondition = or(
+        ilike(detectives.businessName, `%${filters.searchQuery}%`),
+        ilike(detectives.bio, `%${filters.searchQuery}%`)
       );
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
     }
 
     if (conditions.length > 0) {
@@ -235,13 +236,14 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (filters.searchQuery) {
-      conditions.push(
-        or(
-          ilike(services.title, `%${filters.searchQuery}%`),
-          ilike(services.description, `%${filters.searchQuery}%`),
-          ilike(services.category, `%${filters.searchQuery}%`)
-        )
+      const searchCondition = or(
+        ilike(services.title, `%${filters.searchQuery}%`),
+        ilike(services.description, `%${filters.searchQuery}%`),
+        ilike(services.category, `%${filters.searchQuery}%`)
       );
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
     }
 
     let query = db.select({
@@ -271,7 +273,7 @@ export class DatabaseStorage implements IStorage {
 
     const results = await query.limit(limit).offset(offset);
     
-    return results.map(r => ({
+    return results.map((r: any) => ({
       ...r.service,
       detective: r.detective!,
       avgRating: Number(r.avgRating),
@@ -308,7 +310,7 @@ export class DatabaseStorage implements IStorage {
     .where(and(eq(services.detectiveId, detectiveId), eq(reviews.isPublished, true)))
     .orderBy(desc(reviews.createdAt))
     .limit(limit)
-    .then(results => results.map(r => r.review));
+    .then((results: any) => results.map((r: any) => r.review));
   }
 
   async createReview(insertReview: InsertReview): Promise<Review> {
@@ -398,7 +400,7 @@ export class DatabaseStorage implements IStorage {
     .where(eq(favorites.userId, userId))
     .orderBy(desc(favorites.createdAt));
 
-    return results.map(r => ({ ...r.favorite, service: r.service! }));
+    return results.map((r: any) => ({ ...r.favorite, service: r.service! }));
   }
 
   async addFavorite(insertFavorite: InsertFavorite): Promise<Favorite> {
@@ -532,7 +534,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(reviews)
       .where(and(
-        inArray(reviews.serviceId, serviceIds.map(s => s.id)),
+        inArray(reviews.serviceId, serviceIds.map((s: any) => s.id)),
         eq(reviews.isPublished, true)
       ));
 
