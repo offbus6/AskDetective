@@ -30,11 +30,14 @@ import FavoritesPage from "@/pages/user/favorites";
 
 import { CurrencyProvider } from "./lib/currency-context";
 import { UserProvider } from "./lib/user-context";
+import ScrollToTop from "@/components/scroll-to-top";
 
 function Router() {
   return (
-    <Switch>
-      {/* Public Routes */}
+    <>
+      <ScrollToTop />
+      <Switch>
+        {/* Public Routes */}
       <Route path="/" component={Home} />
       <Route path="/service/:id" component={DetectiveProfile} />
       <Route path="/login" component={Login} />
