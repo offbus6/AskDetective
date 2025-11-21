@@ -25,6 +25,7 @@ interface PackageDetails {
   price: string;
   offerPrice: string;
   features: string[];
+  enabled: boolean;
 }
 
 import { Switch } from "@/components/ui/switch";
@@ -34,7 +35,6 @@ interface Service {
   title: string;
   description: string;
   image: string | null;
-  hasThreeTiers: boolean;
   packages: {
     basic: PackageDetails;
     standard: PackageDetails;
@@ -47,7 +47,8 @@ const DEFAULT_PACKAGE: PackageDetails = {
   description: "",
   price: "",
   offerPrice: "",
-  features: []
+  features: [],
+  enabled: true
 };
 
 export default function DetectiveProfileEdit() {
@@ -57,11 +58,10 @@ export default function DetectiveProfileEdit() {
       title: "I will conduct professional covert surveillance for your case",
       description: "Professional covert surveillance services for personal and corporate matters. We use state-of-the-art equipment to gather evidence discreetly.",
       image: null,
-      hasThreeTiers: true,
       packages: {
-        basic: { ...DEFAULT_PACKAGE, name: "Basic Watch", price: "150", offerPrice: "120", description: "4 hours of surveillance with basic report." },
-        standard: { ...DEFAULT_PACKAGE, name: "Standard Day", price: "300", offerPrice: "", description: "8 hours of surveillance with video evidence." },
-        premium: { ...DEFAULT_PACKAGE, name: "Full Investigation", price: "800", offerPrice: "750", description: "24-hour coverage with full team and detailed dossier." }
+        basic: { ...DEFAULT_PACKAGE, name: "Basic Watch", price: "150", offerPrice: "120", description: "4 hours of surveillance with basic report.", enabled: true },
+        standard: { ...DEFAULT_PACKAGE, name: "Standard Day", price: "300", offerPrice: "", description: "8 hours of surveillance with video evidence.", enabled: true },
+        premium: { ...DEFAULT_PACKAGE, name: "Full Investigation", price: "800", offerPrice: "750", description: "24-hour coverage with full team and detailed dossier.", enabled: true }
       }
     },
     { 
@@ -69,11 +69,10 @@ export default function DetectiveProfileEdit() {
       title: "I will perform a comprehensive background check on any individual",
       description: "Comprehensive background screening services. We verify identity, criminal history, employment, and more using reliable databases.",
       image: null,
-      hasThreeTiers: true,
       packages: {
-        basic: { ...DEFAULT_PACKAGE, name: "Simple Check", price: "100", offerPrice: "", description: "Identity and criminal record check." },
-        standard: { ...DEFAULT_PACKAGE, name: "Deep Dive", price: "250", offerPrice: "200", description: "Includes financial and social media analysis." },
-        premium: { ...DEFAULT_PACKAGE, name: "Complete Profile", price: "500", offerPrice: "", description: "Full 360-degree background investigation." }
+        basic: { ...DEFAULT_PACKAGE, name: "Simple Check", price: "100", offerPrice: "", description: "Identity and criminal record check.", enabled: true },
+        standard: { ...DEFAULT_PACKAGE, name: "Deep Dive", price: "250", offerPrice: "200", description: "Includes financial and social media analysis.", enabled: true },
+        premium: { ...DEFAULT_PACKAGE, name: "Complete Profile", price: "500", offerPrice: "", description: "Full 360-degree background investigation.", enabled: true }
       }
     }
   ]);
@@ -90,11 +89,10 @@ export default function DetectiveProfileEdit() {
         title: `I will provide ${newService} services`,
         description: "",
         image: null,
-        hasThreeTiers: true,
         packages: {
-          basic: { ...DEFAULT_PACKAGE, name: "Basic Package", price: "100", offerPrice: "" },
-          standard: { ...DEFAULT_PACKAGE, name: "Standard Package", price: "200", offerPrice: "" },
-          premium: { ...DEFAULT_PACKAGE, name: "Premium Package", price: "300", offerPrice: "" }
+          basic: { ...DEFAULT_PACKAGE, name: "Basic Package", price: "100", offerPrice: "", enabled: true },
+          standard: { ...DEFAULT_PACKAGE, name: "Standard Package", price: "200", offerPrice: "", enabled: true },
+          premium: { ...DEFAULT_PACKAGE, name: "Premium Package", price: "300", offerPrice: "", enabled: true }
         }
       }]);
       setNewService("");
@@ -110,7 +108,7 @@ export default function DetectiveProfileEdit() {
     setServices(services.map(s => s.name === serviceName ? { ...s, [field]: value } : s));
   };
 
-  const updatePackage = (serviceName: string, tier: PackageTier, field: keyof PackageDetails, value: string) => {
+  const updatePackage = (serviceName: string, tier: PackageTier, field: keyof PackageDetails, value: any) => {
     setServices(services.map(s => {
       if (s.name === serviceName) {
         return {
@@ -307,71 +305,70 @@ export default function DetectiveProfileEdit() {
                            <p className="text-xs text-gray-500">This text appears at the top of your service page.</p>
                         </div>
 
-                        {/* Package Toggle */}
-                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-md border border-gray-200">
-                          <div className="space-y-0.5">
-                            <Label className="text-base">Three-Tier Packages</Label>
-                            <p className="text-xs text-gray-500">Enable Standard and Premium packages for this service</p>
-                          </div>
-                          <Switch 
-                            checked={service.hasThreeTiers}
-                            onCheckedChange={(checked) => updateServiceField(service.name, 'hasThreeTiers', checked)}
-                          />
-                        </div>
-
                         {/* Packages Grid */}
-                        <div className={`grid grid-cols-1 ${service.hasThreeTiers ? 'md:grid-cols-3' : 'md:grid-cols-1'} gap-4`}>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                            {(['basic', 'standard', 'premium'] as PackageTier[]).map((tier) => {
-                              if (!service.hasThreeTiers && tier !== 'basic') return null;
+                              const isEnabled = service.packages[tier].enabled;
                               
                               return (
-                                <div key={tier} className={`border rounded-md p-3 space-y-3 ${
-                                   tier === 'basic' ? 'bg-gray-50/50 border-gray-200' : 
-                                   tier === 'standard' ? 'bg-blue-50/30 border-blue-100' : 
-                                   'bg-green-50/30 border-green-100'
+                                <div key={tier} className={`border rounded-md p-3 space-y-3 transition-all ${
+                                   isEnabled 
+                                     ? (tier === 'basic' ? 'bg-gray-50/50 border-gray-200' : 
+                                        tier === 'standard' ? 'bg-blue-50/30 border-blue-100' : 
+                                        'bg-green-50/30 border-green-100')
+                                     : 'bg-gray-100 border-gray-200 opacity-75'
                                 }`}>
-                                 <div className="font-bold uppercase text-xs tracking-wider text-center pb-2 border-b mb-2">
-                                    {tier} Package
-                                 </div>
-                                 
-                                 <div className="space-y-1">
-                                    <Label className="text-xs">Package Name</Label>
-                                    <Input 
-                                       className="h-8 text-sm" 
-                                       value={service.packages[tier].name}
-                                       onChange={(e) => updatePackage(service.name, tier, 'name', e.target.value)}
+                                 <div className="flex items-center justify-between border-b pb-2 mb-2">
+                                    <div className="font-bold uppercase text-xs tracking-wider">
+                                       {tier} Package
+                                    </div>
+                                    <Switch 
+                                       checked={isEnabled}
+                                       onCheckedChange={(checked) => updatePackage(service.name, tier, 'enabled', checked)}
+                                       className="scale-75"
                                     />
                                  </div>
                                  
-                                 <div className="space-y-1">
-                                    <Label className="text-xs">Description</Label>
-                                    <Textarea 
-                                       className="h-16 text-xs resize-none" 
-                                       value={service.packages[tier].description}
-                                       onChange={(e) => updatePackage(service.name, tier, 'description', e.target.value)}
-                                    />
-                                 </div>
-                                 
-                                 <div className="grid grid-cols-2 gap-2">
-                                    <div className="space-y-1">
-                                       <Label className="text-xs">Price ($)</Label>
-                                       <Input 
-                                          type="number" 
-                                          className="h-8 text-sm font-bold" 
-                                          value={service.packages[tier].price}
-                                          onChange={(e) => updatePackage(service.name, tier, 'price', e.target.value)}
-                                       />
-                                    </div>
-                                    <div className="space-y-1">
-                                       <Label className="text-xs text-green-600">Offer Price ($)</Label>
-                                       <Input 
-                                          type="number" 
-                                          className="h-8 text-sm font-bold border-green-200 text-green-700 bg-green-50" 
-                                          placeholder="Optional"
-                                          value={service.packages[tier].offerPrice}
-                                          onChange={(e) => updatePackage(service.name, tier, 'offerPrice', e.target.value)}
-                                       />
-                                    </div>
+                                 <div className={isEnabled ? "" : "pointer-events-none opacity-50"}>
+                                   <div className="space-y-1">
+                                      <Label className="text-xs">Package Name</Label>
+                                      <Input 
+                                         className="h-8 text-sm" 
+                                         value={service.packages[tier].name}
+                                         onChange={(e) => updatePackage(service.name, tier, 'name', e.target.value)}
+                                      />
+                                   </div>
+                                   
+                                   <div className="space-y-1">
+                                      <Label className="text-xs">Description</Label>
+                                      <Textarea 
+                                         className="h-16 text-xs resize-none" 
+                                         value={service.packages[tier].description}
+                                         onChange={(e) => updatePackage(service.name, tier, 'description', e.target.value)}
+                                      />
+                                   </div>
+                                   
+                                   <div className="grid grid-cols-2 gap-2">
+                                      <div className="space-y-1">
+                                         <Label className="text-xs">Price ($)</Label>
+                                         <Input 
+                                            type="number" 
+                                            className="h-8 text-sm font-bold" 
+                                            value={service.packages[tier].price}
+                                            onChange={(e) => updatePackage(service.name, tier, 'price', e.target.value)}
+                                         />
+                                      </div>
+                                      <div className="space-y-1">
+                                         <Label className="text-xs text-green-600">Offer Price ($)</Label>
+                                         <Input 
+                                            type="number" 
+                                            className="h-8 text-sm font-bold border-green-200 text-green-700 bg-green-50" 
+                                            placeholder="Optional"
+                                            value={service.packages[tier].offerPrice}
+                                            onChange={(e) => updatePackage(service.name, tier, 'offerPrice', e.target.value)}
+                                         />
+                                      </div>
+                                   </div>
                                  </div>
                               </div>
                            );
