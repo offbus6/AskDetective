@@ -8,6 +8,11 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Star, MapPin, Check, Clock, RefreshCw, MessageSquare, Mail, Phone, MessageCircle, ShieldCheck } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
+import { useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
 
@@ -46,6 +51,32 @@ const PACKAGES: { basic: PackageDetails, standard: PackageDetails, premium: Pack
 export default function DetectiveProfile() {
   // Mock subscription tier for demo - change this to 'free' or 'agency' to test other views
   const detectiveTier = 'agency' as 'free' | 'pro' | 'agency';
+
+  const [reviews, setReviews] = useState([
+    { id: 1, user: "User_1", rating: 5, text: "Excellent work! Found exactly what I needed in record time. Highly recommended for anyone needing discreet information." },
+    { id: 2, user: "User_2", rating: 5, text: "Very professional and thorough. Kept me updated throughout the process." },
+    { id: 3, user: "User_3", rating: 5, text: "Worth every penny. The detailed report provided was beyond my expectations." }
+  ]);
+
+  const [newReview, setNewReview] = useState({ rating: 5, text: "", name: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmitReview = () => {
+    if (!newReview.text || !newReview.name) return;
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      setReviews([{
+        id: Date.now(),
+        user: newReview.name,
+        rating: newReview.rating,
+        text: newReview.text
+      }, ...reviews]);
+      setNewReview({ rating: 5, text: "", name: "" });
+      setIsSubmitting(false);
+    }, 500);
+  };
 
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900">
@@ -165,18 +196,85 @@ export default function DetectiveProfile() {
             
             <Separator className="my-8" />
 
-            {/* Reviews (Brief) */}
+            {/* Reviews Section */}
             <section>
-              <h2 className="text-xl font-bold font-heading mb-6">Reviews</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold font-heading">Reviews</h2>
+                <div className="flex items-center gap-2">
+                  <span className="text-yellow-500 font-bold flex items-center gap-1">
+                    <Star className="h-5 w-5 fill-yellow-500" /> 5.0
+                  </span>
+                  <span className="text-gray-500">({reviews.length} reviews)</span>
+                </div>
+              </div>
+
+              {/* Add Review Form */}
+              <Card className="mb-8 bg-gray-50 border-gray-200">
+                <CardContent className="p-6 space-y-4">
+                  <h3 className="font-bold text-lg">Leave a Review</h3>
+                  <div className="space-y-2">
+                    <Label>Your Rating</Label>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button 
+                          key={star}
+                          onClick={() => setNewReview({...newReview, rating: star})}
+                          className="focus:outline-none"
+                        >
+                          <Star 
+                            className={`h-6 w-6 ${star <= newReview.rating ? 'fill-yellow-500 text-yellow-500' : 'text-gray-300'}`} 
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Your Name</Label>
+                    <Input 
+                      placeholder="Enter your name" 
+                      value={newReview.name}
+                      onChange={(e) => setNewReview({...newReview, name: e.target.value})}
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Your Review</Label>
+                    <Textarea 
+                      placeholder="Share your experience with this detective..." 
+                      value={newReview.text}
+                      onChange={(e) => setNewReview({...newReview, text: e.target.value})}
+                      className="bg-white min-h-[100px]"
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleSubmitReview} 
+                    disabled={!newReview.text || !newReview.name || isSubmitting}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit Review"}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Reviews List */}
               <div className="space-y-6">
-                {[1, 2, 3].map((i) => (
-                   <div key={i} className="border-b border-gray-100 pb-6">
+                {reviews.map((review) => (
+                   <div key={review.id} className="border-b border-gray-100 pb-6">
                      <div className="flex items-center gap-3 mb-2">
-                       <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center font-bold text-xs">U{i}</div>
-                       <span className="font-bold text-sm">User_{i}</span>
-                       <div className="flex text-yellow-500"><Star className="h-3 w-3 fill-yellow-500" /><Star className="h-3 w-3 fill-yellow-500" /><Star className="h-3 w-3 fill-yellow-500" /><Star className="h-3 w-3 fill-yellow-500" /><Star className="h-3 w-3 fill-yellow-500" /></div>
+                       <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center font-bold text-xs">
+                         {review.user.charAt(0).toUpperCase()}
+                       </div>
+                       <span className="font-bold text-sm">{review.user}</span>
+                       <div className="flex text-yellow-500">
+                         {[...Array(5)].map((_, i) => (
+                           <Star 
+                             key={i} 
+                             className={`h-3 w-3 ${i < review.rating ? 'fill-yellow-500' : 'text-gray-300'}`} 
+                           />
+                         ))}
+                       </div>
                      </div>
-                     <p className="text-gray-600 text-sm">Excellent work! Found exactly what I needed in record time. Highly recommended for anyone needing discreet information.</p>
+                     <p className="text-gray-600 text-sm">{review.text}</p>
                    </div>
                 ))}
               </div>
