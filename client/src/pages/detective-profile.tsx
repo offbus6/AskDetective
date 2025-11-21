@@ -86,7 +86,7 @@ export default function DetectiveProfile() {
     <div className="min-h-screen bg-white font-sans text-gray-900">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-8 mt-20">
+      <main className="container mx-auto px-6 md:px-12 lg:px-24 py-8 mt-20">
         <div className="flex flex-col lg:flex-row gap-12">
           
           {/* Left Column - Main Content */}
