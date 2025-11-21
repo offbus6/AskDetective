@@ -678,7 +678,7 @@ export default function DetectiveProfileEdit() {
                             size="sm" 
                             className="w-full bg-blue-600 hover:bg-blue-700"
                             onClick={addRecognition}
-                            disabled={!newRecognition.name || !newRecognition.description}
+                            disabled={!newRecognition.name || !newRecognition.description || !newRecognition.year}
                           >
                             <Plus className="h-3 w-3 mr-1" /> Add Recognition
                           </Button>
