@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload, Plus, MapPin, DollarSign, Globe, Shield, Check } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useServiceCategories } from "@/lib/hooks";
 
 // Reuse the detailed countries list from signup for consistent experience
 const COUNTRIES = [
@@ -57,23 +58,14 @@ const COUNTRIES = [
   },
 ];
 
-const SERVICE_OPTIONS = [
-  "Surveillance",
-  "Background Checks",
-  "Missing Persons",
-  "Infidelity",
-  "Corporate Fraud",
-  "Cyber Investigation",
-  "Asset Search",
-  "Due Diligence",
-  "Legal Support",
-  "Process Serving"
-];
-
 export default function AdminAddDetective() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Fetch service categories from API
+  const { data: categoriesData } = useServiceCategories();
+  const serviceCategories = categoriesData?.categories?.filter(cat => cat.isActive) || [];
   
   // Form State
   const [country, setCountry] = useState("US");
@@ -252,19 +244,19 @@ export default function AdminAddDetective() {
               </div>
 
               <div className="space-y-2">
-                <Label>Specializations & Pricing</Label>
+                <Label>Service Categories</Label>
                 <p className="text-xs text-gray-500 mb-2">Select services and set price ranges.</p>
                 <div className="grid gap-3">
-                  {SERVICE_OPTIONS.map((spec) => (
-                    <div key={spec} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border p-3 rounded-md hover:bg-gray-50 gap-3">
+                  {serviceCategories.map((category) => (
+                    <div key={category.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border p-3 rounded-md hover:bg-gray-50 gap-3">
                       <div className="flex items-center space-x-2 flex-1">
                         <Checkbox 
-                          id={`service-${spec}`}
-                          checked={selectedServices.includes(spec)}
-                          onCheckedChange={() => toggleService(spec)}
+                          id={`service-${category.id}`}
+                          checked={selectedServices.includes(category.id)}
+                          onCheckedChange={() => toggleService(category.id)}
                         />
-                        <label htmlFor={`service-${spec}`} className="text-sm font-medium leading-none cursor-pointer">
-                          {spec}
+                        <label htmlFor={`service-${category.id}`} className="text-sm font-medium leading-none cursor-pointer">
+                          {category.name}
                         </label>
                       </div>
                       <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -272,14 +264,14 @@ export default function AdminAddDetective() {
                           <span className="text-[10px] text-gray-500">Starting</span>
                           <div className="flex items-center">
                             <span className="text-xs text-gray-500 mr-1">{currencySymbol}</span>
-                            <Input type="number" className="w-full sm:w-20 h-8 text-sm" placeholder="100" disabled={!selectedServices.includes(spec)} />
+                            <Input type="number" className="w-full sm:w-20 h-8 text-sm" placeholder="100" disabled={!selectedServices.includes(category.id)} />
                           </div>
                         </div>
                         <div className="flex flex-col flex-1 sm:flex-none">
                           <span className="text-[10px] text-gray-500">Ending (Opt)</span>
                           <div className="flex items-center">
                             <span className="text-xs text-gray-500 mr-1">{currencySymbol}</span>
-                            <Input type="number" className="w-full sm:w-20 h-8 text-sm" placeholder="Max" disabled={!selectedServices.includes(spec)} />
+                            <Input type="number" className="w-full sm:w-20 h-8 text-sm" placeholder="Max" disabled={!selectedServices.includes(category.id)} />
                           </div>
                         </div>
                       </div>

@@ -244,7 +244,7 @@ export default function DetectiveSignup() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Specializations & Pricing</Label>
+                      <Label>Service Categories</Label>
                       <p className="text-xs text-gray-500 mb-2">Select your services and set a price range.</p>
                       <div className="grid gap-3">
                         {serviceCategories.map((category) => (
