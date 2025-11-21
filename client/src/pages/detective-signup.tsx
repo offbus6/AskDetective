@@ -11,21 +11,58 @@ import { Link } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const COUNTRIES = [
-  { name: "United States", code: "US", currency: "$" },
-  { name: "United Kingdom", code: "UK", currency: "£" },
-  { name: "India", code: "IN", currency: "₹" },
-  { name: "Canada", code: "CA", currency: "CA$" },
-  { name: "Australia", code: "AU", currency: "AU$" },
-  { name: "Germany", code: "DE", currency: "€" },
-  { name: "France", code: "FR", currency: "€" },
+  {
+    name: "United States",
+    code: "US",
+    currency: "$",
+    states: ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
+  },
+  {
+    name: "United Kingdom",
+    code: "UK",
+    currency: "£",
+    states: ["England", "Scotland", "Wales", "Northern Ireland"]
+  },
+  {
+    name: "India",
+    code: "IN",
+    currency: "₹",
+    states: ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi"]
+  },
+  {
+    name: "Canada",
+    code: "CA",
+    currency: "CA$",
+    states: ["Alberta", "British Columbia", "Manitoba", "New Brunswick", "Newfoundland and Labrador", "Nova Scotia", "Ontario", "Prince Edward Island", "Quebec", "Saskatchewan"]
+  },
+  {
+    name: "Australia",
+    code: "AU",
+    currency: "AU$",
+    states: ["New South Wales", "Queensland", "South Australia", "Tasmania", "Victoria", "Western Australia", "Australian Capital Territory", "Northern Territory"]
+  },
+  {
+    name: "Germany",
+    code: "DE",
+    currency: "€",
+    states: ["Baden-Württemberg", "Bavaria", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hesse", "Lower Saxony", "Mecklenburg-Vorpommern", "North Rhine-Westphalia", "Rhineland-Palatinate", "Saarland", "Saxony", "Saxony-Anhalt", "Schleswig-Holstein", "Thuringia"]
+  },
+  {
+    name: "France",
+    code: "FR",
+    currency: "€",
+    states: ["Île-de-France", "Auvergne-Rhône-Alpes", "Bourgogne-Franche-Comté", "Brittany", "Centre-Val de Loire", "Corsica", "Grand Est", "Hauts-de-France", "Normandy", "Nouvelle-Aquitaine", "Occitanie", "Pays de la Loire", "Provence-Alpes-Côte d'Azur"]
+  },
 ];
 
 export default function DetectiveSignup() {
   const [step, setStep] = useState(1);
   const [country, setCountry] = useState("US");
+  const [state, setState] = useState("");
   
   const selectedCountry = COUNTRIES.find(c => c.code === country) || COUNTRIES[0];
   const currencySymbol = selectedCountry.currency;
+  const availableStates = selectedCountry.states || [];
 
   const nextStep = () => setStep(step + 1);
   const prevStep = () => setStep(step - 1);
@@ -123,7 +160,24 @@ export default function DetectiveSignup() {
                       </div>
                       <div className="space-y-2">
                         <Label>State / Region</Label>
-                        <Input placeholder="State, Province, or Region" />
+                        {availableStates.length > 0 ? (
+                          <Select value={state} onValueChange={setState}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select State" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableStates.map((s) => (
+                                <SelectItem key={s} value={s}>{s}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Input 
+                            placeholder="State, Province, or Region" 
+                            value={state}
+                            onChange={(e) => setState(e.target.value)}
+                          />
+                        )}
                       </div>
                     </div>
 
