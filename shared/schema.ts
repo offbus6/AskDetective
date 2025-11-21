@@ -65,7 +65,7 @@ export const serviceCategories = pgTable("service_categories", {
 export const services = pgTable("services", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   detectiveId: varchar("detective_id").notNull().references(() => detectives.id, { onDelete: "cascade" }),
-  categoryId: varchar("category_id").notNull().references(() => serviceCategories.id, { onDelete: "restrict" }),
+  category: text("category").notNull(),
   title: text("title").notNull(),
   description: text("description").notNull(),
   images: text("images").array().default(sql`ARRAY[]::text[]`),
@@ -78,7 +78,7 @@ export const services = pgTable("services", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({
   detectiveIdIdx: index("services_detective_id_idx").on(table.detectiveId),
-  categoryIdx: index("services_category_idx").on(table.categoryId),
+  categoryIdx: index("services_category_idx").on(table.category),
   activeIdx: index("services_active_idx").on(table.isActive),
   orderCountIdx: index("services_order_count_idx").on(table.orderCount),
 }));
@@ -220,7 +220,7 @@ export const insertDetectiveSchema = createInsertSchema(detectives, {
 export const insertServiceSchema = createInsertSchema(services, {
   title: z.string().min(10).max(200),
   description: z.string().min(50),
-  categoryId: z.string(),
+  category: z.string().min(3),
   basePrice: z.string().regex(/^\d+(\.\d{1,2})?$/),
 }).omit({ id: true, createdAt: true, updatedAt: true, viewCount: true, orderCount: true });
 
@@ -265,7 +265,7 @@ export const updateDetectiveSchema = z.object({
 export const updateServiceSchema = z.object({
   title: z.string().min(10).max(200).optional(),
   description: z.string().min(50).optional(),
-  categoryId: z.string().optional(),
+  category: z.string().min(3).optional(),
   basePrice: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
   offerPrice: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
   images: z.array(z.string().url()).optional(),
