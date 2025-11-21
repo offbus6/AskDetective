@@ -97,8 +97,8 @@ export default function DetectiveSignup() {
                         <Input id="registeredDate" type="date" />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="regNumber">Registration Number</Label>
-                        <Input id="regNumber" placeholder="Company Reg. No." />
+                        <Label htmlFor="regNumber">Registration Number or GST</Label>
+                        <Input id="regNumber" placeholder="Company Reg. No. / GST" />
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -122,19 +122,31 @@ export default function DetectiveSignup() {
 
                     <div className="space-y-2">
                       <Label>Specializations & Pricing</Label>
-                      <p className="text-xs text-gray-500 mb-2">Select your services and set a starting price (optional).</p>
+                      <p className="text-xs text-gray-500 mb-2">Select your services and set a price range.</p>
                       <div className="grid gap-3">
                         {["Surveillance", "Background Checks", "Missing Persons", "Infidelity", "Corporate Fraud", "Cyber Investigation"].map((spec) => (
                           <div key={spec} className="flex items-center justify-between border p-3 rounded-md hover:bg-gray-50">
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2 flex-1">
                               <input type="checkbox" id={spec} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
                               <label htmlFor={spec} className="text-sm font-medium leading-none cursor-pointer">
                                 {spec}
                               </label>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-500">Starting at $</span>
-                              <Input type="number" className="w-24 h-8 text-sm" placeholder="Optional" />
+                              <div className="flex flex-col">
+                                <span className="text-[10px] text-gray-500">Starting (Req)</span>
+                                <div className="flex items-center">
+                                  <span className="text-xs text-gray-500 mr-1">$</span>
+                                  <Input type="number" className="w-20 h-8 text-sm" placeholder="100" />
+                                </div>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[10px] text-gray-500">Ending (Opt)</span>
+                                <div className="flex items-center">
+                                  <span className="text-xs text-gray-500 mr-1">$</span>
+                                  <Input type="number" className="w-20 h-8 text-sm" placeholder="Max" />
+                                </div>
+                              </div>
                             </div>
                           </div>
                         ))}
