@@ -11,10 +11,34 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload, Plus, MapPin, DollarSign, Globe } from "lucide-react";
 import { COUNTRIES } from "@/lib/currency-context";
 
+import { Checkbox } from "@/components/ui/checkbox";
+
+const SERVICE_OPTIONS = [
+  "Surveillance",
+  "Background Checks",
+  "Infidelity Investigations",
+  "Missing Persons",
+  "Cyber Investigation",
+  "Asset Search",
+  "Due Diligence",
+  "Legal Support",
+  "Counter Surveillance",
+  "Process Serving"
+];
+
 export default function AdminAddDetective() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+
+  const toggleService = (service: string) => {
+    setSelectedServices(prev => 
+      prev.includes(service) 
+        ? prev.filter(s => s !== service)
+        : [...prev, service]
+    );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +49,7 @@ export default function AdminAddDetective() {
       setIsLoading(false);
       toast({
         title: "Detective Added Successfully",
-        description: "The profile has been created as 'Unclaimed'.",
+        description: `Profile created with ${selectedServices.length} services assigned.`,
       });
       setLocation("/admin/detectives");
     }, 1000);
@@ -62,26 +86,31 @@ export default function AdminAddDetective() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category">Primary Category</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="surveillance">Surveillance</SelectItem>
-                      <SelectItem value="background">Background Checks</SelectItem>
-                      <SelectItem value="infidelity">Infidelity</SelectItem>
-                      <SelectItem value="missing">Missing Persons</SelectItem>
-                      <SelectItem value="cyber">Cyber Investigation</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-2">
+                <Label>Services Offered</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 border border-gray-200 rounded-md">
+                  {SERVICE_OPTIONS.map((service) => (
+                    <div key={service} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`service-${service}`} 
+                        checked={selectedServices.includes(service)}
+                        onCheckedChange={() => toggleService(service)}
+                      />
+                      <label 
+                        htmlFor={`service-${service}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        {service}
+                      </label>
+                    </div>
+                  ))}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="experience">Years of Experience</Label>
-                  <Input id="experience" placeholder="e.g. 10 years" />
-                </div>
+                <p className="text-xs text-muted-foreground">Select all services provided by this detective.</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="experience">Years of Experience</Label>
+                <Input id="experience" placeholder="e.g. 10 years" />
               </div>
             </CardContent>
           </Card>

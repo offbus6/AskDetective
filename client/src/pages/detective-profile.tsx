@@ -163,6 +163,18 @@ export default function DetectiveProfile() {
                 <p>
                   Need to know who you are really dealing with? I provide professional, discreet, and comprehensive background checks for individuals and businesses.
                 </p>
+                
+                <div className="mt-6 mb-6">
+                  <h3 className="text-lg font-bold mb-3 text-gray-900">Services Provided</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {["Surveillance", "Background Checks", "Infidelity Investigations", "Missing Persons", "Asset Search", "Due Diligence"].map((service) => (
+                      <Badge key={service} variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1 text-sm border-green-100">
+                        {service}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
                 <p className="mt-4">
                   <strong>My services include:</strong>
                 </p>

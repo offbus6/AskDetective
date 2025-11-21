@@ -35,6 +35,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
   const adminLinks = [
     { href: "/admin/dashboard", label: "Overview", icon: LayoutDashboard },
     { href: "/admin/signups", label: "New Signups", icon: UserCheck },
+    { href: "/admin/claims", label: "Claims", icon: Shield },
     { href: "/admin/detectives", label: "Detectives", icon: Users },
     { href: "/admin/services", label: "Service Categories", icon: Layers },
     { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
