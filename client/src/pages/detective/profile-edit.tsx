@@ -23,8 +23,7 @@ interface PackageDetails {
   name: string;
   description: string;
   price: string;
-  deliveryTime: string;
-  revisions: string;
+  offerPrice: string;
   features: string[];
 }
 
@@ -42,8 +41,7 @@ const DEFAULT_PACKAGE: PackageDetails = {
   name: "",
   description: "",
   price: "",
-  deliveryTime: "3 Days",
-  revisions: "1",
+  offerPrice: "",
   features: []
 };
 
@@ -53,18 +51,18 @@ export default function DetectiveProfileEdit() {
       name: "Surveillance", 
       description: "Professional covert surveillance services for personal and corporate matters. We use state-of-the-art equipment to gather evidence discreetly.",
       packages: {
-        basic: { ...DEFAULT_PACKAGE, name: "Basic Watch", price: "150", description: "4 hours of surveillance with basic report." },
-        standard: { ...DEFAULT_PACKAGE, name: "Standard Day", price: "300", description: "8 hours of surveillance with video evidence." },
-        premium: { ...DEFAULT_PACKAGE, name: "Full Investigation", price: "800", description: "24-hour coverage with full team and detailed dossier." }
+        basic: { ...DEFAULT_PACKAGE, name: "Basic Watch", price: "150", offerPrice: "120", description: "4 hours of surveillance with basic report." },
+        standard: { ...DEFAULT_PACKAGE, name: "Standard Day", price: "300", offerPrice: "", description: "8 hours of surveillance with video evidence." },
+        premium: { ...DEFAULT_PACKAGE, name: "Full Investigation", price: "800", offerPrice: "750", description: "24-hour coverage with full team and detailed dossier." }
       }
     },
     { 
       name: "Background Checks", 
       description: "Comprehensive background screening services. We verify identity, criminal history, employment, and more using reliable databases.",
       packages: {
-        basic: { ...DEFAULT_PACKAGE, name: "Simple Check", price: "100", description: "Identity and criminal record check." },
-        standard: { ...DEFAULT_PACKAGE, name: "Deep Dive", price: "250", description: "Includes financial and social media analysis." },
-        premium: { ...DEFAULT_PACKAGE, name: "Complete Profile", price: "500", description: "Full 360-degree background investigation." }
+        basic: { ...DEFAULT_PACKAGE, name: "Simple Check", price: "100", offerPrice: "", description: "Identity and criminal record check." },
+        standard: { ...DEFAULT_PACKAGE, name: "Deep Dive", price: "250", offerPrice: "200", description: "Includes financial and social media analysis." },
+        premium: { ...DEFAULT_PACKAGE, name: "Complete Profile", price: "500", offerPrice: "", description: "Full 360-degree background investigation." }
       }
     }
   ]);
@@ -80,9 +78,9 @@ export default function DetectiveProfileEdit() {
         name: newService, 
         description: "",
         packages: {
-          basic: { ...DEFAULT_PACKAGE, name: "Basic Package", price: "100" },
-          standard: { ...DEFAULT_PACKAGE, name: "Standard Package", price: "200" },
-          premium: { ...DEFAULT_PACKAGE, name: "Premium Package", price: "300" }
+          basic: { ...DEFAULT_PACKAGE, name: "Basic Package", price: "100", offerPrice: "" },
+          standard: { ...DEFAULT_PACKAGE, name: "Standard Package", price: "200", offerPrice: "" },
+          premium: { ...DEFAULT_PACKAGE, name: "Premium Package", price: "300", offerPrice: "" }
         }
       }]);
       setNewService("");
@@ -293,47 +291,25 @@ export default function DetectiveProfileEdit() {
                                     />
                                  </div>
                                  
-                                 <div className="space-y-1">
-                                    <Label className="text-xs">Price ($)</Label>
-                                    <Input 
-                                       type="number" 
-                                       className="h-8 text-sm font-bold" 
-                                       value={service.packages[tier].price}
-                                       onChange={(e) => updatePackage(service.name, tier, 'price', e.target.value)}
-                                    />
-                                 </div>
-
                                  <div className="grid grid-cols-2 gap-2">
                                     <div className="space-y-1">
-                                       <Label className="text-[10px]">Delivery</Label>
-                                       <Select 
-                                          value={service.packages[tier].deliveryTime} 
-                                          onValueChange={(val) => updatePackage(service.name, tier, 'deliveryTime', val)}
-                                       >
-                                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                                          <SelectContent>
-                                             <SelectItem value="1 Day">1 Day</SelectItem>
-                                             <SelectItem value="3 Days">3 Days</SelectItem>
-                                             <SelectItem value="7 Days">7 Days</SelectItem>
-                                             <SelectItem value="14 Days">14 Days</SelectItem>
-                                             <SelectItem value="30 Days">30 Days</SelectItem>
-                                          </SelectContent>
-                                       </Select>
+                                       <Label className="text-xs">Price ($)</Label>
+                                       <Input 
+                                          type="number" 
+                                          className="h-8 text-sm font-bold" 
+                                          value={service.packages[tier].price}
+                                          onChange={(e) => updatePackage(service.name, tier, 'price', e.target.value)}
+                                       />
                                     </div>
                                     <div className="space-y-1">
-                                       <Label className="text-[10px]">Revisions</Label>
-                                       <Select 
-                                          value={service.packages[tier].revisions}
-                                          onValueChange={(val) => updatePackage(service.name, tier, 'revisions', val)}
-                                       >
-                                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                                          <SelectContent>
-                                             <SelectItem value="0">None</SelectItem>
-                                             <SelectItem value="1">1 Rev</SelectItem>
-                                             <SelectItem value="2">2 Rev</SelectItem>
-                                             <SelectItem value="Unlimited">Unlimited</SelectItem>
-                                          </SelectContent>
-                                       </Select>
+                                       <Label className="text-xs text-green-600">Offer Price ($)</Label>
+                                       <Input 
+                                          type="number" 
+                                          className="h-8 text-sm font-bold border-green-200 text-green-700 bg-green-50" 
+                                          placeholder="Optional"
+                                          value={service.packages[tier].offerPrice}
+                                          onChange={(e) => updatePackage(service.name, tier, 'offerPrice', e.target.value)}
+                                       />
                                     </div>
                                  </div>
                               </div>
