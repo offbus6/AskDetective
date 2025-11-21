@@ -74,7 +74,7 @@ export function Navbar() {
   return (
     <nav
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        isScrolled ? "bg-white border-b border-gray-200 text-gray-700" : "bg-transparent text-white"
+        isScrolled || location !== '/' ? "bg-white border-b border-gray-200 text-gray-700" : "bg-transparent text-white"
       }`}
     >
       <div className="container mx-auto px-6 md:px-12 lg:px-24 h-20 flex items-center justify-between">
@@ -88,7 +88,7 @@ export function Navbar() {
           </Link>
 
           {/* Country Selector */}
-          <div className={`hidden md:flex items-center ${isScrolled ? "text-gray-700" : "text-white/90 hover:text-white"}`}>
+          <div className={`hidden md:flex items-center ${isScrolled || location !== '/' ? "text-gray-700" : "text-white/90 hover:text-white"}`}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-2 px-2 hover:bg-white/10">
@@ -113,7 +113,7 @@ export function Navbar() {
           </div>
 
           {/* Desktop Search - Only show when scrolled or on non-home pages (simplified for now) */}
-          <div className={`hidden xl:flex relative w-96 transition-opacity duration-300 ${isScrolled ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+          <div className={`hidden xl:flex relative w-96 transition-opacity duration-300 ${isScrolled || location !== '/' ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
             <Input 
               type="text" 
               placeholder={`Search in ${selectedCountry.name === 'Global' ? 'All Countries' : selectedCountry.name}...`}
@@ -148,8 +148,8 @@ export function Navbar() {
           </Link>
           <Link href="/signup">
             <Button 
-              variant={isScrolled ? "outline" : "outline"} 
-              className={`${isScrolled ? "text-green-500 border-green-500 hover:bg-green-50" : "text-white border-white hover:bg-white hover:text-green-500"} transition-colors`}
+              variant={isScrolled || location !== '/' ? "outline" : "outline"} 
+              className={`${isScrolled || location !== '/' ? "text-green-500 border-green-500 hover:bg-green-50" : "text-white border-white hover:bg-white hover:text-green-500"} transition-colors`}
             >
               Join
             </Button>
@@ -160,7 +160,7 @@ export function Navbar() {
         <div className="md:hidden">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className={isScrolled ? "text-black" : "text-white"}>
+              <Button variant="ghost" size="icon" className={isScrolled || location !== '/' ? "text-black" : "text-white"}>
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
