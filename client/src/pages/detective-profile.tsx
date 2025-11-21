@@ -5,14 +5,24 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, MapPin, Check, Clock, RefreshCw, MessageSquare, Mail, Phone, MessageCircle, ShieldCheck } from "lucide-react";
+import { Star, MapPin, Check, Clock, RefreshCw, MessageSquare, Mail, Phone, MessageCircle, ShieldCheck, Upload, FileText } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useCurrency } from "@/lib/currency-context";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
@@ -62,6 +72,30 @@ export default function DetectiveProfile() {
   // Mock subscription tier for demo - change this to 'free' or 'agency' to test other views
   const detectiveTier = 'agency' as 'free' | 'pro' | 'agency';
   const { formatPrice } = useCurrency();
+  const { toast } = useToast();
+  const [isClaimDialogOpen, setIsClaimDialogOpen] = useState(false);
+  const [claimFormData, setClaimFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    details: ""
+  });
+  const [isSubmittingClaim, setIsSubmittingClaim] = useState(false);
+
+  const handleClaimSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingClaim(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      setIsSubmittingClaim(false);
+      setIsClaimDialogOpen(false);
+      toast({
+        title: "Claim Request Submitted",
+        description: "We have received your proof documents. Our team will review your claim shortly.",
+      });
+    }, 1500);
+  };
   
   const [reviews, setReviews] = useState([
     { id: 1, user: "User_1", rating: 5, text: "Excellent work! Found exactly what I needed in record time. Highly recommended for anyone needing discreet information." },
@@ -107,9 +141,83 @@ export default function DetectiveProfile() {
                  </p>
                </div>
              </div>
-             <Button className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap px-8 shadow-md">
-               Claim This Profile
-             </Button>
+             <Dialog open={isClaimDialogOpen} onOpenChange={setIsClaimDialogOpen}>
+               <DialogTrigger asChild>
+                 <Button className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap px-8 shadow-md">
+                   Claim This Profile
+                 </Button>
+               </DialogTrigger>
+               <DialogContent className="max-w-md">
+                 <DialogHeader>
+                   <DialogTitle>Claim Business Profile</DialogTitle>
+                   <DialogDescription>
+                     Please provide your details and proof of ownership to claim this profile.
+                   </DialogDescription>
+                 </DialogHeader>
+                 <form onSubmit={handleClaimSubmit} className="space-y-4 mt-4">
+                   <div className="space-y-2">
+                     <Label htmlFor="fullName">Full Name</Label>
+                     <Input 
+                       id="fullName" 
+                       required 
+                       placeholder="Your legal name"
+                       value={claimFormData.fullName}
+                       onChange={(e) => setClaimFormData({...claimFormData, fullName: e.target.value})}
+                     />
+                   </div>
+                   <div className="space-y-2">
+                     <Label htmlFor="email">Business Email</Label>
+                     <Input 
+                       id="email" 
+                       type="email" 
+                       required 
+                       placeholder="name@agency.com" 
+                       value={claimFormData.email}
+                       onChange={(e) => setClaimFormData({...claimFormData, email: e.target.value})}
+                     />
+                   </div>
+                   <div className="space-y-2">
+                     <Label htmlFor="phone">Phone Number</Label>
+                     <Input 
+                       id="phone" 
+                       type="tel" 
+                       required 
+                       placeholder="+1 (555) 000-0000" 
+                       value={claimFormData.phone}
+                       onChange={(e) => setClaimFormData({...claimFormData, phone: e.target.value})}
+                     />
+                   </div>
+                   
+                   <div className="space-y-2">
+                     <Label>Proof of Ownership</Label>
+                     <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer">
+                       <div className="flex flex-col items-center gap-2">
+                         <Upload className="h-8 w-8 text-gray-400" />
+                         <span className="text-sm text-gray-600 font-medium">Upload Business License or ID</span>
+                         <span className="text-xs text-gray-400">PDF, JPG or PNG (Max 5MB)</span>
+                       </div>
+                     </div>
+                   </div>
+
+                   <div className="space-y-2">
+                     <Label htmlFor="details">Additional Details (Optional)</Label>
+                     <Textarea 
+                       id="details" 
+                       placeholder="Any extra information to help verify your ownership..." 
+                       value={claimFormData.details}
+                       onChange={(e) => setClaimFormData({...claimFormData, details: e.target.value})}
+                     />
+                   </div>
+
+                   <DialogFooter className="pt-4">
+                     <Button type="button" variant="outline" onClick={() => setIsClaimDialogOpen(false)}>Cancel</Button>
+                     <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={isSubmittingClaim}>
+                       {isSubmittingClaim ? "Submitting..." : "Submit Claim"}
+                     </Button>
+                   </DialogFooter>
+                 </form>
+               </DialogContent>
+             </Dialog>
           </div>
         )}
 
