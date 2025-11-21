@@ -36,6 +36,15 @@ const DetectiveSettings = lazy(() => import("@/pages/detective/settings"));
 const UserDashboard = lazy(() => import("@/pages/user/dashboard"));
 const FavoritesPage = lazy(() => import("@/pages/user/favorites"));
 
+// Static Pages
+const AboutPage = lazy(() => import("@/pages/about"));
+const PrivacyPage = lazy(() => import("@/pages/privacy"));
+const TermsPage = lazy(() => import("@/pages/terms"));
+const PackagesPage = lazy(() => import("@/pages/packages"));
+const BlogPage = lazy(() => import("@/pages/blog"));
+const SupportPage = lazy(() => import("@/pages/support"));
+const ContactPage = lazy(() => import("@/pages/contact"));
+
 function PageSkeleton() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -72,6 +81,15 @@ function Router() {
           <Route path="/detective-signup" component={DetectiveSignup} />
           <Route path="/search" component={SearchPage} />
           <Route path="/category/:name" component={SearchPage} />
+          
+          {/* Static Pages */}
+          <Route path="/about" component={AboutPage} />
+          <Route path="/privacy" component={PrivacyPage} />
+          <Route path="/terms" component={TermsPage} />
+          <Route path="/packages" component={PackagesPage} />
+          <Route path="/blog" component={BlogPage} />
+          <Route path="/support" component={SupportPage} />
+          <Route path="/contact" component={ContactPage} />
           
           {/* Admin Routes */}
           <Route path="/admin/dashboard" component={AdminDashboard} />

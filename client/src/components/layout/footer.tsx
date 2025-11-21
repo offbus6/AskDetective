@@ -16,25 +16,25 @@ export function Footer() {
           
           <div className="flex flex-col gap-4">
             <h4 className="font-bold text-gray-900">About</h4>
-            <Link href="#"><a className="hover:underline">Careers</a></Link>
-            <Link href="#"><a className="hover:underline">Press & News</a></Link>
-            <Link href="#"><a className="hover:underline">Partnerships</a></Link>
-            <Link href="#"><a className="hover:underline">Privacy Policy</a></Link>
-            <Link href="#"><a className="hover:underline">Terms of Service</a></Link>
+            <Link href="/about"><a className="hover:underline">About Us</a></Link>
+            <Link href="/privacy"><a className="hover:underline">Privacy Policy</a></Link>
+            <Link href="/terms"><a className="hover:underline">Terms of Service</a></Link>
+            <Link href="/contact"><a className="hover:underline">Contact Us</a></Link>
           </div>
           
           <div className="flex flex-col gap-4">
             <h4 className="font-bold text-gray-900">Support</h4>
-            <Link href="#"><a className="hover:underline">Help & Support</a></Link>
-            <Link href="#"><a className="hover:underline">Trust & Safety</a></Link>
-            <Link href="#"><a className="hover:underline">Selling on FindDetectives</a></Link>
-            <Link href="#"><a className="hover:underline">Buying on FindDetectives</a></Link>
+            <Link href="/support"><a className="hover:underline">Help & Support</a></Link>
+            <Link href="/detective-signup"><a className="hover:underline">Become a Detective</a></Link>
+            <Link href="/packages"><a className="hover:underline">Pricing & Packages</a></Link>
+            <Link href="/login"><a className="hover:underline">Login as Detective</a></Link>
+            <Link href="/signup"><a className="hover:underline">Signup as User</a></Link>
           </div>
           
           <div className="flex flex-col gap-4">
             <h4 className="font-bold text-gray-900">Community</h4>
+            <Link href="/blog"><a className="hover:underline">Blog</a></Link>
             <Link href="#"><a className="hover:underline">Events</a></Link>
-            <Link href="#"><a className="hover:underline">Blog</a></Link>
             <Link href="#"><a className="hover:underline">Forum</a></Link>
             <Link href="#"><a className="hover:underline">Podcast</a></Link>
           </div>
