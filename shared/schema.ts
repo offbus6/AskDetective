@@ -184,12 +184,12 @@ export const billingHistory = pgTable("billing_history", {
   invoiceNumberIdx: index("billing_history_invoice_number_idx").on(table.invoiceNumber),
 }));
 
-export const sessions = pgTable("sessions", {
+export const session = pgTable("session", {
   sid: varchar("sid").primaryKey(),
   sess: jsonb("sess").notNull(),
   expire: timestamp("expire").notNull(),
 }, (table) => ({
-  expireIdx: index("sessions_expire_idx").on(table.expire),
+  expireIdx: index("session_expire_idx").on(table.expire),
 }));
 
 // Zod Schemas for validation
@@ -234,6 +234,43 @@ export const insertProfileClaimSchema = createInsertSchema(profileClaims, {
   claimantEmail: z.string().email(),
   claimantName: z.string().min(2),
 }).omit({ id: true, createdAt: true, reviewedAt: true });
+
+// Update schemas - whitelist only allowed fields for security
+export const updateUserSchema = z.object({
+  name: z.string().min(2).optional(),
+  avatar: z.string().url().optional(),
+}).strict();
+
+export const updateDetectiveSchema = z.object({
+  businessName: z.string().optional(),
+  bio: z.string().optional(),
+  location: z.string().optional(),
+  phone: z.string().optional(),
+  whatsapp: z.string().optional(),
+  languages: z.array(z.string()).optional(),
+}).strict();
+
+export const updateServiceSchema = z.object({
+  title: z.string().min(10).max(200).optional(),
+  description: z.string().min(50).optional(),
+  category: z.string().optional(),
+  basePrice: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
+  offerPrice: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
+  images: z.array(z.string().url()).optional(),
+  isActive: z.boolean().optional(),
+}).strict();
+
+export const updateReviewSchema = z.object({
+  rating: z.number().int().min(1).max(5).optional(),
+  comment: z.string().min(10).optional(),
+  isPublished: z.boolean().optional(),
+}).strict();
+
+export const updateOrderSchema = z.object({
+  status: z.enum(["pending", "in_progress", "completed", "cancelled", "refunded"]).optional(),
+  requirements: z.string().optional(),
+  deliveryDate: z.string().datetime().optional(),
+}).strict();
 
 // Type exports
 export type User = typeof users.$inferSelect;

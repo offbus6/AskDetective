@@ -11,6 +11,11 @@ import {
   insertFavoriteSchema,
   insertDetectiveApplicationSchema,
   insertProfileClaimSchema,
+  updateUserSchema,
+  updateDetectiveSchema,
+  updateServiceSchema,
+  updateReviewSchema,
+  updateOrderSchema,
   type User
 } from "@shared/schema";
 import { z } from "zod";
@@ -187,8 +192,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const detective = await storage.createDetective(validatedData);
       
-      // Update user role to detective
-      await storage.updateUser(req.session.userId!, { role: "detective" });
+      // Update user role to detective using privileged method
+      await storage.updateUserRole(req.session.userId!, "detective");
       req.session.userRole = "detective";
 
       res.status(201).json({ detective });
@@ -214,9 +219,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Cannot update another detective's profile" });
       }
 
-      const updatedDetective = await storage.updateDetective(req.params.id, req.body);
+      // Validate request body - only allow whitelisted fields
+      const validatedData = updateDetectiveSchema.parse(req.body);
+      const updatedDetective = await storage.updateDetective(req.params.id, validatedData);
       res.json({ detective: updatedDetective });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).message });
+      }
       console.error("Update detective error:", error);
       res.status(500).json({ error: "Failed to update detective" });
     }
@@ -334,9 +344,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const updatedService = await storage.updateService(req.params.id, req.body);
+      // Validate request body - only allow whitelisted fields
+      const validatedData = updateServiceSchema.parse(req.body);
+      const updatedService = await storage.updateService(req.params.id, validatedData);
       res.json({ service: updatedService });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).message });
+      }
       console.error("Update service error:", error);
       res.status(500).json({ error: "Failed to update service" });
     }
@@ -412,9 +427,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Cannot update another user's review" });
       }
 
-      const updatedReview = await storage.updateReview(req.params.id, req.body);
+      // Validate request body - only allow whitelisted fields
+      const validatedData = updateReviewSchema.parse(req.body);
+      const updatedReview = await storage.updateReview(req.params.id, validatedData);
       res.json({ review: updatedReview });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).message });
+      }
       console.error("Update review error:", error);
       res.status(500).json({ error: "Failed to update review" });
     }
@@ -493,9 +513,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Cannot update this order" });
       }
 
-      const updatedOrder = await storage.updateOrder(req.params.id, req.body);
+      // Validate request body - only allow whitelisted fields
+      const validatedData = updateOrderSchema.parse(req.body);
+      const updatedOrder = await storage.updateOrder(req.params.id, validatedData);
       res.json({ order: updatedOrder });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).message });
+      }
       console.error("Update order error:", error);
       res.status(500).json({ error: "Failed to update order" });
     }
@@ -576,13 +601,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update application (admin only)
   app.patch("/api/applications/:id", requireRole("admin"), async (req: Request, res: Response) => {
     try {
+      // Only allow status and reviewNotes to be updated
+      const allowedData = z.object({
+        status: z.enum(["pending", "under_review", "approved", "rejected"]).optional(),
+        reviewNotes: z.string().optional(),
+      }).strict().parse(req.body);
+
       const application = await storage.updateDetectiveApplication(req.params.id, {
-        ...req.body,
+        ...allowedData,
         reviewedBy: req.session.userId,
         reviewedAt: new Date(),
       });
       res.json({ application });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).message });
+      }
       console.error("Update application error:", error);
       res.status(500).json({ error: "Failed to update application" });
     }
@@ -620,13 +654,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update claim (admin only)
   app.patch("/api/claims/:id", requireRole("admin"), async (req: Request, res: Response) => {
     try {
+      // Only allow status and reviewNotes to be updated
+      const allowedData = z.object({
+        status: z.enum(["pending", "under_review", "approved", "rejected"]).optional(),
+        reviewNotes: z.string().optional(),
+      }).strict().parse(req.body);
+
       const claim = await storage.updateProfileClaim(req.params.id, {
-        ...req.body,
+        ...allowedData,
         reviewedBy: req.session.userId,
         reviewedAt: new Date(),
       });
       res.json({ claim });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).message });
+      }
       console.error("Update claim error:", error);
       res.status(500).json({ error: "Failed to update claim" });
     }

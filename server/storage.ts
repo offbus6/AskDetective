@@ -23,6 +23,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
+  updateUserRole(id: string, role: User['role']): Promise<User | undefined>;
 
   // Detective operations
   getDetective(id: string): Promise<Detective | undefined>;
@@ -122,8 +123,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    // Whitelist only allowed fields - prevent modification of protected columns (role, email, password)
+    const allowedFields: (keyof User)[] = ['name', 'avatar'];
+    const safeUpdates: Partial<User> = {};
+    
+    for (const key of allowedFields) {
+      if (key in updates) {
+        (safeUpdates as any)[key] = updates[key];
+      }
+    }
+    
     const [user] = await db.update(users)
-      .set({ ...updates, updatedAt: new Date() })
+      .set({ ...safeUpdates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  // Privileged method for updating user role - only for internal use by detective creation and admin operations
+  async updateUserRole(id: string, role: User['role']): Promise<User | undefined> {
+    const [user] = await db.update(users)
+      .set({ role, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
     return user;
@@ -146,8 +166,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateDetective(id: string, updates: Partial<Detective>): Promise<Detective | undefined> {
+    // Whitelist only allowed fields - prevent modification of protected columns
+    const allowedFields: (keyof Detective)[] = ['businessName', 'bio', 'location', 'phone', 'whatsapp', 'languages'];
+    const safeUpdates: Partial<Detective> = {};
+    
+    for (const key of allowedFields) {
+      if (key in updates) {
+        (safeUpdates as any)[key] = updates[key];
+      }
+    }
+    
     const [detective] = await db.update(detectives)
-      .set({ ...updates, updatedAt: new Date() })
+      .set({ ...safeUpdates, updatedAt: new Date() })
       .where(eq(detectives.id, id))
       .returning();
     return detective;
@@ -209,8 +239,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateService(id: string, updates: Partial<Service>): Promise<Service | undefined> {
+    // Whitelist only allowed fields - prevent modification of protected columns
+    const allowedFields: (keyof Service)[] = ['title', 'description', 'category', 'basePrice', 'offerPrice', 'images', 'isActive'];
+    const safeUpdates: Partial<Service> = {};
+    
+    for (const key of allowedFields) {
+      if (key in updates) {
+        (safeUpdates as any)[key] = updates[key];
+      }
+    }
+    
     const [service] = await db.update(services)
-      .set({ ...updates, updatedAt: new Date() })
+      .set({ ...safeUpdates, updatedAt: new Date() })
       .where(eq(services.id, id))
       .returning();
     return service;
@@ -319,8 +359,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateReview(id: string, updates: Partial<Review>): Promise<Review | undefined> {
+    // Whitelist only allowed fields - prevent modification of protected columns
+    const allowedFields: (keyof Review)[] = ['rating', 'comment', 'isPublished'];
+    const safeUpdates: Partial<Review> = {};
+    
+    for (const key of allowedFields) {
+      if (key in updates) {
+        (safeUpdates as any)[key] = updates[key];
+      }
+    }
+    
     const [review] = await db.update(reviews)
-      .set(updates)
+      .set(safeUpdates)
       .where(eq(reviews.id, id))
       .returning();
     return review;
@@ -377,8 +427,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateOrder(id: string, updates: Partial<Order>): Promise<Order | undefined> {
+    // Whitelist only allowed fields - prevent modification of protected columns
+    const allowedFields: (keyof Order)[] = ['status', 'requirements', 'deliveryDate'];
+    const safeUpdates: Partial<Order> = {};
+    
+    for (const key of allowedFields) {
+      if (key in updates) {
+        // Convert ISO string dates to Date objects for deliveryDate
+        if (key === 'deliveryDate' && typeof updates[key] === 'string') {
+          (safeUpdates as any)[key] = new Date(updates[key] as string);
+        } else {
+          (safeUpdates as any)[key] = updates[key];
+        }
+      }
+    }
+    
     const [order] = await db.update(orders)
-      .set({ ...updates, updatedAt: new Date() })
+      .set({ ...safeUpdates, updatedAt: new Date() })
       .where(eq(orders.id, id))
       .returning();
     return order;

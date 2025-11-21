@@ -2,7 +2,11 @@ import { type Server } from "node:http";
 
 import express, { type Express, type Request, Response, NextFunction } from "express";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import { Pool } from "@neondatabase/serverless";
 import { registerRoutes } from "./routes";
+
+const PgSession = connectPgSimple(session);
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -29,14 +33,22 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+const sessionStore = new PgSession({
+  pool: new Pool({ connectionString: process.env.DATABASE_URL }),
+  tableName: "session",
+  createTableIfMissing: true,
+});
+
 app.use(
   session({
+    store: sessionStore,
     secret: process.env.SESSION_SECRET || "finddetectives-secret-key-change-in-production",
     resave: false,
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
+      sameSite: "lax",
       maxAge: 1000 * 60 * 60 * 24 * 7,
     },
   })
