@@ -82,8 +82,7 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
   };
 
   return (
-    <Link href={profileLink}>
-      <a className="block h-full relative group/card">
+    <Link href={profileLink} className="block h-full relative group/card">
         <Card 
           className={`h-full overflow-hidden border-gray-200 hover:shadow-md transition-shadow cursor-pointer flex flex-col ${isUnclaimed ? 'opacity-90 border-dashed border-2' : ''}`}
           onMouseEnter={() => setIsHovered(true)}
@@ -239,7 +238,6 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
             </div>
           </CardFooter>
         </Card>
-      </a>
     </Link>
   );
 }
