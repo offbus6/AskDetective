@@ -13,6 +13,7 @@ import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { Save } from "lucide-react";
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
@@ -71,6 +72,7 @@ interface Recognition {
 
 export default function DetectiveProfileEdit() {
   const { toast } = useToast();
+  const [validationErrors, setValidationErrors] = useState<Record<string, boolean>>({});
   const [recognitions, setRecognitions] = useState<Recognition[]>([
     {
       id: '1',
@@ -217,40 +219,91 @@ export default function DetectiveProfileEdit() {
 
   const validateAndSaveServices = () => {
     // Check each service for required fields
+    const newErrors: Record<string, boolean> = {};
+    let hasErrors = false;
+
     for (const service of services) {
       if (!service.title.trim()) {
-        toast({
-          title: "Missing Information",
-          description: `Please provide a title for the ${service.name} service.`,
-          variant: "destructive"
-        });
-        setOpenService(service.name);
-        return;
+        newErrors[`${service.name}-title`] = true;
+        hasErrors = true;
       }
       if (!service.description.trim()) {
-        toast({
-          title: "Missing Information",
-          description: `Please provide a description for the ${service.name} service.`,
-          variant: "destructive"
-        });
-        setOpenService(service.name);
-        return;
+        newErrors[`${service.name}-description`] = true;
+        hasErrors = true;
       }
       if (service.images.length === 0) {
+        newErrors[`${service.name}-images`] = true;
+        hasErrors = true;
+      }
+    }
+
+    setValidationErrors(newErrors);
+
+    if (hasErrors) {
+      // Find first service with error to open
+      const firstErrorService = services.find(s => 
+        newErrors[`${s.name}-title`] || 
+        newErrors[`${s.name}-description`] || 
+        newErrors[`${s.name}-images`]
+      );
+      
+      if (firstErrorService) {
+        setOpenService(firstErrorService.name);
         toast({
-          title: "Missing Image",
-          description: `Please upload at least one image for the ${service.name} service.`,
+          title: "Missing Information",
+          description: `Please fill in all mandatory fields marked with *`,
           variant: "destructive"
         });
-        setOpenService(service.name);
-        return;
       }
+      return;
     }
 
     // If all valid
     toast({
       title: "Services Saved",
       description: "Your services and pricing packages have been updated successfully.",
+    });
+  };
+
+  const validateAndSaveSingleService = (serviceName: string) => {
+    const service = services.find(s => s.name === serviceName);
+    if (!service) return;
+
+    const newErrors: Record<string, boolean> = { ...validationErrors };
+    let hasErrors = false;
+
+    // Clear previous errors for this service
+    delete newErrors[`${serviceName}-title`];
+    delete newErrors[`${serviceName}-description`];
+    delete newErrors[`${serviceName}-images`];
+
+    if (!service.title.trim()) {
+      newErrors[`${serviceName}-title`] = true;
+      hasErrors = true;
+    }
+    if (!service.description.trim()) {
+      newErrors[`${serviceName}-description`] = true;
+      hasErrors = true;
+    }
+    if (service.images.length === 0) {
+      newErrors[`${serviceName}-images`] = true;
+      hasErrors = true;
+    }
+
+    setValidationErrors(newErrors);
+
+    if (hasErrors) {
+      toast({
+        title: "Missing Information",
+        description: `Please fill in all mandatory fields marked with *`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Service Saved",
+      description: `${serviceName} details have been updated.`,
     });
   };
 
@@ -469,19 +522,33 @@ export default function DetectiveProfileEdit() {
                       <CollapsibleContent className="p-4 space-y-6">
                         {/* Service Title */}
                         <div className="space-y-2">
-                           <Label>Service Title</Label>
+                           <Label className="flex items-center gap-1">
+                             Service Title <span className="text-red-500">*</span>
+                           </Label>
                            <Input 
                               placeholder="e.g., I will conduct a comprehensive background check" 
                               value={service.title}
-                              onChange={(e) => updateServiceField(service.name, 'title', e.target.value)}
+                              onChange={(e) => {
+                                updateServiceField(service.name, 'title', e.target.value);
+                                if (validationErrors[`${service.name}-title`]) {
+                                  setValidationErrors(prev => {
+                                    const next = { ...prev };
+                                    delete next[`${service.name}-title`];
+                                    return next;
+                                  });
+                                }
+                              }}
+                              className={validationErrors[`${service.name}-title`] ? "border-red-500 focus-visible:ring-red-500" : ""}
                            />
                            <p className="text-xs text-gray-500">Use a catchy title starting with "I will..."</p>
                         </div>
 
                         {/* Service Images */}
                         <div className="space-y-2">
-                           <Label>Service Gallery (Max 3 Images)</Label>
-                           <div className="flex items-center gap-4">
+                           <Label className="flex items-center gap-1">
+                             Service Gallery (Max 3 Images) <span className="text-red-500">*</span>
+                           </Label>
+                           <div className={`flex items-center gap-4 p-2 rounded-md ${validationErrors[`${service.name}-images`] ? "border border-red-500 bg-red-50/10" : ""}`}>
                              {service.images.map((img, idx) => (
                                <div key={idx} className="h-24 w-24 relative group rounded-md overflow-hidden border border-gray-200">
                                   <img src={img} alt={`Service ${idx}`} className="w-full h-full object-cover" />
@@ -499,11 +566,18 @@ export default function DetectiveProfileEdit() {
                              
                              {service.images.length < 3 && (
                                <div 
-                                 className="h-24 w-24 bg-gray-100 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:border-green-500 hover:text-green-500 transition-colors"
+                                 className={`h-24 w-24 bg-gray-100 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:border-green-500 hover:text-green-500 transition-colors ${validationErrors[`${service.name}-images`] ? "border-red-300 bg-red-50" : ""}`}
                                  onClick={() => {
                                     // Mock upload by adding a placeholder image
                                     const mockImage = "https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop";
                                     updateServiceField(service.name, 'images', [...service.images, mockImage]);
+                                    if (validationErrors[`${service.name}-images`]) {
+                                      setValidationErrors(prev => {
+                                        const next = { ...prev };
+                                        delete next[`${service.name}-images`];
+                                        return next;
+                                      });
+                                    }
                                  }}
                                >
                                   <Upload className="h-6 w-6 mb-1" />
@@ -511,6 +585,9 @@ export default function DetectiveProfileEdit() {
                                </div>
                              )}
                            </div>
+                           {validationErrors[`${service.name}-images`] && (
+                             <p className="text-xs text-red-500 font-medium">At least one image is required.</p>
+                           )}
                            <div className="text-xs text-gray-500 mt-1">
                               <p>Upload high-quality images representing this service. First image will be the main cover.</p>
                               <p>Supported formats: JPG, PNG. Max size: 5MB.</p>
@@ -519,12 +596,23 @@ export default function DetectiveProfileEdit() {
 
                         {/* General Service Description */}
                         <div className="space-y-2">
-                           <Label>About This Service</Label>
+                           <Label className="flex items-center gap-1">
+                             About This Service <span className="text-red-500">*</span>
+                           </Label>
                            <Textarea 
                               placeholder="Describe what you offer in this service generally..." 
                               value={service.description}
-                              onChange={(e) => updateServiceField(service.name, 'description', e.target.value)}
-                              className="h-24"
+                              onChange={(e) => {
+                                updateServiceField(service.name, 'description', e.target.value);
+                                if (validationErrors[`${service.name}-description`]) {
+                                  setValidationErrors(prev => {
+                                    const next = { ...prev };
+                                    delete next[`${service.name}-description`];
+                                    return next;
+                                  });
+                                }
+                              }}
+                              className={`h-24 ${validationErrors[`${service.name}-description`] ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                            />
                            <p className="text-xs text-gray-500">This text appears at the top of your service page.</p>
                         </div>
@@ -597,6 +685,17 @@ export default function DetectiveProfileEdit() {
                               </div>
                            );
                            })}
+                        </div>
+
+                        <div className="flex justify-end pt-4 border-t border-gray-100">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-green-700 border-green-200 hover:bg-green-50"
+                            onClick={() => validateAndSaveSingleService(service.name)}
+                          >
+                            <Save className="h-4 w-4 mr-2" /> Save {service.name}
+                          </Button>
                         </div>
                       </CollapsibleContent>
                     </Collapsible>
