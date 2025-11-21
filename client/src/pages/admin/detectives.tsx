@@ -23,16 +23,13 @@ import {
 } from "@/components/ui/table";
 
 import { Link } from "wouter";
-
-const DETECTIVES = [
-  { id: 1, name: "James Bond", email: "007@mi6.gov.uk", level: "Top Rated", plan: "Professional", status: "Active", earnings: "$15,240" },
-  { id: 2, name: "Sherlock Holmes", email: "sherlock@bakerst.com", level: "Level 2", plan: "Standard", status: "Active", earnings: "$8,450" },
-  { id: 3, name: "Adrian Monk", email: "monk@sfpd.com", level: "Level 1", plan: "Basic", status: "Suspended", earnings: "$1,200" },
-  { id: 4, name: "Jessica Fletcher", email: "jessica@cabotcove.com", level: "Level 2", plan: "Professional", status: "Active", earnings: "$12,100" },
-  { id: 5, name: "Columbo", email: "lt.columbo@lapd.gov", level: "Top Rated", plan: "Standard", status: "Active", earnings: "$9,800" },
-];
+import { useDetectives } from "@/lib/hooks";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { Detective } from "@shared/schema";
 
 export default function AdminDetectives() {
+  const { data: detectivesData, isLoading } = useDetectives(100);
+  const detectives = detectivesData?.detectives || [];
   return (
     <DashboardLayout role="admin">
       <div className="space-y-6">
@@ -82,51 +79,70 @@ export default function AdminDetectives() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {DETECTIVES.map((detective) => (
-                  <TableRow key={detective.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback>{detective.name[0]}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-gray-900">{detective.name}</span>
-                          <span className="text-xs text-gray-500">{detective.email}</span>
+                {isLoading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-12 w-full" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : detectives.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                      No detectives found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  detectives.map((detective: Detective) => (
+                    <TableRow key={detective.id} data-testid={`row-detective-${detective.id}`}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback>{(detective.businessName || "D")[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-gray-900">{detective.businessName || "Unknown"}</span>
+                            <span className="text-xs text-gray-500">{detective.location || detective.country}</span>
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50">
-                        {detective.level}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{detective.plan}</TableCell>
-                    <TableCell className="font-mono">{detective.earnings}</TableCell>
-                    <TableCell>
-                      <Badge className={detective.status === "Active" ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-red-100 text-red-700 hover:bg-red-200"}>
-                        {detective.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>View Profile</DropdownMenuItem>
-                          <DropdownMenuItem>View Subscriptions</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">
-                            <Ban className="mr-2 h-4 w-4" /> Suspend Account
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50">
+                          {detective.subscriptionPlan}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="capitalize">{detective.subscriptionPlan}</TableCell>
+                      <TableCell className="font-mono">${detective.totalEarnings}</TableCell>
+                      <TableCell>
+                        <Badge className={detective.status === "active" ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-red-100 text-red-700 hover:bg-red-200"} data-testid={`badge-status-${detective.id}`}>
+                          {detective.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0" data-testid={`button-actions-${detective.id}`}>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem>View Profile</DropdownMenuItem>
+                            <DropdownMenuItem>View Subscriptions</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-600">
+                              <Ban className="mr-2 h-4 w-4" /> Suspend Account
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
