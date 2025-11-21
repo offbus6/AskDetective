@@ -74,7 +74,7 @@ export function Navbar() {
           </Link>
 
           {/* Country Selector */}
-          <div className={`hidden md:flex items-center ${isScrolled || location !== '/' ? "text-gray-700" : "text-white/90 hover:text-white"}`}>
+          <div className={`hidden md:hidden items-center ${isScrolled || location !== '/' ? "text-gray-700" : "text-white/90 hover:text-white"}`}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-2 px-2 hover:bg-white/10">
@@ -214,6 +214,30 @@ export function Navbar() {
               </DropdownMenu>
             </>
           )}
+          {/* Country Selector - Desktop */}
+          <div className={`hidden md:flex items-center ${isScrolled || location !== '/' ? "text-gray-700" : "text-white/90 hover:text-white"}`}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="gap-2 px-2 hover:bg-white/10">
+                  <span className="text-lg">{selectedCountry.flag}</span>
+                  <span className="font-medium hidden lg:inline">{selectedCountry.code}</span>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {COUNTRIES.map((country) => (
+                  <DropdownMenuItem 
+                    key={country.code}
+                    onClick={() => handleCountrySelect(country)}
+                    className="gap-3 cursor-pointer"
+                  >
+                    <span className="text-lg">{country.flag}</span>
+                    <span>{country.name}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Mobile Menu */}
