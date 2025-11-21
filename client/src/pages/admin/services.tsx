@@ -11,22 +11,185 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Eye, Briefcase } from "lucide-react";
-import { useServices } from "@/lib/hooks";
-import { Link } from "wouter";
+import { Search, Eye, Briefcase, Plus, Pencil, Trash2 } from "lucide-react";
+import { useServices, useDetectives, useCreateService, useUpdateService, useDeleteService } from "@/lib/hooks";
+import { useToast } from "@/hooks/use-toast";
 import type { Service } from "@shared/schema";
 import { useState } from "react";
 
+const CATEGORIES = [
+  "Surveillance",
+  "Background Check",
+  "Missing Persons",
+  "Corporate Investigation",
+  "Forensic Analysis",
+  "Other"
+];
+
 export default function AdminServices() {
   const { data: servicesData, isLoading } = useServices(100);
+  const { data: detectivesData } = useDetectives(100);
   const services = servicesData?.services || [];
+  const detectives = detectivesData?.detectives || [];
   const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
+
+  const [showServiceDialog, setShowServiceDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [deletingServiceId, setDeletingServiceId] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    category: "",
+    basePrice: "",
+    offerPrice: "",
+    detectiveId: "",
+  });
+
+  const createService = useCreateService();
+  const updateService = useUpdateService();
+  const deleteService = useDeleteService();
 
   const filteredServices = services.filter((service: Service) =>
     service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     service.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      description: "",
+      category: "",
+      basePrice: "",
+      offerPrice: "",
+      detectiveId: "",
+    });
+    setEditingService(null);
+  };
+
+  const handleOpenAddDialog = () => {
+    resetForm();
+    setShowServiceDialog(true);
+  };
+
+  const handleOpenEditDialog = (service: Service) => {
+    setEditingService(service);
+    setFormData({
+      title: service.title,
+      description: service.description,
+      category: service.category,
+      basePrice: service.basePrice,
+      offerPrice: service.offerPrice || "",
+      detectiveId: service.detectiveId,
+    });
+    setShowServiceDialog(true);
+  };
+
+  const handleOpenDeleteDialog = (serviceId: string) => {
+    setDeletingServiceId(serviceId);
+    setShowDeleteDialog(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.title || !formData.description || !formData.category || !formData.basePrice || !formData.detectiveId) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const serviceData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        basePrice: formData.basePrice,
+        offerPrice: formData.offerPrice || null,
+        detectiveId: formData.detectiveId,
+        isActive: true,
+      };
+
+      if (editingService) {
+        await updateService.mutateAsync({
+          id: editingService.id,
+          data: serviceData,
+        });
+        toast({
+          title: "Success",
+          description: "Service updated successfully",
+        });
+      } else {
+        await createService.mutateAsync(serviceData);
+        toast({
+          title: "Success",
+          description: "Service created successfully",
+        });
+      }
+
+      setShowServiceDialog(false);
+      resetForm();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: editingService ? "Failed to update service" : "Failed to create service",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingServiceId) return;
+
+    try {
+      await deleteService.mutateAsync(deletingServiceId);
+      toast({
+        title: "Success",
+        description: "Service deleted successfully",
+      });
+      setShowDeleteDialog(false);
+      setDeletingServiceId(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete service",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <DashboardLayout role="admin">
@@ -36,6 +199,13 @@ export default function AdminServices() {
             <h2 className="text-3xl font-bold font-heading text-gray-900">Detective Services</h2>
             <p className="text-gray-500">Manage all services offered by detectives on the platform.</p>
           </div>
+          <Button 
+            onClick={handleOpenAddDialog}
+            className="bg-green-600 hover:bg-green-700 gap-2"
+            data-testid="button-add-service"
+          >
+            <Plus className="h-4 w-4" /> Add New Service
+          </Button>
         </div>
 
         <div className="flex items-center gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
@@ -67,7 +237,6 @@ export default function AdminServices() {
                   <TableHead>Category</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Views</TableHead>
-                  <TableHead>Orders</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -81,13 +250,12 @@ export default function AdminServices() {
                       <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
                     </TableRow>
                   ))
                 ) : filteredServices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                       {searchTerm ? "No services found matching your search" : "No services available yet"}
                     </TableCell>
                   </TableRow>
@@ -111,9 +279,6 @@ export default function AdminServices() {
                           <span data-testid={`text-views-${service.id}`}>{service.viewCount}</span>
                         </div>
                       </TableCell>
-                      <TableCell data-testid={`text-orders-${service.id}`}>
-                        {service.orderCount}
-                      </TableCell>
                       <TableCell>
                         <Badge 
                           className={service.isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}
@@ -123,16 +288,25 @@ export default function AdminServices() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Link href={`/service/${service.id}`}>
+                        <div className="flex items-center justify-end gap-2">
                           <Button 
                             size="sm" 
                             variant="ghost"
-                            data-testid={`button-view-${service.id}`}
+                            onClick={() => handleOpenEditDialog(service)}
+                            data-testid={`button-edit-${service.id}`}
                           >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
+                            <Pencil className="h-4 w-4" />
                           </Button>
-                        </Link>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleOpenDeleteDialog(service.id)}
+                            data-testid={`button-delete-${service.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -142,6 +316,156 @@ export default function AdminServices() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
+        <DialogContent className="max-w-2xl" data-testid="dialog-service-form">
+          <DialogHeader>
+            <DialogTitle>{editingService ? "Edit Service" : "Add New Service"}</DialogTitle>
+            <DialogDescription>
+              {editingService ? "Update the service details below" : "Create a new service for a detective"}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Title *</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Enter service title"
+                  data-testid="input-service-title"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description *</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Describe the service"
+                  rows={4}
+                  data-testid="input-service-description"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category *</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  >
+                    <SelectTrigger id="category" data-testid="select-service-category">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat} data-testid={`option-category-${cat}`}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="detective">Detective *</Label>
+                  <Select
+                    value={formData.detectiveId}
+                    onValueChange={(value) => setFormData({ ...formData, detectiveId: value })}
+                  >
+                    <SelectTrigger id="detective" data-testid="select-service-detective">
+                      <SelectValue placeholder="Select detective" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {detectives.map((detective) => (
+                        <SelectItem key={detective.id} value={detective.id} data-testid={`option-detective-${detective.id}`}>
+                          {detective.businessName || "Unknown"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="basePrice">Base Price ($) *</Label>
+                  <Input
+                    id="basePrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.basePrice}
+                    onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
+                    placeholder="0.00"
+                    data-testid="input-service-base-price"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="offerPrice">Offer Price ($)</Label>
+                  <Input
+                    id="offerPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.offerPrice}
+                    onChange={(e) => setFormData({ ...formData, offerPrice: e.target.value })}
+                    placeholder="0.00 (optional)"
+                    data-testid="input-service-offer-price"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowServiceDialog(false)}
+                data-testid="button-cancel-service"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit"
+                disabled={createService.isPending || updateService.isPending}
+                data-testid="button-submit-service"
+              >
+                {createService.isPending || updateService.isPending ? "Saving..." : (editingService ? "Update Service" : "Create Service")}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent data-testid="dialog-delete-service">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Service</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this service? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteService.isPending}
+              data-testid="button-confirm-delete"
+            >
+              {deleteService.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

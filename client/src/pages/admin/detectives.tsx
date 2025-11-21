@@ -28,15 +28,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { Link, useLocation } from "wouter";
-import { useDetectives } from "@/lib/hooks";
+import { useDetectives, useUpdateDetective } from "@/lib/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import type { Detective } from "@shared/schema";
 import { useState } from "react";
 import { format } from "date-fns";
-import { api } from "@/lib/api";
 
 export default function AdminDetectives() {
   const { data: detectivesData, isLoading } = useDetectives(100);
@@ -45,27 +54,13 @@ export default function AdminDetectives() {
   const [, setLocation] = useLocation();
   const [selectedDetective, setSelectedDetective] = useState<Detective | null>(null);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
+  const [showSuspendDialog, setShowSuspendDialog] = useState(false);
+  const [suspendingDetective, setSuspendingDetective] = useState<Detective | null>(null);
 
-  const handleViewProfile = async (detective: Detective) => {
-    try {
-      const { services } = await api.services.getByDetective(detective.id);
-      
-      if (services && services.length > 0) {
-        setLocation(`/service/${services[0].id}`);
-      } else {
-        toast({
-          title: "No Services",
-          description: "This detective hasn't created any services yet.",
-          variant: "default",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch detective services.",
-        variant: "destructive",
-      });
-    }
+  const updateDetective = useUpdateDetective();
+
+  const handleViewProfile = (detective: Detective) => {
+    setLocation(`/detective/${detective.id}`);
   };
 
   const handleViewSubscriptions = (detective: Detective) => {
@@ -73,12 +68,37 @@ export default function AdminDetectives() {
     setShowSubscriptionDialog(true);
   };
 
-  const handleSuspendAccount = (detective: Detective) => {
-    toast({
-      title: "Feature Coming Soon",
-      description: "Account suspension functionality will be available soon.",
-      variant: "default",
-    });
+  const handleSuspendClick = (detective: Detective) => {
+    setSuspendingDetective(detective);
+    setShowSuspendDialog(true);
+  };
+
+  const handleConfirmSuspend = async () => {
+    if (!suspendingDetective) return;
+
+    const isSuspended = suspendingDetective.status === "suspended";
+    const newStatus = isSuspended ? "active" : "suspended";
+
+    try {
+      await updateDetective.mutateAsync({
+        id: suspendingDetective.id,
+        data: { status: newStatus },
+      });
+
+      toast({
+        title: "Success",
+        description: `Detective account ${isSuspended ? "unsuspended" : "suspended"} successfully`,
+      });
+
+      setShowSuspendDialog(false);
+      setSuspendingDetective(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to ${isSuspended ? "unsuspend" : "suspend"} detective account`,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -197,15 +217,16 @@ export default function AdminDetectives() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
                               className="text-red-600"
-                              onClick={() => handleSuspendAccount(detective)}
+                              onClick={() => handleSuspendClick(detective)}
                               data-testid={`menuitem-suspend-account-${detective.id}`}
                             >
-                              <Ban className="mr-2 h-4 w-4" /> Suspend Account
+                              <Ban className="mr-2 h-4 w-4" /> 
+                              {detective.status === "suspended" ? "Unsuspend Account" : "Suspend Account"}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
               </TableBody>
@@ -250,6 +271,36 @@ export default function AdminDetectives() {
             )}
           </DialogContent>
         </Dialog>
+
+        <AlertDialog open={showSuspendDialog} onOpenChange={setShowSuspendDialog}>
+          <AlertDialogContent data-testid="dialog-suspend-detective">
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {suspendingDetective?.status === "suspended" ? "Unsuspend Detective Account" : "Suspend Detective Account"}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {suspendingDetective?.status === "suspended" 
+                  ? "Are you sure you want to unsuspend this detective? They will be able to login and receive new orders again."
+                  : "Are you sure you want to suspend this detective? They will not be able to login or receive new orders."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel data-testid="button-cancel-suspend">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmSuspend}
+                className={suspendingDetective?.status === "suspended" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}
+                disabled={updateDetective.isPending}
+                data-testid="button-confirm-suspend"
+              >
+                {updateDetective.isPending 
+                  ? "Processing..." 
+                  : suspendingDetective?.status === "suspended" 
+                    ? "Unsuspend" 
+                    : "Suspend"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
