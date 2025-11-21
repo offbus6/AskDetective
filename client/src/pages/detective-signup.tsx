@@ -8,9 +8,24 @@ import { Check, Upload, Shield, ArrowRight, ArrowLeft } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Link } from "wouter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const COUNTRIES = [
+  { name: "United States", code: "US", currency: "$" },
+  { name: "United Kingdom", code: "UK", currency: "£" },
+  { name: "India", code: "IN", currency: "₹" },
+  { name: "Canada", code: "CA", currency: "CA$" },
+  { name: "Australia", code: "AU", currency: "AU$" },
+  { name: "Germany", code: "DE", currency: "€" },
+  { name: "France", code: "FR", currency: "€" },
+];
 
 export default function DetectiveSignup() {
   const [step, setStep] = useState(1);
+  const [country, setCountry] = useState("US");
+  
+  const selectedCountry = COUNTRIES.find(c => c.code === country) || COUNTRIES[0];
+  const currencySymbol = selectedCountry.currency;
 
   const nextStep = () => setStep(step + 1);
   const prevStep = () => setStep(step - 1);
@@ -91,6 +106,27 @@ export default function DetectiveSignup() {
                       <Label htmlFor="companyName">Company Name</Label>
                       <Input id="companyName" placeholder="e.g. Sherlock Investigations Ltd." />
                     </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Country</Label>
+                        <Select value={country} onValueChange={setCountry}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Country" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {COUNTRIES.map((c) => (
+                              <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>State / Region</Label>
+                        <Input placeholder="State, Province, or Region" />
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="registeredDate">Date Registered</Label>
@@ -136,14 +172,14 @@ export default function DetectiveSignup() {
                               <div className="flex flex-col">
                                 <span className="text-[10px] text-gray-500">Starting (Req)</span>
                                 <div className="flex items-center">
-                                  <span className="text-xs text-gray-500 mr-1">$</span>
+                                  <span className="text-xs text-gray-500 mr-1">{currencySymbol}</span>
                                   <Input type="number" className="w-20 h-8 text-sm" placeholder="100" />
                                 </div>
                               </div>
                               <div className="flex flex-col">
                                 <span className="text-[10px] text-gray-500">Ending (Opt)</span>
                                 <div className="flex items-center">
-                                  <span className="text-xs text-gray-500 mr-1">$</span>
+                                  <span className="text-xs text-gray-500 mr-1">{currencySymbol}</span>
                                   <Input type="number" className="w-20 h-8 text-sm" placeholder="Max" />
                                 </div>
                               </div>
