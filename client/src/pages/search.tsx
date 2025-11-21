@@ -196,6 +196,17 @@ export default function SearchPage() {
 
   const filteredResults = RESULTS.filter(service => {
     if (countryFilter && service.country !== countryFilter) return false;
+    
+    // Simple search filtering
+    if (query !== "All Services") {
+      const searchLower = query.toLowerCase();
+      const matchesCategory = service.category.toLowerCase().includes(searchLower);
+      const matchesTitle = service.title.toLowerCase().includes(searchLower);
+      const matchesName = service.name.toLowerCase().includes(searchLower);
+      
+      if (!matchesCategory && !matchesTitle && !matchesName) return false;
+    }
+    
     return true;
   });
 

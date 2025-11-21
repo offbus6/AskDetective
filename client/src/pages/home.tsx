@@ -5,6 +5,7 @@ import { ServiceCard } from "@/components/home/service-card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { SEO } from "@/components/seo";
+import { Link } from "wouter";
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
@@ -315,9 +316,11 @@ export default function Home() {
         <section className="py-16 container mx-auto px-6 md:px-12 lg:px-24">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold font-heading">Popular Professional Services</h2>
-            <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
-              View All <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <Link href="/search">
+              <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
+                View All <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -331,9 +334,11 @@ export default function Home() {
         <section className="py-12 container mx-auto px-6 md:px-12 lg:px-24 bg-gray-50/50">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold font-heading">Background Checks</h2>
-            <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
-              View All <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <Link href="/search?q=Background%20Checks">
+              <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
+                View All <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {BACKGROUND_CHECKS.map((service) => (
@@ -342,46 +347,18 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Infidelity */}
+        {/* Surveillance */}
         <section className="py-12 container mx-auto px-6 md:px-12 lg:px-24">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold font-heading">Infidelity Investigations</h2>
-            <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
-              View All <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {INFIDELITY_SERVICES.map((service) => (
-              <ServiceCard key={service.id} {...service} />
-            ))}
-          </div>
-        </section>
-
-        {/* Surveillance */}
-        <section className="py-12 container mx-auto px-6 md:px-12 lg:px-24 bg-gray-50/50">
-          <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold font-heading">Surveillance Services</h2>
-            <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
-              View All <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <Link href="/search?q=Surveillance">
+              <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
+                View All <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {SURVEILLANCE_SERVICES.map((service) => (
-              <ServiceCard key={service.id} {...service} />
-            ))}
-          </div>
-        </section>
-
-        {/* Asset Search */}
-        <section className="py-12 container mx-auto px-6 md:px-12 lg:px-24">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold font-heading">Asset Search & Recovery</h2>
-            <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
-              View All <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {ASSET_SEARCH_SERVICES.map((service) => (
               <ServiceCard key={service.id} {...service} />
             ))}
           </div>
