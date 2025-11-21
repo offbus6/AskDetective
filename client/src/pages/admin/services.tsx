@@ -108,8 +108,8 @@ export default function AdminServices() {
       title: service.title,
       description: service.description,
       category: service.category,
-      basePrice: service.basePrice,
-      offerPrice: service.offerPrice || "",
+      basePrice: service.basePrice.toString(),
+      offerPrice: service.offerPrice !== null && service.offerPrice !== undefined ? service.offerPrice.toString() : "",
       detectiveId: service.detectiveId,
     });
     setShowServiceDialog(true);
@@ -132,13 +132,34 @@ export default function AdminServices() {
       return;
     }
 
+    const basePrice = parseFloat(formData.basePrice.trim());
+    const offerPrice = formData.offerPrice !== "" ? parseFloat(formData.offerPrice.trim()) : null;
+
+    if (Number.isNaN(basePrice) || basePrice < 0) {
+      toast({
+        title: "Validation Error",
+        description: "Base price must be a valid positive number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (offerPrice !== null && (Number.isNaN(offerPrice) || offerPrice < 0)) {
+      toast({
+        title: "Validation Error",
+        description: "Offer price must be a valid positive number",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const serviceData = {
         title: formData.title,
         description: formData.description,
         category: formData.category,
-        basePrice: formData.basePrice,
-        offerPrice: formData.offerPrice || null,
+        basePrice,
+        offerPrice,
         detectiveId: formData.detectiveId,
         isActive: true,
       };
