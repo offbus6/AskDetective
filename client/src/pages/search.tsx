@@ -43,7 +43,7 @@ const CATEGORIES = [
   "Due Diligence"
 ];
 
-function mapServiceToCard(service: Service & { detective: Detective; avgRating: number; reviewCount: number; categoryName?: string }) {
+function mapServiceToCard(service: Service & { detective: Detective; avgRating: number; reviewCount: number }) {
   const levelMap = {
     free: "Free Member",
     pro: "Pro Detective",
@@ -73,7 +73,7 @@ function mapServiceToCard(service: Service & { detective: Detective; avgRating: 
     avatar: avatarMap[detectiveName] || maleAvatar,
     name: detectiveName,
     level: levelMap[service.detective.subscriptionPlan] || "Free Member",
-    category: service.categoryName,
+    category: service.category,
     badges,
     title: service.title,
     rating: service.avgRating,
