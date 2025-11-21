@@ -217,6 +217,40 @@ export default function DetectiveProfileEdit() {
     }));
   };
 
+  const handleServiceImageUpload = (e: React.ChangeEvent<HTMLInputElement>, serviceName: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // 400KB limit
+      if (file.size > 400 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Image must be less than 400KB",
+          variant: "destructive"
+        });
+        e.target.value = ''; // Reset input
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const service = services.find(s => s.name === serviceName);
+        if (service) {
+             updateServiceField(serviceName, 'images', [...service.images, reader.result as string]);
+             if (validationErrors[`${serviceName}-images`]) {
+                  setValidationErrors(prev => {
+                    const next = { ...prev };
+                    delete next[`${serviceName}-images`];
+                    return next;
+                  });
+             }
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    // Reset input so same file can be selected again if needed
+    e.target.value = '';
+  };
+
   const validateAndSaveServices = () => {
     // Check each service for required fields
     const newErrors: Record<string, boolean> = {};
@@ -566,20 +600,15 @@ export default function DetectiveProfileEdit() {
                              
                              {service.images.length < 3 && (
                                <div 
-                                 className={`h-24 w-24 bg-gray-100 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:border-green-500 hover:text-green-500 transition-colors ${validationErrors[`${service.name}-images`] ? "border-red-300 bg-red-50" : ""}`}
-                                 onClick={() => {
-                                    // Mock upload by adding a placeholder image
-                                    const mockImage = "https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop";
-                                    updateServiceField(service.name, 'images', [...service.images, mockImage]);
-                                    if (validationErrors[`${service.name}-images`]) {
-                                      setValidationErrors(prev => {
-                                        const next = { ...prev };
-                                        delete next[`${service.name}-images`];
-                                        return next;
-                                      });
-                                    }
-                                 }}
+                                 className={`h-24 w-24 bg-gray-100 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:border-green-500 hover:text-green-500 transition-colors relative ${validationErrors[`${service.name}-images`] ? "border-red-300 bg-red-50" : ""}`}
                                >
+                                  <input 
+                                    type="file" 
+                                    id={`upload-${service.name}`} 
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                                    accept="image/*"
+                                    onChange={(e) => handleServiceImageUpload(e, service.name)}
+                                  />
                                   <Upload className="h-6 w-6 mb-1" />
                                   <span className="text-[10px]">Upload</span>
                                </div>
@@ -590,7 +619,7 @@ export default function DetectiveProfileEdit() {
                            )}
                            <div className="text-xs text-gray-500 mt-1">
                               <p>Upload high-quality images representing this service. First image will be the main cover.</p>
-                              <p>Supported formats: JPG, PNG. Max size: 5MB.</p>
+                              <p>Supported formats: JPG, PNG. Max size: 400KB.</p>
                            </div>
                         </div>
 
