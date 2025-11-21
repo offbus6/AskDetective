@@ -153,7 +153,7 @@ export default function SearchPage() {
       <main className="flex-1 pt-20">
         {/* Top Category Slider */}
         <div className="border-b border-gray-200 bg-white sticky top-20 z-40">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-6 md:px-12 lg:px-16">
             <ScrollArea className="w-full whitespace-nowrap py-3">
               <div className="flex w-max space-x-4">
                 {CATEGORIES.map((cat) => (
@@ -170,7 +170,7 @@ export default function SearchPage() {
           </div>
         </div>
 
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-6 md:px-12 lg:px-16 py-8">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Left Sidebar Filters */}
             <aside className="w-full lg:w-64 flex-shrink-0 space-y-6">

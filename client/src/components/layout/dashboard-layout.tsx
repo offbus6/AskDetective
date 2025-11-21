@@ -109,7 +109,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-64 min-h-screen">
         {/* Header */}
-        <header className="h-16 bg-white border-b border-gray-200 sticky top-0 z-10 flex items-center justify-between px-4 lg:px-8">
+        <header className="h-16 bg-white border-b border-gray-200 sticky top-0 z-10 flex items-center justify-between px-6 md:px-12 lg:px-16">
           <div className="flex items-center gap-4">
              <Sheet>
                 <SheetTrigger asChild>
@@ -164,7 +164,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="p-4 lg:p-8 flex-1 overflow-auto">
+        <main className="p-6 md:p-12 lg:p-16 flex-1 overflow-auto">
           {children}
         </main>
       </div>

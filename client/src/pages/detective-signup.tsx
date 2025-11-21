@@ -89,7 +89,7 @@ export default function DetectiveSignup() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       
-      <main className="flex-1 container mx-auto px-4 py-12 mt-16">
+      <main className="flex-1 container mx-auto px-6 md:px-12 lg:px-24 py-12 mt-16">
         <div className="max-w-3xl mx-auto">
           {/* Progress Steps */}
           <div className="mb-8">

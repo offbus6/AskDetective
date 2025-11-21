@@ -67,7 +67,7 @@ export default function Home() {
 
         {/* Trusted By (Optional polish) */}
         <div className="bg-gray-50 py-8 border-b border-gray-200">
-          <div className="container mx-auto px-4 flex justify-center gap-8 md:gap-16 grayscale opacity-50">
+          <div className="container mx-auto px-6 md:px-12 lg:px-24 flex justify-center gap-8 md:gap-16 grayscale opacity-50">
             {/* Placeholders for logos */}
             <span className="font-bold text-xl">Meta</span>
             <span className="font-bold text-xl">Google</span>
@@ -78,7 +78,7 @@ export default function Home() {
         </div>
 
         {/* Popular Services */}
-        <section className="py-16 container mx-auto px-4">
+        <section className="py-16 container mx-auto px-6 md:px-12 lg:px-24">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold font-heading">Popular Professional Services</h2>
             <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
@@ -95,7 +95,7 @@ export default function Home() {
 
         {/* Value Proposition */}
         <section className="bg-green-50 py-16">
-          <div className="container mx-auto px-4 flex flex-col md:flex-row items-center gap-12">
+          <div className="container mx-auto px-6 md:px-12 lg:px-24 flex flex-col md:flex-row items-center gap-12">
             <div className="flex-1 space-y-6">
               <h2 className="text-3xl md:text-4xl font-bold font-heading">
                 The best part? Everything.
