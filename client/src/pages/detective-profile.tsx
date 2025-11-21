@@ -5,9 +5,29 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, Mail, Phone, MessageCircle, ShieldCheck, Upload, FileText, Heart, Clock, RefreshCw, Check, Award } from "lucide-react";
+import { Star, Mail, Phone, MessageCircle, ShieldCheck, Upload, FileText, Heart, Clock, RefreshCw, Check, Award, AlertTriangle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { useCurrency } from "@/lib/currency-context";
+import { useUser } from "@/lib/user-context";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
+import { useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+
+// @ts-ignore
+import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
 // @ts-ignore
 import awardGold from "@assets/generated_images/gold_badge_award_icon.png";
 // @ts-ignore
