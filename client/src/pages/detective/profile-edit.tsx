@@ -251,54 +251,6 @@ export default function DetectiveProfileEdit() {
     e.target.value = '';
   };
 
-  const validateAndSaveServices = () => {
-    // Check each service for required fields
-    const newErrors: Record<string, boolean> = {};
-    let hasErrors = false;
-
-    for (const service of services) {
-      if (!service.title.trim()) {
-        newErrors[`${service.name}-title`] = true;
-        hasErrors = true;
-      }
-      if (!service.description.trim()) {
-        newErrors[`${service.name}-description`] = true;
-        hasErrors = true;
-      }
-      if (service.images.length === 0) {
-        newErrors[`${service.name}-images`] = true;
-        hasErrors = true;
-      }
-    }
-
-    setValidationErrors(newErrors);
-
-    if (hasErrors) {
-      // Find first service with error to open
-      const firstErrorService = services.find(s => 
-        newErrors[`${s.name}-title`] || 
-        newErrors[`${s.name}-description`] || 
-        newErrors[`${s.name}-images`]
-      );
-      
-      if (firstErrorService) {
-        setOpenService(firstErrorService.name);
-        toast({
-          title: "Missing Information",
-          description: `Please fill in all mandatory fields marked with *`,
-          variant: "destructive"
-        });
-      }
-      return;
-    }
-
-    // If all valid
-    toast({
-      title: "Services Saved",
-      description: "Your services and pricing packages have been updated successfully.",
-    });
-  };
-
   const validateAndSaveSingleService = (serviceName: string) => {
     const service = services.find(s => s.name === serviceName);
     if (!service) return;
@@ -751,15 +703,6 @@ export default function DetectiveProfileEdit() {
                     </Button>
                   </div>
                 )}
-
-                <div className="pt-4">
-                   <Button 
-                     className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-                     onClick={validateAndSaveServices}
-                   >
-                     Save Services
-                   </Button>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
