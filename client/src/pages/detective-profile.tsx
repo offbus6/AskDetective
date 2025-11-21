@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, Mail, Phone, MessageCircle, ShieldCheck, Upload, FileText, Heart } from "lucide-react";
+import { Star, Mail, Phone, MessageCircle, ShieldCheck, Upload, FileText, Heart, Clock, RefreshCw, Check } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useCurrency } from "@/lib/currency-context";
 import { useUser } from "@/lib/user-context";
@@ -628,47 +628,43 @@ export default function DetectiveProfile() {
                 </Tabs>
                 
                 {/* Contact Methods based on Tier */}
-                <div className="p-4 bg-gray-50 border-t border-gray-200">
-                   <h4 className="text-sm font-bold text-gray-700 mb-3">Available Contact Options</h4>
-                   <div className="space-y-3">
-                      <div className="flex items-center gap-3 text-sm text-gray-700">
-                        <div className="bg-white p-1.5 rounded border border-gray-200">
-                          <Mail className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <span className="font-medium">Email Support</span>
-                      </div>
-                      
-                      {detectiveTier !== 'free' && (
-                        <div className="flex items-center gap-3 text-sm text-gray-700">
-                          <div className="bg-white p-1.5 rounded border border-gray-200">
-                            <Phone className="h-4 w-4 text-green-600" />
-                          </div>
-                          <span className="font-medium">Direct Phone Line</span>
-                        </div>
-                      )}
-                      
-                      {detectiveTier !== 'free' && (
-                        <div className="flex items-center gap-3 text-sm text-gray-700">
-                          <div className="bg-white p-1.5 rounded border border-gray-200">
-                            <MessageCircle className="h-4 w-4 text-green-500" />
-                          </div>
-                          <span className="font-medium">WhatsApp Chat</span>
-                        </div>
-                      )}
-                      
-                      {detectiveTier === 'free' && (
-                        <p className="text-xs text-gray-500 mt-2 italic bg-yellow-50 p-2 rounded border border-yellow-100">
-                           Upgrade your package to unlock direct phone and WhatsApp support.
+                <div className="p-4 bg-gray-50 border-t border-gray-200 space-y-3">
+                   <Button className="w-full flex items-center justify-center gap-2 bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 shadow-sm h-12">
+                     <Mail className="h-5 w-5" />
+                     <span className="font-bold">Contact via Email</span>
+                   </Button>
+                   
+                   {detectiveTier !== 'free' ? (
+                     <>
+                       <Button className="w-full flex items-center justify-center gap-2 bg-white hover:bg-green-50 text-green-700 border border-green-200 shadow-sm h-12">
+                         <Phone className="h-5 w-5" />
+                         <span className="font-bold">Call Now</span>
+                       </Button>
+                       
+                       <Button className="w-full flex items-center justify-center gap-2 bg-white hover:bg-green-50 text-green-700 border border-green-200 shadow-sm h-12">
+                         <MessageCircle className="h-5 w-5" />
+                         <span className="font-bold">WhatsApp</span>
+                       </Button>
+                     </>
+                   ) : (
+                     <div className="bg-yellow-50 border border-yellow-100 rounded-md p-3 text-center">
+                        <p className="text-xs text-yellow-800 font-medium mb-2">
+                          Phone & WhatsApp available on Pro plans
                         </p>
-                      )}
-                   </div>
+                        <div className="flex gap-2 opacity-50">
+                          <Button disabled className="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-200 shadow-sm h-10 text-gray-400">
+                             <Phone className="h-4 w-4" />
+                          </Button>
+                          <Button disabled className="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-200 shadow-sm h-10 text-gray-400">
+                             <MessageCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                     </div>
+                   )}
                 </div>
               </Card>
               
-              <div className="mt-6 text-center">
-                <Button variant="outline" className="w-full mb-2 border-gray-300 text-gray-600 font-semibold">
-                  Contact Detective
-                </Button>
+              <div className="mt-4 text-center">
                 <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
                   <ShieldCheck className="h-3 w-3" /> 100% Secure & Confidential
                 </p>
