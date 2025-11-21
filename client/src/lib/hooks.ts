@@ -28,6 +28,9 @@ export function useLogout() {
     mutationFn: () => api.auth.logout(),
     onSuccess: () => {
       queryClient.clear();
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      // Force refetch auth status
+      queryClient.refetchQueries({ queryKey: ["auth", "me"] });
     },
   });
 }

@@ -123,6 +123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (err) {
         return res.status(500).json({ error: "Failed to log out" });
       }
+      res.clearCookie("connect.sid");
       res.json({ message: "Logged out successfully" });
     });
   });
