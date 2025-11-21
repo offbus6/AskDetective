@@ -74,7 +74,7 @@ export default function DetectiveProfileEdit() {
 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label>Company Name</Label>
+                    <Label>Company Name / Individual Name</Label>
                     <Input defaultValue="Bond Investigations Ltd." />
                   </div>
                    <div className="space-y-2">

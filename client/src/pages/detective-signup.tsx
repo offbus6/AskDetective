@@ -158,8 +158,8 @@ export default function DetectiveSignup() {
                   <div className="space-y-4 border-b pb-6">
                     <h3 className="font-bold text-lg">Company Details</h3>
                     <div className="space-y-2">
-                      <Label htmlFor="companyName">Company Name</Label>
-                      <Input id="companyName" placeholder="e.g. Sherlock Investigations Ltd." />
+                      <Label htmlFor="companyName">Company Name / Individual Name</Label>
+                      <Input id="companyName" placeholder="e.g. Sherlock Investigations Ltd. or John Doe" />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
@@ -222,6 +222,17 @@ export default function DetectiveSignup() {
                       <Input id="title" placeholder="e.g. Senior Private Investigator | Ex-Police" />
                       <p className="text-xs text-gray-500">This will appear under your name in search results.</p>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="experience">Years of Experience</Label>
+                        <Input id="experience" type="number" placeholder="e.g. 5" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="languages">Languages Spoken</Label>
+                        <Input id="languages" placeholder="e.g. English, Spanish" />
+                      </div>
+                    </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="bio">Professional Bio</Label>
@@ -275,6 +286,12 @@ export default function DetectiveSignup() {
                   </div>
 
                   <div className="space-y-4">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
+                      <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                      <h4 className="font-bold text-gray-700">Upload Profile Photo or Company Logo</h4>
+                      <p className="text-xs text-gray-500 mt-1">JPG or PNG (Max 2MB)</p>
+                    </div>
+
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
                       <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                       <h4 className="font-bold text-gray-700">Upload Company Incorporation Certificate</h4>
