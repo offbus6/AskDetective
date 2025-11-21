@@ -6,6 +6,8 @@ interface SEOProps {
   image?: string;
   type?: string;
   keywords?: string[];
+  canonical?: string;
+  schema?: Record<string, any>;
 }
 
 export function SEO({ 
@@ -13,7 +15,9 @@ export function SEO({
   description, 
   image, 
   type = 'website',
-  keywords = []
+  keywords = [],
+  canonical,
+  schema
 }: SEOProps) {
   useEffect(() => {
     // Update title
@@ -34,10 +38,44 @@ export function SEO({
       element.setAttribute('content', content);
     };
 
+    // Helper for Link tags (canonical)
+    const updateLink = (rel: string, href: string) => {
+      let element = document.querySelector(`link[rel="${rel}"]`);
+      if (!element) {
+        element = document.createElement('link');
+        element.setAttribute('rel', rel);
+        document.head.appendChild(element);
+      }
+      element.setAttribute('href', href);
+    };
+
+    // Helper for Schema (JSON-LD)
+    const updateSchema = (data: Record<string, any>) => {
+      let element = document.querySelector('script[type="application/ld+json"]');
+      if (!element) {
+        element = document.createElement('script');
+        element.setAttribute('type', 'application/ld+json');
+        document.head.appendChild(element);
+      }
+      element.textContent = JSON.stringify(data);
+    };
+
     // Standard Meta
     updateMeta('description', description);
     if (keywords.length > 0) {
       updateMeta('keywords', keywords.join(', '));
+    }
+
+    // Canonical
+    if (canonical) {
+      updateLink('canonical', canonical);
+    } else {
+      updateLink('canonical', window.location.href);
+    }
+
+    // Schema
+    if (schema) {
+      updateSchema(schema);
     }
 
     // Open Graph
@@ -57,7 +95,7 @@ export function SEO({
       updateMeta('twitter:image', image);
     }
 
-  }, [title, description, image, type, keywords]);
+  }, [title, description, image, type, keywords, canonical, schema]);
 
   return null;
 }

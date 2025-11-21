@@ -203,6 +203,27 @@ export default function DetectiveProfile() {
     });
   };
   
+  // Schema.org Structured Data for Local Business / Professional Service
+  const detectiveSchema = {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    "name": profileData.name,
+    "image": isUnclaimed ? undefined : "https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop",
+    "description": profileData.description,
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": profileData.location,
+      "addressCountry": isUnclaimed ? "US" : "UK"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": profileData.rating,
+      "reviewCount": profileData.reviews
+    },
+    "priceRange": `$$`,
+    "telephone": "+1-555-0123"
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900">
       <SEO 
@@ -210,6 +231,7 @@ export default function DetectiveProfile() {
         description={profileData.description}
         image={!isUnclaimed ? "https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop" : undefined}
         type="profile"
+        schema={detectiveSchema}
       />
       <Navbar />
       
