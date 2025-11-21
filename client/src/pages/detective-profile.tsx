@@ -124,20 +124,8 @@ export default function DetectiveProfile() {
                   </p>
                   
                   {/* Contact Methods - Conditional Display */}
-                  <div className="pt-4 flex gap-3">
-                     <Button variant="outline" className="gap-2">
-                        <Mail className="h-4 w-4" /> Contact via Email
-                     </Button>
-                     {detectiveTier !== 'free' && (
-                       <>
-                         <Button variant="outline" className="gap-2">
-                            <Phone className="h-4 w-4" /> Call
-                         </Button>
-                         <Button variant="outline" className="gap-2 bg-green-50 text-green-600 border-green-200 hover:bg-green-100">
-                            <MessageCircle className="h-4 w-4" /> WhatsApp
-                         </Button>
-                       </>
-                     )}
+                  <div className="pt-4 text-sm text-gray-500">
+                     <p>Contact options are available based on the detective's subscription plan.</p>
                   </div>
                 </div>
               </div>
@@ -217,13 +205,22 @@ export default function DetectiveProfile() {
                        <div className="flex items-center gap-2 text-sm text-gray-500"><Check className="h-4 w-4 text-green-500" /> <span>Confidentiality Guaranteed</span></div>
                     </div>
                     
-                    <Button className="w-full mt-6 bg-black hover:bg-gray-800 text-white font-bold py-6 text-lg">
-                      Continue
-                    </Button>
-                    
-                    <Button variant="outline" className="w-full mt-3 border-gray-300 text-gray-600 hover:bg-gray-50">
-                      Contact Detective
-                    </Button>
+                    <div className="mt-6 space-y-3">
+                      <Button className="w-full gap-2" variant="outline">
+                        <Mail className="h-4 w-4" /> Contact via Email
+                      </Button>
+                      
+                      {detectiveTier !== 'free' && (
+                        <>
+                          <Button className="w-full gap-2" variant="outline">
+                            <Phone className="h-4 w-4" /> Call Detective
+                          </Button>
+                          <Button className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white">
+                            <MessageCircle className="h-4 w-4" /> WhatsApp
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </Tabs>
               </Card>
