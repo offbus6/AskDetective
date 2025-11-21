@@ -605,78 +605,93 @@ export default function DetectiveProfileEdit() {
             </Card>
           </TabsContent>
 
-          {/* Recognitions Tab (Available for all in mockup) */}
-          <TabsContent value="recognitions">
+          {/* Recognitions Tab */}
+          <TabsContent value="recognitions" className="space-y-4">
               <Card>
                 <CardHeader>
                   <CardTitle>Recognitions & Awards</CardTitle>
                   <CardDescription>Showcase your achievements to build trust (Max 4).</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Existing Recognitions */}
                     {recognitions.map((rec) => (
-                      <div key={rec.id} className="border rounded-lg p-4 flex gap-4 items-start relative group bg-white shadow-sm">
-                        <div className="h-16 w-16 bg-gray-50 rounded-md flex items-center justify-center flex-shrink-0 border overflow-hidden">
+                      <div key={rec.id} className="relative flex gap-4 items-start p-4 border rounded-lg bg-white shadow-sm">
+                        <div className="h-16 w-16 bg-gray-50 rounded-md border flex items-center justify-center flex-shrink-0 overflow-hidden">
                           <img src={rec.image} alt={rec.name} className="w-full h-full object-contain p-1" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start">
-                            <h4 className="font-bold truncate text-sm">{rec.name}</h4>
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{rec.year}</span>
+                          <div className="flex justify-between items-start mb-1">
+                            <h4 className="font-bold text-sm truncate pr-6">{rec.name}</h4>
+                            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 whitespace-nowrap">
+                              {rec.year}
+                            </Badge>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{rec.description}</p>
+                          <p className="text-xs text-gray-500 line-clamp-2">{rec.description}</p>
                         </div>
-                        <button 
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full"
                           onClick={() => removeRecognition(rec.id)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600"
                         >
                           <Trash2 className="h-3 w-3" />
-                        </button>
+                        </Button>
                       </div>
                     ))}
 
+                    {/* Add New Recognition Form */}
                     {recognitions.length < 4 && (
-                      <div className="border-2 border-dashed rounded-lg p-4 flex flex-col gap-3 hover:bg-gray-50/50 transition-colors">
-                        <h4 className="font-bold text-sm text-gray-700">Add New Recognition</h4>
+                      <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 flex flex-col gap-4 hover:bg-gray-50/50 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-sm text-gray-900">Add New Recognition</h4>
+                          <span className="text-xs text-gray-500">{recognitions.length}/4 Added</span>
+                        </div>
+                        
                         <div className="space-y-3">
                           <div className="flex gap-3">
-                             <div className="h-16 w-16 bg-gray-50 rounded-md flex items-center justify-center flex-shrink-0 border cursor-pointer hover:bg-gray-100 transition-colors overflow-hidden" onClick={() => {
-                               // Cycle through mock images for demo
-                               const images = [awardGold, awardSilver, awardCert];
-                               const currentIdx = images.indexOf(newRecognition.image || awardCert);
-                               const nextIdx = (currentIdx + 1) % images.length;
-                               setNewRecognition({...newRecognition, image: images[nextIdx]});
-                             }}>
-                               <img src={newRecognition.image} alt="Preview" className="w-full h-full object-contain p-1" />
+                             <div 
+                               className="h-16 w-16 bg-white rounded-md border flex items-center justify-center flex-shrink-0 cursor-pointer hover:border-blue-400 transition-colors relative overflow-hidden"
+                               onClick={() => {
+                                 const images = [awardGold, awardSilver, awardCert];
+                                 const currentIdx = images.indexOf(newRecognition.image || awardCert);
+                                 const nextIdx = (currentIdx + 1) % images.length;
+                                 setNewRecognition({...newRecognition, image: images[nextIdx]});
+                               }}
+                             >
+                               <img src={newRecognition.image || awardCert} alt="Preview" className="w-full h-full object-contain p-1" />
                                <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/10 transition-colors">
-                                 <span className="text-[10px] bg-white/80 px-1 rounded shadow-sm opacity-0 hover:opacity-100">Change</span>
+                                 <span className="text-[10px] bg-white/90 px-1 rounded shadow-sm opacity-0 hover:opacity-100">Change</span>
                                </div>
                              </div>
+                             
                              <div className="flex-1 space-y-2">
                                <Input 
                                  placeholder="Award Name" 
-                                 value={newRecognition.name}
+                                 value={newRecognition.name || ""}
                                  onChange={(e) => setNewRecognition({...newRecognition, name: e.target.value})}
                                  className="h-8 text-sm"
                                />
                                <Input 
                                  placeholder="Year" 
                                  type="number"
-                                 value={newRecognition.year}
+                                 value={newRecognition.year || ""}
                                  onChange={(e) => setNewRecognition({...newRecognition, year: e.target.value})}
                                  className="h-8 text-sm"
                                />
                              </div>
                           </div>
+                          
                           <Textarea 
-                            placeholder="Short description..." 
-                            value={newRecognition.description}
+                            placeholder="Short description of the award..." 
+                            value={newRecognition.description || ""}
                             onChange={(e) => setNewRecognition({...newRecognition, description: e.target.value})}
                             className="h-16 text-sm resize-none"
                           />
+                          
                           <Button 
                             size="sm" 
-                            className="w-full bg-blue-600 hover:bg-blue-700"
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                             onClick={addRecognition}
                             disabled={!newRecognition.name || !newRecognition.description || !newRecognition.year}
                           >
