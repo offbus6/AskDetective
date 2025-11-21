@@ -4,13 +4,34 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, UserCheck, Package, Plus } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useDetectives, useServices } from "@/lib/hooks";
+import { useUser } from "@/lib/user-context";
+import { useEffect } from "react";
 
 
 export default function AdminDashboard() {
+  const { user, isAuthenticated, isLoading: isLoadingUser } = useUser();
+  const [, setLocation] = useLocation();
   const { data: detectivesData, isLoading: isLoadingDetectives } = useDetectives();
   const { data: servicesData, isLoading: isLoadingServices } = useServices();
+
+  // Redirect if not authenticated or not admin
+  useEffect(() => {
+    if (!isLoadingUser && (!isAuthenticated || user?.role !== "admin")) {
+      setLocation("/login");
+    }
+  }, [isAuthenticated, user, isLoadingUser, setLocation]);
+
+  // Show loading state while checking authentication
+  if (isLoadingUser) {
+    return null;
+  }
+
+  // Don't render anything if not authenticated or not admin (will redirect)
+  if (!isAuthenticated || user?.role !== "admin") {
+    return null;
+  }
 
   const detectives = detectivesData?.detectives || [];
   const services = servicesData?.services || [];
