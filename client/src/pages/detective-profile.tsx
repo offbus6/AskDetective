@@ -186,7 +186,7 @@ export default function DetectiveProfile() {
     <div className="min-h-screen bg-white font-sans text-gray-900">
       <Navbar />
       
-      <main className="container mx-auto px-4 md:px-12 py-8 mt-20">
+      <main className="container mx-auto px-5 py-8 mt-20">
         {isUnclaimed && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
              <div className="flex items-start gap-4">
