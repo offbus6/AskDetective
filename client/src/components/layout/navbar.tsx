@@ -11,32 +11,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const COUNTRIES = [
-  { code: "ALL", name: "Global", flag: "🌐" },
-  { code: "US", name: "United States", flag: "🇺🇸" },
-  { code: "UK", name: "United Kingdom", flag: "🇬🇧" },
-  { code: "IN", name: "India", flag: "🇮🇳" },
-  { code: "CA", name: "Canada", flag: "🇨🇦" },
-  { code: "AU", name: "Australia", flag: "🇦🇺" },
-  { code: "DE", name: "Germany", flag: "🇩🇪" },
-  { code: "FR", name: "France", flag: "🇫🇷" },
-];
+import { useCurrency, COUNTRIES } from "@/lib/currency-context";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [location, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
+  const { selectedCountry, setCountry } = useCurrency();
 
-  useEffect(() => {
-    // Check URL for country param on mount
-    const params = new URLSearchParams(window.location.search);
-    const countryCode = params.get("country");
-    if (countryCode) {
-      const country = COUNTRIES.find(c => c.code === countryCode);
-      if (country) setSelectedCountry(country);
-    }
-  }, []);
+  // Removed local useEffect for URL parsing as it's handled in Context (or shared)
+  // Actually, context handles initialization, so we rely on that.
 
   const handleSearch = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
@@ -50,7 +34,7 @@ export function Navbar() {
   };
 
   const handleCountrySelect = (country: typeof COUNTRIES[0]) => {
-    setSelectedCountry(country);
+    setCountry(country);
     
     // If currently on search page, update the URL
     if (location.startsWith("/search")) {

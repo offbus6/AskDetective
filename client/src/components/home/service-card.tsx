@@ -21,10 +21,13 @@ interface ServiceCardProps {
   price: number;
 }
 
+import { useCurrency } from "@/lib/currency-context";
+
 export function ServiceCard({ id, images, image, avatar, name, level, category, badges = [], title, rating, reviews, price }: ServiceCardProps) {
   const displayImages = images || (image ? [image] : []);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const { formatPrice } = useCurrency();
 
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -145,7 +148,7 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
             <Heart className="h-4 w-4 text-gray-400 hover:fill-red-500 hover:text-red-500 transition-colors cursor-pointer" />
             <div className="flex flex-col items-end">
               <span className="text-xs text-gray-500 uppercase font-semibold">Starting at</span>
-              <span className="text-lg font-bold text-gray-900">${price}</span>
+              <span className="text-lg font-bold text-gray-900">{formatPrice(price)}</span>
             </div>
           </CardFooter>
         </Card>
