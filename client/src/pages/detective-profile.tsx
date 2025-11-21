@@ -626,6 +626,43 @@ export default function DetectiveProfile() {
                     </div>
                   </div>
                 </Tabs>
+                
+                {/* Contact Methods based on Tier */}
+                <div className="p-4 bg-gray-50 border-t border-gray-200">
+                   <h4 className="text-sm font-bold text-gray-700 mb-3">Available Contact Options</h4>
+                   <div className="space-y-3">
+                      <div className="flex items-center gap-3 text-sm text-gray-700">
+                        <div className="bg-white p-1.5 rounded border border-gray-200">
+                          <Mail className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <span className="font-medium">Email Support</span>
+                      </div>
+                      
+                      {detectiveTier !== 'free' && (
+                        <div className="flex items-center gap-3 text-sm text-gray-700">
+                          <div className="bg-white p-1.5 rounded border border-gray-200">
+                            <Phone className="h-4 w-4 text-green-600" />
+                          </div>
+                          <span className="font-medium">Direct Phone Line</span>
+                        </div>
+                      )}
+                      
+                      {detectiveTier !== 'free' && (
+                        <div className="flex items-center gap-3 text-sm text-gray-700">
+                          <div className="bg-white p-1.5 rounded border border-gray-200">
+                            <MessageCircle className="h-4 w-4 text-green-500" />
+                          </div>
+                          <span className="font-medium">WhatsApp Chat</span>
+                        </div>
+                      )}
+                      
+                      {detectiveTier === 'free' && (
+                        <p className="text-xs text-gray-500 mt-2 italic bg-yellow-50 p-2 rounded border border-yellow-100">
+                           Upgrade your package to unlock direct phone and WhatsApp support.
+                        </p>
+                      )}
+                   </div>
+                </div>
               </Card>
               
               <div className="mt-6 text-center">
