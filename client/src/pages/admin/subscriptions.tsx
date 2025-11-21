@@ -9,12 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
-
-interface PlanFeature {
-  id: string;
-  text: string;
-}
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Pencil, Trash2, Check, X, Shield, Crown, Star } from "lucide-react";
 
 interface SubscriptionPlan {
   id: string;
@@ -23,8 +19,12 @@ interface SubscriptionPlan {
   yearlyPrice: number;
   description: string;
   features: string[];
-  highlight: boolean;
-  popular: boolean;
+  badges: {
+    blueTick: boolean;
+    pro: boolean;
+    recommended: boolean;
+  };
+  serviceLimit: string;
   active: boolean;
 }
 
@@ -38,12 +38,15 @@ const INITIAL_PLANS: SubscriptionPlan[] = [
     features: [
       "Basic Profile Listing",
       "Email Contact Only",
-      "2 Service Categories",
       "Standard Search Ranking",
       "No Phone/WhatsApp Displayed"
     ],
-    highlight: false,
-    popular: false,
+    badges: {
+      blueTick: false,
+      pro: false,
+      recommended: false
+    },
+    serviceLimit: "2",
     active: true
   },
   {
@@ -53,14 +56,16 @@ const INITIAL_PLANS: SubscriptionPlan[] = [
     yearlyPrice: 290,
     description: "Enhanced tools for growing agencies.",
     features: [
-      "Verified Badge",
       "Phone & WhatsApp Contact",
-      "4 Service Categories",
       "Boosted Search Ranking",
       "Priority Support"
     ],
-    highlight: true,
-    popular: true,
+    badges: {
+      blueTick: false,
+      pro: true,
+      recommended: false
+    },
+    serviceLimit: "4",
     active: true
   },
   {
@@ -71,13 +76,16 @@ const INITIAL_PLANS: SubscriptionPlan[] = [
     description: "Maximum exposure for top firms.",
     features: [
       "Agency Profile (Multiple Detectives)",
-      "Unlimited Categories",
-      "Free Blue Tick Included",
-      "Recommended Badge",
-      "Top Search Ranking"
+      "Top Search Ranking",
+      "Dedicated Account Manager",
+      "Featured on Homepage"
     ],
-    highlight: false,
-    popular: false,
+    badges: {
+      blueTick: true,
+      pro: true,
+      recommended: true
+    },
+    serviceLimit: "unlimited",
     active: true
   }
 ];
@@ -96,8 +104,12 @@ export default function AdminSubscriptions() {
     yearlyPrice: 0,
     description: "",
     features: [],
-    highlight: false,
-    popular: false,
+    badges: {
+      blueTick: false,
+      pro: false,
+      recommended: false
+    },
+    serviceLimit: "1",
     active: true
   });
   const [featureInput, setFeatureInput] = useState("");
@@ -114,8 +126,12 @@ export default function AdminSubscriptions() {
         yearlyPrice: 0,
         description: "",
         features: [],
-        highlight: false,
-        popular: false,
+        badges: {
+          blueTick: false,
+          pro: false,
+          recommended: false
+        },
+        serviceLimit: "1",
         active: true
       });
     }
@@ -159,6 +175,16 @@ export default function AdminSubscriptions() {
     const newFeatures = [...(formData.features || [])];
     newFeatures.splice(index, 1);
     setFormData({ ...formData, features: newFeatures });
+  };
+
+  const toggleBadge = (badge: keyof SubscriptionPlan['badges']) => {
+    setFormData(prev => ({
+      ...prev,
+      badges: {
+        ...prev.badges!,
+        [badge]: !prev.badges![badge]
+      }
+    }));
   };
 
   return (
@@ -226,10 +252,10 @@ export default function AdminSubscriptions() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Plan Name</TableHead>
-                  <TableHead>Monthly</TableHead>
-                  <TableHead>Yearly</TableHead>
+                  <TableHead>Price (Mo/Yr)</TableHead>
+                  <TableHead>Service Limit</TableHead>
+                  <TableHead>Badges</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Highlights</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -240,18 +266,23 @@ export default function AdminSubscriptions() {
                       <div>{plan.name}</div>
                       <div className="text-xs text-gray-500 truncate max-w-[200px]">{plan.description}</div>
                     </TableCell>
-                    <TableCell>${plan.monthlyPrice}/mo</TableCell>
-                    <TableCell>${plan.yearlyPrice}/yr</TableCell>
+                    <TableCell>
+                      <div className="text-sm font-medium">${plan.monthlyPrice} / ${plan.yearlyPrice}</div>
+                    </TableCell>
+                    <TableCell>
+                       <Badge variant="outline">{plan.serviceLimit === "unlimited" ? "Unlimited" : `${plan.serviceLimit} Services`}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1 flex-wrap">
+                        {plan.badges.blueTick && <Badge className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] px-1"><Check className="h-3 w-3 mr-1"/> Blue Tick</Badge>}
+                        {plan.badges.pro && <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white text-[10px] px-1"><Crown className="h-3 w-3 mr-1"/> Pro</Badge>}
+                        {plan.badges.recommended && <Badge className="bg-green-500 hover:bg-green-600 text-white text-[10px] px-1"><Star className="h-3 w-3 mr-1"/> Recommended</Badge>}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={plan.active ? "default" : "secondary"} className={plan.active ? "bg-green-100 text-green-700 hover:bg-green-200" : ""}>
                         {plan.active ? "Active" : "Inactive"}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        {plan.popular && <Badge variant="outline" className="border-yellow-500 text-yellow-600">Popular</Badge>}
-                        {plan.highlight && <Badge variant="outline" className="border-blue-500 text-blue-600">Highlighted</Badge>}
-                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -321,6 +352,28 @@ export default function AdminSubscriptions() {
                   placeholder="Short description of the plan..."
                 />
               </div>
+              
+              <div className="space-y-2">
+                 <Label>Service Limit</Label>
+                 <Select 
+                    value={formData.serviceLimit} 
+                    onValueChange={(val) => setFormData({...formData, serviceLimit: val})}
+                 >
+                   <SelectTrigger>
+                     <SelectValue placeholder="Select limit" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="1">1 Service</SelectItem>
+                     <SelectItem value="2">2 Services</SelectItem>
+                     <SelectItem value="3">3 Services</SelectItem>
+                     <SelectItem value="4">4 Services</SelectItem>
+                     <SelectItem value="5">5 Services</SelectItem>
+                     <SelectItem value="10">10 Services</SelectItem>
+                     <SelectItem value="unlimited">Unlimited Services</SelectItem>
+                   </SelectContent>
+                 </Select>
+                 <p className="text-xs text-gray-500">How many service categories can a detective add?</p>
+              </div>
 
               <div className="space-y-2">
                 <Label>Plan Features</Label>
@@ -348,30 +401,54 @@ export default function AdminSubscriptions() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <div className="flex items-center justify-between border p-3 rounded-md">
-                  <Label htmlFor="popular" className="cursor-pointer">Popular Badge</Label>
-                  <Switch 
-                    id="popular" 
-                    checked={formData.popular} 
-                    onCheckedChange={(c) => setFormData({...formData, popular: c})} 
-                  />
-                </div>
-                <div className="flex items-center justify-between border p-3 rounded-md">
-                  <Label htmlFor="highlight" className="cursor-pointer">Highlighted</Label>
-                  <Switch 
-                    id="highlight" 
-                    checked={formData.highlight} 
-                    onCheckedChange={(c) => setFormData({...formData, highlight: c})} 
-                  />
-                </div>
-                <div className="flex items-center justify-between border p-3 rounded-md col-span-2">
-                  <Label htmlFor="active" className="cursor-pointer">Plan Active</Label>
-                  <Switch 
-                    id="active" 
-                    checked={formData.active} 
-                    onCheckedChange={(c) => setFormData({...formData, active: c})} 
-                  />
+              <div className="space-y-3 pt-2">
+                <Label className="text-base">Plan Badges & Visibility</Label>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center justify-between border p-3 rounded-md bg-blue-50/30 border-blue-100">
+                    <div className="flex items-center gap-2">
+                       <Check className="h-4 w-4 text-blue-600" />
+                       <Label htmlFor="badge-bluetick" className="cursor-pointer text-blue-900">Blue Tick</Label>
+                    </div>
+                    <Switch 
+                      id="badge-bluetick" 
+                      checked={formData.badges?.blueTick} 
+                      onCheckedChange={() => toggleBadge('blueTick')} 
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between border p-3 rounded-md bg-yellow-50/30 border-yellow-100">
+                    <div className="flex items-center gap-2">
+                       <Crown className="h-4 w-4 text-yellow-600" />
+                       <Label htmlFor="badge-pro" className="cursor-pointer text-yellow-900">Pro Badge</Label>
+                    </div>
+                    <Switch 
+                      id="badge-pro" 
+                      checked={formData.badges?.pro} 
+                      onCheckedChange={() => toggleBadge('pro')} 
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between border p-3 rounded-md bg-green-50/30 border-green-100">
+                    <div className="flex items-center gap-2">
+                       <Star className="h-4 w-4 text-green-600" />
+                       <Label htmlFor="badge-rec" className="cursor-pointer text-green-900">Recommended</Label>
+                    </div>
+                    <Switch 
+                      id="badge-rec" 
+                      checked={formData.badges?.recommended} 
+                      onCheckedChange={() => toggleBadge('recommended')} 
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between border p-3 rounded-md">
+                    <Label htmlFor="active" className="cursor-pointer">Plan Active</Label>
+                    <Switch 
+                      id="active" 
+                      checked={formData.active} 
+                      onCheckedChange={(c) => setFormData({...formData, active: c})} 
+                    />
+                  </div>
                 </div>
               </div>
             </div>
