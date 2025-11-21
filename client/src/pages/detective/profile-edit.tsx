@@ -143,7 +143,7 @@ export default function DetectiveProfileEdit() {
   const [openService, setOpenService] = useState<string | null>(null);
   
   // Mock subscription tier for demo - change this to 'free', 'pro', or 'agency' to test
-  const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'pro' | 'agency'>('free');
+  const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'pro' | 'agency'>('agency');
   
   const [contactInfo, setContactInfo] = useState({
     email: "james.bond@example.com",
@@ -224,7 +224,7 @@ export default function DetectiveProfileEdit() {
             <TabsTrigger value="general">General Info</TabsTrigger>
             <TabsTrigger value="services">Services & Pricing</TabsTrigger>
             <TabsTrigger value="verification">Verification</TabsTrigger>
-            {subscriptionTier === 'agency' && <TabsTrigger value="recognitions">Recognitions</TabsTrigger>}
+            <TabsTrigger value="recognitions">Recognitions</TabsTrigger>
           </TabsList>
           
           {/* General Info Tab */}
@@ -605,9 +605,8 @@ export default function DetectiveProfileEdit() {
             </Card>
           </TabsContent>
 
-          {/* Recognitions Tab (Agency Only) */}
-          {subscriptionTier === 'agency' && (
-            <TabsContent value="recognitions">
+          {/* Recognitions Tab (Available for all in mockup) */}
+          <TabsContent value="recognitions">
               <Card>
                 <CardHeader>
                   <CardTitle>Recognitions & Awards</CardTitle>
@@ -690,7 +689,6 @@ export default function DetectiveProfileEdit() {
                 </CardContent>
               </Card>
             </TabsContent>
-          )}
         </Tabs>
       </div>
     </DashboardLayout>
