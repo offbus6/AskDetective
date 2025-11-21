@@ -16,7 +16,7 @@ import AdminDetectives from "@/pages/admin/detectives";
 
 import DetectiveDashboard from "@/pages/detective/dashboard";
 import DetectiveProfileEdit from "@/pages/detective/profile-edit";
-import DetectiveOrders from "@/pages/detective/orders";
+import DetectiveReviews from "@/pages/detective/reviews";
 import DetectiveSubscription from "@/pages/detective/subscription";
 import DetectiveSettings from "@/pages/detective/settings";
 
@@ -42,7 +42,7 @@ function Router() {
       {/* Detective Routes */}
       <Route path="/detective/dashboard" component={DetectiveDashboard} />
       <Route path="/detective/profile" component={DetectiveProfileEdit} />
-      <Route path="/detective/orders" component={DetectiveOrders} />
+      <Route path="/detective/reviews" component={DetectiveReviews} />
       <Route path="/detective/subscription" component={DetectiveSubscription} />
       <Route path="/detective/settings" component={DetectiveSettings} />
       

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
-import { Star, Eye, MousePointer, DollarSign } from "lucide-react";
+import { Star, Eye, MousePointer, DollarSign, MessageSquare } from "lucide-react";
 
 export default function DetectiveDashboard() {
   return (
@@ -13,7 +13,7 @@ export default function DetectiveDashboard() {
         <div className="flex items-center justify-between">
           <div>
              <h2 className="text-3xl font-bold font-heading text-gray-900">My Dashboard</h2>
-             <p className="text-gray-500">Manage your profile, orders, and performance.</p>
+             <p className="text-gray-500">Manage your profile, reviews, and performance.</p>
           </div>
           <Badge className="bg-green-100 text-green-700 hover:bg-green-200 text-sm px-3 py-1">
             <span className="w-2 h-2 bg-green-600 rounded-full mr-2 animate-pulse"></span>
@@ -80,28 +80,36 @@ export default function DetectiveDashboard() {
           </Card>
         </div>
 
-        {/* Active Orders */}
-        <h3 className="text-xl font-bold font-heading mt-8">Active Orders</h3>
+        {/* Recent Reviews */}
+        <h3 className="text-xl font-bold font-heading mt-8">Recent Reviews</h3>
         <Card>
           <CardContent className="p-0">
-             <div className="grid grid-cols-5 p-4 border-b border-gray-100 bg-gray-50 font-semibold text-sm text-gray-500">
-               <div className="col-span-2">Client / Service</div>
-               <div>Price</div>
-               <div>Due Date</div>
-               <div>Status</div>
+             <div className="grid grid-cols-4 p-4 border-b border-gray-100 bg-gray-50 font-semibold text-sm text-gray-500">
+               <div className="col-span-2">Client / Comment</div>
+               <div>Rating</div>
+               <div className="text-right">Action</div>
              </div>
              {[1, 2].map((i) => (
-               <div key={i} className="grid grid-cols-5 p-4 border-b border-gray-100 items-center last:border-0 hover:bg-gray-50/50 transition-colors">
+               <div key={i} className="grid grid-cols-4 p-4 border-b border-gray-100 items-center last:border-0 hover:bg-gray-50/50 transition-colors">
                  <div className="col-span-2 flex items-center gap-3">
                    <div className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center text-xs font-bold">C{i}</div>
                    <div>
                      <div className="font-bold text-sm">Client Name {i}</div>
-                     <div className="text-xs text-gray-500">Background Check Standard</div>
+                     <div className="text-xs text-gray-500 italic">"Great service, very discreet..."</div>
                    </div>
                  </div>
-                 <div className="font-medium">$300</div>
-                 <div className="text-sm text-gray-500">Aug 24, 2025</div>
-                 <div><Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none">In Progress</Badge></div>
+                 <div className="flex text-yellow-500">
+                    <Star className="h-4 w-4 fill-current" />
+                    <Star className="h-4 w-4 fill-current" />
+                    <Star className="h-4 w-4 fill-current" />
+                    <Star className="h-4 w-4 fill-current" />
+                    <Star className="h-4 w-4 fill-current" />
+                 </div>
+                 <div className="text-right">
+                    <Button size="sm" variant="outline" className="text-xs">
+                      <MessageSquare className="h-3 w-3 mr-1" /> Reply
+                    </Button>
+                 </div>
                </div>
              ))}
           </CardContent>

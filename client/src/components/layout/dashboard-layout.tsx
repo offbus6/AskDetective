@@ -10,7 +10,8 @@ import {
   Menu, 
   Bell,
   CreditCard,
-  UserCheck
+  UserCheck,
+  Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,7 +40,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
   const detectiveLinks = [
     { href: "/detective/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/detective/profile", label: "My Profile", icon: Users },
-    { href: "/detective/orders", label: "Orders", icon: FileText },
+    { href: "/detective/reviews", label: "Reviews", icon: Star },
     { href: "/detective/subscription", label: "Subscription", icon: CreditCard },
     { href: "/detective/settings", label: "Settings", icon: Settings },
   ];
