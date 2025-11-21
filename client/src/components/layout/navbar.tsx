@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Search, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,14 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [, setLocation] = useLocation();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      setLocation(`/search?q=${encodeURIComponent(searchQuery)}`);
+    }
+  };
 
   // Effect to handle scroll state for transparent/solid navbar
   if (typeof window !== "undefined") {
@@ -37,8 +45,14 @@ export function Navbar() {
               type="text" 
               placeholder="What service are you looking for?" 
               className="w-full pl-4 pr-10 h-10 bg-white border-gray-300 text-black"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearch}
             />
-            <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-500" />
+            <Search 
+              className="absolute right-3 top-2.5 h-5 w-5 text-gray-500 cursor-pointer" 
+              onClick={() => searchQuery.trim() && setLocation(`/search?q=${encodeURIComponent(searchQuery)}`)}
+            />
           </div>
         </div>
 

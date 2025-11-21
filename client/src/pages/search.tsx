@@ -82,6 +82,9 @@ const RESULTS = [
 ];
 
 export default function SearchPage() {
+  const searchParams = new URLSearchParams(window.location.search);
+  const query = searchParams.get("q") || "All Services";
+
   return (
     <div className="min-h-screen flex flex-col font-sans text-gray-900">
       <Navbar />
@@ -89,7 +92,7 @@ export default function SearchPage() {
       <main className="flex-1 container mx-auto px-4 py-8 mt-20">
         {/* Search Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold font-heading mb-2">Results for "Background Check"</h1>
+          <h1 className="text-3xl font-bold font-heading mb-2">Results for "{query}"</h1>
           <div className="flex items-center gap-2 text-gray-500 text-sm">
              <span className="font-semibold text-gray-900">2,451</span> services available
           </div>
