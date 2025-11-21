@@ -4,21 +4,51 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
-import { Star, Eye, MousePointer, DollarSign, MessageSquare } from "lucide-react";
+import { Star, Eye, MousePointer, MessageSquare, AlertCircle, Ban } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useState } from "react";
 
 export default function DetectiveDashboard() {
+  // Mock status: 'pending' | 'approved' | 'suspended'
+  // In a real app, this would come from the backend/auth context
+  const [accountStatus] = useState<'pending' | 'approved' | 'suspended'>('pending');
+
   return (
     <DashboardLayout role="detective">
       <div className="space-y-8">
+        {/* Status Banners */}
+        {accountStatus === 'pending' && (
+          <Alert className="bg-yellow-50 border-yellow-200 text-yellow-800">
+            <AlertCircle className="h-4 w-4 text-yellow-800" />
+            <AlertTitle>Application Under Review</AlertTitle>
+            <AlertDescription>
+              Your application is currently being reviewed by our team. You will be notified once approved (usually within 24-48 hours).
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {accountStatus === 'suspended' && (
+          <Alert variant="destructive">
+            <Ban className="h-4 w-4" />
+            <AlertTitle>Account Suspended</AlertTitle>
+            <AlertDescription>
+              Your account has been suspended. Please contact support@detectiveportal.com for assistance.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex items-center justify-between">
           <div>
              <h2 className="text-3xl font-bold font-heading text-gray-900">My Dashboard</h2>
              <p className="text-gray-500">Manage your profile, reviews, and performance.</p>
           </div>
-          <Badge className="bg-green-100 text-green-700 hover:bg-green-200 text-sm px-3 py-1">
-            <span className="w-2 h-2 bg-green-600 rounded-full mr-2 animate-pulse"></span>
-            Online Status: Active
-          </Badge>
+          
+          {accountStatus === 'approved' && (
+            <Badge className="bg-green-100 text-green-700 hover:bg-green-200 text-sm px-3 py-1">
+              <span className="w-2 h-2 bg-green-600 rounded-full mr-2 animate-pulse"></span>
+              Online Status: Active
+            </Badge>
+          )}
         </div>
 
         {/* Profile Completion */}
@@ -41,7 +71,7 @@ export default function DetectiveDashboard() {
         </Card>
 
         {/* Stats */}
-        <div className="grid gap-6 md:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-500">Profile Views</CardTitle>
@@ -67,15 +97,6 @@ export default function DetectiveDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">5.0</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Earnings (Aug)</CardTitle>
-              <DollarSign className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">$1,250</div>
             </CardContent>
           </Card>
         </div>
