@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, MapPin, Check, Clock, RefreshCw, MessageSquare, Mail, Phone, MessageCircle, ShieldCheck, Upload, FileText, Heart } from "lucide-react";
+import { Star, Mail, Phone, MessageCircle, ShieldCheck, Upload, FileText, Heart } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useCurrency } from "@/lib/currency-context";
 import { useUser } from "@/lib/user-context";
