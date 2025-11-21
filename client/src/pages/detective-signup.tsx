@@ -84,29 +84,61 @@ export default function DetectiveSignup() {
               )}
 
               {step === 2 && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Professional Title</Label>
-                    <Input id="title" placeholder="e.g. Senior Private Investigator | Ex-Police" />
-                    <p className="text-xs text-gray-500">This will appear under your name in search results.</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="bio">Professional Bio</Label>
-                    <Textarea id="bio" placeholder="Describe your experience, specialties, and approach..." className="h-32" />
+                <div className="space-y-6">
+                  <div className="space-y-4 border-b pb-6">
+                    <h3 className="font-bold text-lg">Company Details</h3>
+                    <div className="space-y-2">
+                      <Label htmlFor="companyName">Company Name</Label>
+                      <Input id="companyName" placeholder="e.g. Sherlock Investigations Ltd." />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="registeredDate">Date Registered</Label>
+                        <Input id="registeredDate" type="date" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="regNumber">Registration Number</Label>
+                        <Input id="regNumber" placeholder="Company Reg. No." />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="address">Registered Address</Label>
+                      <Textarea id="address" placeholder="Full registered office address..." className="h-20" />
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Specializations</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {["Surveillance", "Background Checks", "Missing Persons", "Infidelity", "Corporate Fraud", "Cyber Investigation"].map((spec) => (
-                        <div key={spec} className="flex items-center space-x-2 border p-3 rounded-md hover:bg-gray-50 cursor-pointer">
-                          <input type="checkbox" id={spec} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-                          <label htmlFor={spec} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
-                            {spec}
-                          </label>
-                        </div>
-                      ))}
+                  <div className="space-y-4">
+                    <h3 className="font-bold text-lg">Professional Profile</h3>
+                    <div className="space-y-2">
+                      <Label htmlFor="title">Professional Title</Label>
+                      <Input id="title" placeholder="e.g. Senior Private Investigator | Ex-Police" />
+                      <p className="text-xs text-gray-500">This will appear under your name in search results.</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="bio">Professional Bio</Label>
+                      <Textarea id="bio" placeholder="Describe your experience, specialties, and approach..." className="h-32" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Specializations & Pricing</Label>
+                      <p className="text-xs text-gray-500 mb-2">Select your services and set a starting price (optional).</p>
+                      <div className="grid gap-3">
+                        {["Surveillance", "Background Checks", "Missing Persons", "Infidelity", "Corporate Fraud", "Cyber Investigation"].map((spec) => (
+                          <div key={spec} className="flex items-center justify-between border p-3 rounded-md hover:bg-gray-50">
+                            <div className="flex items-center space-x-2">
+                              <input type="checkbox" id={spec} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                              <label htmlFor={spec} className="text-sm font-medium leading-none cursor-pointer">
+                                {spec}
+                              </label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500">Starting at $</span>
+                              <Input type="number" className="w-24 h-8 text-sm" placeholder="Optional" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -131,8 +163,14 @@ export default function DetectiveSignup() {
 
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
                       <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                      <h4 className="font-bold text-gray-700">Upload Government ID</h4>
-                      <p className="text-xs text-gray-500 mt-1">Driver's License or Passport</p>
+                      <h4 className="font-bold text-gray-700">Upload Company Incorporation Certificate</h4>
+                      <p className="text-xs text-gray-500 mt-1">Official Government Document</p>
+                    </div>
+
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
+                      <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                      <h4 className="font-bold text-gray-700">Upload Director's Government ID</h4>
+                      <p className="text-xs text-gray-500 mt-1">Passport or Driver's License of Director</p>
                     </div>
                   </div>
 
