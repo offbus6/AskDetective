@@ -116,7 +116,6 @@ const PACKAGES: { basic: PackageDetails, standard: PackageDetails, premium: Pack
   }
 };
 
-import { AlertTriangle } from "lucide-react";
 
 export default function DetectiveProfile() {
   const params = new URLSearchParams(window.location.search);
