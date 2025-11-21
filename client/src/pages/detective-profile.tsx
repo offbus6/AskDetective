@@ -11,6 +11,38 @@ import { Separator } from "@/components/ui/separator";
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
 
+interface PackageDetails {
+  name: string;
+  description: string;
+  price: string;
+  offerPrice: string;
+  features: string[];
+}
+
+const PACKAGES: { basic: PackageDetails, standard: PackageDetails, premium: PackageDetails } = {
+  basic: {
+    name: "Simple Check",
+    description: "Basic criminal record check and address verification for one individual.",
+    price: "150",
+    offerPrice: "",
+    features: ["Background Check", "Report Included", "Confidentiality Guaranteed"]
+  },
+  standard: {
+    name: "Deep Dive",
+    description: "Includes Basic + Social media analysis, employment verification, and asset search.",
+    price: "300",
+    offerPrice: "",
+    features: ["Background Check", "Report Included", "Confidentiality Guaranteed", "Social Media Analysis"]
+  },
+  premium: {
+    name: "Full Investigation",
+    description: "Complete 360° profile including on-site verification if needed (local only) and detailed report.",
+    price: "800",
+    offerPrice: "",
+    features: ["Background Check", "Report Included", "Confidentiality Guaranteed", "Social Media Analysis", "On-site Verification"]
+  }
+};
+
 export default function DetectiveProfile() {
   // Mock subscription tier for demo - change this to 'free' or 'agency' to test other views
   const detectiveTier = 'agency' as 'free' | 'pro' | 'agency';
@@ -166,40 +198,59 @@ export default function DetectiveProfile() {
                   <div className="p-6">
                     <TabsContent value="basic" className="mt-0 space-y-4">
                       <div className="flex justify-between items-baseline">
-                        <h3 className="font-bold text-lg">Simple Check</h3>
-                        <span className="text-2xl font-bold text-gray-900">$150</span>
+                        <h3 className="font-bold text-lg">{PACKAGES.basic.name}</h3>
+                        <div className="text-right">
+                          {PACKAGES.basic.offerPrice ? (
+                            <>
+                              <span className="text-2xl font-bold text-green-600">${PACKAGES.basic.offerPrice}</span>
+                              <span className="text-sm text-gray-400 line-through ml-2">${PACKAGES.basic.price}</span>
+                            </>
+                          ) : (
+                            <span className="text-2xl font-bold text-gray-900">${PACKAGES.basic.price}</span>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600">Basic criminal record check and address verification for one individual.</p>
+                      <p className="text-sm text-gray-600">{PACKAGES.basic.description}</p>
                     </TabsContent>
                     
                     <TabsContent value="standard" className="mt-0 space-y-4">
                       <div className="flex justify-between items-baseline">
-                        <h3 className="font-bold text-lg">Deep Dive</h3>
-                        <span className="text-2xl font-bold text-gray-900">$300</span>
+                        <h3 className="font-bold text-lg">{PACKAGES.standard.name}</h3>
+                        <div className="text-right">
+                          {PACKAGES.standard.offerPrice ? (
+                            <>
+                              <span className="text-2xl font-bold text-green-600">${PACKAGES.standard.offerPrice}</span>
+                              <span className="text-sm text-gray-400 line-through ml-2">${PACKAGES.standard.price}</span>
+                            </>
+                          ) : (
+                            <span className="text-2xl font-bold text-gray-900">${PACKAGES.standard.price}</span>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600">Includes Basic + Social media analysis, employment verification, and asset search.</p>
+                      <p className="text-sm text-gray-600">{PACKAGES.standard.description}</p>
                     </TabsContent>
                     
                     <TabsContent value="premium" className="mt-0 space-y-4">
                       <div className="flex justify-between items-baseline">
-                        <h3 className="font-bold text-lg">Full Investigation</h3>
-                        <span className="text-2xl font-bold text-gray-900">$800</span>
+                        <h3 className="font-bold text-lg">{PACKAGES.premium.name}</h3>
+                        <div className="text-right">
+                          {PACKAGES.premium.offerPrice ? (
+                            <>
+                              <span className="text-2xl font-bold text-green-600">${PACKAGES.premium.offerPrice}</span>
+                              <span className="text-sm text-gray-400 line-through ml-2">${PACKAGES.premium.price}</span>
+                            </>
+                          ) : (
+                            <span className="text-2xl font-bold text-gray-900">${PACKAGES.premium.price}</span>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600">Complete 360° profile including on-site verification if needed (local only) and detailed report.</p>
+                      <p className="text-sm text-gray-600">{PACKAGES.premium.description}</p>
                     </TabsContent>
 
-                    <div className="flex items-center gap-4 text-sm font-semibold text-gray-600 mt-6">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        <span>3 Days Delivery</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <RefreshCw className="h-4 w-4" />
-                        <span>1 Revision</span>
-                      </div>
-                    </div>
+                    {/* Removed Delivery/Revisions as per user request */}
 
                     <div className="mt-4 space-y-2">
+                       {/* Dynamic features based on selected tab would be ideal, for now showing a generic list or we can map if we state which tab is active */}
                        <div className="flex items-center gap-2 text-sm text-gray-500"><Check className="h-4 w-4 text-green-500" /> <span>Background Check</span></div>
                        <div className="flex items-center gap-2 text-sm text-gray-500"><Check className="h-4 w-4 text-green-500" /> <span>Report Included</span></div>
                        <div className="flex items-center gap-2 text-sm text-gray-500"><Check className="h-4 w-4 text-green-500" /> <span>Confidentiality Guaranteed</span></div>
