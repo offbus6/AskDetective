@@ -1,9 +1,10 @@
-import { Star, Heart, ChevronLeft, ChevronRight } from "lucide-react";
+import { Star, Heart, ChevronLeft, ChevronRight, ShieldCheck, Award, BadgeCheck } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { useState } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ServiceCardProps {
   id: string;
@@ -83,13 +84,53 @@ export function ServiceCard({ id, images, image, avatar, name, level, title, rat
           <CardContent className="p-4 flex-1">
             {/* Author Row */}
             <div className="flex items-center gap-3 mb-3">
-              <Avatar className="h-8 w-8">
+              <Avatar className="h-8 w-8 border border-gray-100">
                 <AvatarImage src={avatar} />
                 <AvatarFallback>{name[0]}</AvatarFallback>
               </Avatar>
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-gray-900 hover:underline">{name}</span>
-                <span className="text-xs text-gray-500">{level}</span>
+              <div className="flex flex-col overflow-hidden">
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-bold text-gray-900 hover:underline truncate">{name}</span>
+                  
+                  <TooltipProvider>
+                    {/* Agency Verified Badge */}
+                    {level === "Agency Verified" && (
+                      <Tooltip>
+                        <TooltipTrigger>
+                           <ShieldCheck className="h-4 w-4 text-blue-500 fill-blue-50 flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Agency Verified</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+
+                    {/* Pro Detective Badge */}
+                    {level === "Pro Detective" && (
+                      <Tooltip>
+                        <TooltipTrigger>
+                           <BadgeCheck className="h-4 w-4 text-green-600 fill-green-50 flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Pro Detective</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+
+                    {/* Top Rated Badge (Legacy support) */}
+                    {level === "Top Rated Detective" && (
+                      <Tooltip>
+                        <TooltipTrigger>
+                           <Award className="h-4 w-4 text-amber-500 fill-amber-50 flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Top Rated</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </TooltipProvider>
+                </div>
+                <span className="text-xs text-gray-500 truncate">{level}</span>
               </div>
             </div>
 

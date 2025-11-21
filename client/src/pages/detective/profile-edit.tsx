@@ -34,7 +34,7 @@ interface Service {
   name: string;
   title: string;
   description: string;
-  image: string | null;
+  images: string[];
   packages: {
     basic: PackageDetails;
     standard: PackageDetails;
@@ -57,7 +57,7 @@ export default function DetectiveProfileEdit() {
       name: "Surveillance", 
       title: "I will conduct professional covert surveillance for your case",
       description: "Professional covert surveillance services for personal and corporate matters. We use state-of-the-art equipment to gather evidence discreetly.",
-      image: null,
+      images: [],
       packages: {
         basic: { ...DEFAULT_PACKAGE, name: "Basic Watch", price: "150", offerPrice: "120", description: "4 hours of surveillance with basic report.", enabled: true },
         standard: { ...DEFAULT_PACKAGE, name: "Standard Day", price: "300", offerPrice: "", description: "8 hours of surveillance with video evidence.", enabled: true },
@@ -68,7 +68,7 @@ export default function DetectiveProfileEdit() {
       name: "Background Checks", 
       title: "I will perform a comprehensive background check on any individual",
       description: "Comprehensive background screening services. We verify identity, criminal history, employment, and more using reliable databases.",
-      image: null,
+      images: [],
       packages: {
         basic: { ...DEFAULT_PACKAGE, name: "Simple Check", price: "100", offerPrice: "", description: "Identity and criminal record check.", enabled: true },
         standard: { ...DEFAULT_PACKAGE, name: "Deep Dive", price: "250", offerPrice: "200", description: "Includes financial and social media analysis.", enabled: true },
@@ -97,7 +97,7 @@ export default function DetectiveProfileEdit() {
         name: newService, 
         title: `I will provide ${newService} services`,
         description: "",
-        image: null,
+        images: [],
         packages: {
           basic: { ...DEFAULT_PACKAGE, name: "Basic Package", price: "100", offerPrice: "", enabled: true },
           standard: { ...DEFAULT_PACKAGE, name: "Standard Package", price: "200", offerPrice: "", enabled: true },
@@ -354,24 +354,42 @@ export default function DetectiveProfileEdit() {
                            <p className="text-xs text-gray-500">Use a catchy title starting with "I will..."</p>
                         </div>
 
-                        {/* Service Image */}
+                        {/* Service Images */}
                         <div className="space-y-2">
-                           <Label>Service Image</Label>
+                           <Label>Service Gallery (Max 3 Images)</Label>
                            <div className="flex items-center gap-4">
-                             <div className="h-24 w-40 bg-gray-100 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400 overflow-hidden relative group cursor-pointer hover:border-green-500 hover:text-green-500 transition-colors">
-                                {service.image ? (
-                                  <img src={service.image} alt="Service" className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="flex flex-col items-center text-xs">
-                                    <Upload className="h-5 w-5 mb-1" />
-                                    <span>Upload Photo</span>
-                                  </div>
-                                )}
-                             </div>
-                             <div className="text-sm text-gray-500">
-                               <p>Upload a high-quality image representing this service.</p>
-                               <p className="text-xs mt-1">Supported formats: JPG, PNG. Max size: 5MB.</p>
-                             </div>
+                             {service.images.map((img, idx) => (
+                               <div key={idx} className="h-24 w-24 relative group rounded-md overflow-hidden border border-gray-200">
+                                  <img src={img} alt={`Service ${idx}`} className="w-full h-full object-cover" />
+                                  <button 
+                                    onClick={() => {
+                                      const newImages = service.images.filter((_, i) => i !== idx);
+                                      updateServiceField(service.name, 'images', newImages);
+                                    }}
+                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                               </div>
+                             ))}
+                             
+                             {service.images.length < 3 && (
+                               <div 
+                                 className="h-24 w-24 bg-gray-100 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:border-green-500 hover:text-green-500 transition-colors"
+                                 onClick={() => {
+                                    // Mock upload by adding a placeholder image
+                                    const mockImage = "https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop";
+                                    updateServiceField(service.name, 'images', [...service.images, mockImage]);
+                                 }}
+                               >
+                                  <Upload className="h-6 w-6 mb-1" />
+                                  <span className="text-[10px]">Upload</span>
+                               </div>
+                             )}
+                           </div>
+                           <div className="text-xs text-gray-500 mt-1">
+                              <p>Upload high-quality images representing this service. First image will be the main cover.</p>
+                              <p>Supported formats: JPG, PNG. Max size: 5MB.</p>
                            </div>
                         </div>
 
