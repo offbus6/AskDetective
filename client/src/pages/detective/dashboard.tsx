@@ -12,6 +12,10 @@ export default function DetectiveDashboard() {
   // Mock status: 'pending' | 'approved' | 'suspended'
   // In a real app, this would come from the backend/auth context
   const [accountStatus] = useState<'pending' | 'approved' | 'suspended'>('pending');
+  
+  // Mock profile completion percentage
+  // If 100%, the completion card will be hidden
+  const [completionPercentage] = useState(75);
 
   return (
     <DashboardLayout role="detective">
@@ -51,24 +55,26 @@ export default function DetectiveDashboard() {
           )}
         </div>
 
-        {/* Profile Completion */}
-        <Card className="bg-gray-900 text-white border-none">
-          <CardContent className="p-6 flex items-center justify-between">
-            <div className="space-y-2">
-              <h3 className="font-bold text-lg">Complete your profile</h3>
-              <p className="text-gray-400 text-sm">Add your certifications to reach 100% completion and get verified.</p>
-              <div className="w-64 pt-2">
-                 <div className="flex justify-between text-xs mb-1">
-                   <span>75% Complete</span>
-                 </div>
-                 <Progress value={75} className="h-2 bg-gray-700" /> 
+        {/* Profile Completion - Only show if not 100% complete */}
+        {completionPercentage < 100 && (
+          <Card className="bg-gray-900 text-white border-none">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="space-y-2">
+                <h3 className="font-bold text-lg">Complete your profile</h3>
+                <p className="text-gray-400 text-sm">Add your certifications to reach 100% completion and get verified.</p>
+                <div className="w-64 pt-2">
+                   <div className="flex justify-between text-xs mb-1">
+                     <span>{completionPercentage}% Complete</span>
+                   </div>
+                   <Progress value={completionPercentage} className="h-2 bg-gray-700" /> 
+                </div>
               </div>
-            </div>
-            <Link href="/detective/profile">
-              <Button className="bg-green-600 hover:bg-green-700 text-white">Update Profile</Button>
-            </Link>
-          </CardContent>
-        </Card>
+              <Link href="/detective/profile">
+                <Button className="bg-green-600 hover:bg-green-700 text-white">Update Profile</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats */}
         <div className="grid gap-6 md:grid-cols-3">
