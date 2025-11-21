@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { useState } from "react";
+import { motion } from "framer-motion";
 // @ts-ignore
 import heroBg from "@assets/generated_images/professional_modern_city_skyline_at_dusk_with_subtle_mystery_vibes.png";
 
@@ -38,13 +39,23 @@ export function Hero() {
 
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 flex flex-col items-start max-w-4xl">
-        <h1 className="text-4xl md:text-6xl font-bold font-heading mb-6 leading-tight">
+        <motion.h1 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-4xl md:text-6xl font-bold font-heading mb-6 leading-tight"
+        >
           Find the perfect <i className="font-serif font-light text-green-400">private detective</i><br />
           for your investigation.
-        </h1>
+        </motion.h1>
         
         {/* Search Bar */}
-        <div className="w-full bg-white rounded-md flex items-center p-1 pr-2 h-14 md:h-16 shadow-lg mb-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="w-full bg-white rounded-md flex items-center p-1 pr-2 h-14 md:h-16 shadow-lg mb-6"
+        >
           <div className="flex-1 h-full relative">
             <Search className="absolute ml-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 md:h-6 md:w-6" />
             <input 
@@ -62,10 +73,15 @@ export function Hero() {
           >
             Search
           </Button>
-        </div>
+        </motion.div>
 
         {/* Popular Tags */}
-        <div className="flex flex-wrap items-center gap-3 text-sm font-medium">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="flex flex-wrap items-center gap-3 text-sm font-medium"
+        >
           <span className="text-gray-300">Popular:</span>
           {["Background Checks", "Infidelity", "Surveillance", "Asset Search"].map((tag) => (
             <button 
@@ -76,7 +92,7 @@ export function Hero() {
               {tag}
             </button>
           ))}
-        </div>
+        </motion.div>
       </div>
     </div>
   );

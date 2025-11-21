@@ -66,11 +66,9 @@ export function Navbar() {
       <div className="container mx-auto px-6 md:px-12 lg:px-24 h-20 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-8">
-          <Link href="/">
-            <a className="text-2xl font-bold tracking-tight font-heading cursor-pointer flex items-center gap-1">
+          <Link href="/" className="text-2xl font-bold tracking-tight font-heading cursor-pointer flex items-center gap-1">
               Find<span className="text-green-500">Detectives</span>
               <span className="text-green-500 text-4xl leading-none">.</span>
-            </a>
           </Link>
 
           {/* Country Selector */}
@@ -129,15 +127,13 @@ export function Navbar() {
           {user ? (
             <>
               {/* Favorites Icon */}
-              <Link href="/user/favorites">
-                <a className={`relative hover:text-green-500 transition-colors ${isScrolled || location !== '/' ? "text-gray-600" : "text-white"}`}>
+              <Link href="/user/favorites" className={`relative hover:text-green-500 transition-colors ${isScrolled || location !== '/' ? "text-gray-600" : "text-white"}`}>
                   <Heart className={`h-6 w-6 ${favorites.length > 0 ? 'fill-red-500 text-red-500' : ''}`} />
                   {favorites.length > 0 && (
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
                       {favorites.length}
                     </span>
                   )}
-                </a>
               </Link>
 
               {/* User Menu */}
@@ -309,13 +305,11 @@ export function Navbar() {
                        </div>
                     </div>
                     
-                    <Link href="/user/favorites">
-                      <a className="text-lg font-medium flex items-center gap-2">
+                    <Link href="/user/favorites" className="text-lg font-medium flex items-center gap-2">
                         <Heart className="h-5 w-5 text-red-500" /> My Favorites
-                      </a>
                     </Link>
-                    <Link href="/user/dashboard">
-                      <a className="text-lg font-medium">Dashboard</a>
+                    <Link href="/user/dashboard" className="text-lg font-medium">
+                      Dashboard
                     </Link>
                     <button onClick={logout} className="text-lg font-medium text-left text-red-600">
                       Log Out
@@ -326,30 +320,22 @@ export function Navbar() {
                     {/* Mobile Login Dropdown */}
                     <div className="flex flex-col gap-2">
                       <span className="text-sm font-semibold text-gray-500">Login</span>
-                      <Link href="/login">
-                        <a className="text-lg font-medium pl-2 border-l-2 border-transparent hover:border-green-500 hover:text-green-600 transition-colors">
+                      <Link href="/login" className="text-lg font-medium pl-2 border-l-2 border-transparent hover:border-green-500 hover:text-green-600 transition-colors">
                           As a General User
-                        </a>
                       </Link>
-                      <Link href="/login">
-                        <a className="text-lg font-medium pl-2 border-l-2 border-transparent hover:border-green-500 hover:text-green-600 transition-colors">
+                      <Link href="/login" className="text-lg font-medium pl-2 border-l-2 border-transparent hover:border-green-500 hover:text-green-600 transition-colors">
                           As a Detective
-                        </a>
                       </Link>
                     </div>
 
                     {/* Mobile Sign Up Dropdown */}
                     <div className="flex flex-col gap-2 mt-2">
                       <span className="text-sm font-semibold text-gray-500">Sign Up</span>
-                      <Link href="/signup">
-                        <a className="text-lg font-medium pl-2 border-l-2 border-green-500 text-green-600 bg-green-50/50 py-1 rounded-r">
+                      <Link href="/signup" className="text-lg font-medium pl-2 border-l-2 border-green-500 text-green-600 bg-green-50/50 py-1 rounded-r">
                           As a General User
-                        </a>
                       </Link>
-                      <Link href="/detective-signup">
-                        <a className="text-lg font-medium pl-2 border-l-2 border-green-500 text-green-600 bg-green-50/50 py-1 rounded-r">
+                      <Link href="/detective-signup" className="text-lg font-medium pl-2 border-l-2 border-green-500 text-green-600 bg-green-50/50 py-1 rounded-r">
                           As a Detective
-                        </a>
                       </Link>
                     </div>
                   </div>
@@ -358,9 +344,9 @@ export function Navbar() {
                 <hr />
                 <div className="flex flex-col gap-2">
                   <h4 className="text-sm font-semibold text-gray-500">Browse Categories</h4>
-                  <Link href="/category/surveillance"><a className="text-base">Surveillance</a></Link>
-                  <Link href="/category/background-check"><a className="text-base">Background Checks</a></Link>
-                  <Link href="/category/cyber"><a className="text-base">Cyber Investigation</a></Link>
+                  <Link href="/category/surveillance" className="text-base">Surveillance</Link>
+                  <Link href="/category/background-check" className="text-base">Background Checks</Link>
+                  <Link href="/category/cyber" className="text-base">Cyber Investigation</Link>
                 </div>
               </div>
             </SheetContent>
