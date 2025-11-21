@@ -220,11 +220,11 @@ export default function DetectiveProfileEdit() {
         </div>
 
         <Tabs defaultValue="services" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="general">General Info</TabsTrigger>
+            <TabsTrigger value="recognitions">Recognitions</TabsTrigger>
             <TabsTrigger value="services">Services & Pricing</TabsTrigger>
             <TabsTrigger value="verification">Verification</TabsTrigger>
-            <TabsTrigger value="recognitions">Recognitions</TabsTrigger>
           </TabsList>
           
           {/* General Info Tab */}
