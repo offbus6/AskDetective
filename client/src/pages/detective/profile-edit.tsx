@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
@@ -69,6 +70,7 @@ interface Recognition {
 }
 
 export default function DetectiveProfileEdit() {
+  const { toast } = useToast();
   const [recognitions, setRecognitions] = useState<Recognition[]>([
     {
       id: '1',
@@ -211,6 +213,45 @@ export default function DetectiveProfileEdit() {
       }
       return s;
     }));
+  };
+
+  const validateAndSaveServices = () => {
+    // Check each service for required fields
+    for (const service of services) {
+      if (!service.title.trim()) {
+        toast({
+          title: "Missing Information",
+          description: `Please provide a title for the ${service.name} service.`,
+          variant: "destructive"
+        });
+        setOpenService(service.name);
+        return;
+      }
+      if (!service.description.trim()) {
+        toast({
+          title: "Missing Information",
+          description: `Please provide a description for the ${service.name} service.`,
+          variant: "destructive"
+        });
+        setOpenService(service.name);
+        return;
+      }
+      if (service.images.length === 0) {
+        toast({
+          title: "Missing Image",
+          description: `Please upload at least one image for the ${service.name} service.`,
+          variant: "destructive"
+        });
+        setOpenService(service.name);
+        return;
+      }
+    }
+
+    // If all valid
+    toast({
+      title: "Services Saved",
+      description: "Your services and pricing packages have been updated successfully.",
+    });
   };
 
   return (
@@ -584,7 +625,12 @@ export default function DetectiveProfileEdit() {
                 )}
 
                 <div className="pt-4">
-                   <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">Save Services</Button>
+                   <Button 
+                     className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                     onClick={validateAndSaveServices}
+                   >
+                     Save Services
+                   </Button>
                 </div>
               </CardContent>
             </Card>
