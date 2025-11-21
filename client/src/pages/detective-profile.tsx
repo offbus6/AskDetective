@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Star, MapPin, Check, Clock, RefreshCw, MessageSquare, Mail, Phone, MessageCircle, ShieldCheck } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useCurrency } from "@/lib/currency-context";
 
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,8 +20,8 @@ import maleAvatar from "@assets/generated_images/professional_headshot_of_a_priv
 interface PackageDetails {
   name: string;
   description: string;
-  price: string;
-  offerPrice: string;
+  price: number;
+  offerPrice: number | null;
   features: string[];
   enabled: boolean;
 }
@@ -29,24 +30,24 @@ const PACKAGES: { basic: PackageDetails, standard: PackageDetails, premium: Pack
   basic: {
     name: "Simple Check",
     description: "Basic criminal record check and address verification for one individual.",
-    price: "150",
-    offerPrice: "",
+    price: 150,
+    offerPrice: null,
     features: ["Background Check", "Report Included", "Confidentiality Guaranteed"],
     enabled: true
   },
   standard: {
     name: "Deep Dive",
     description: "Includes Basic + Social media analysis, employment verification, and asset search.",
-    price: "300",
-    offerPrice: "",
+    price: 300,
+    offerPrice: null,
     features: ["Background Check", "Report Included", "Confidentiality Guaranteed", "Social Media Analysis"],
     enabled: true
   },
   premium: {
     name: "Full Investigation",
     description: "Complete 360° profile including on-site verification if needed (local only) and detailed report.",
-    price: "800",
-    offerPrice: "",
+    price: 800,
+    offerPrice: null,
     features: ["Background Check", "Report Included", "Confidentiality Guaranteed", "Social Media Analysis", "On-site Verification"],
     enabled: true
   }
@@ -55,6 +56,7 @@ const PACKAGES: { basic: PackageDetails, standard: PackageDetails, premium: Pack
 export default function DetectiveProfile() {
   // Mock subscription tier for demo - change this to 'free' or 'agency' to test other views
   const detectiveTier = 'agency' as 'free' | 'pro' | 'agency';
+  const { formatPrice } = useCurrency();
   
   const [reviews, setReviews] = useState([
     { id: 1, user: "User_1", rating: 5, text: "Excellent work! Found exactly what I needed in record time. Highly recommended for anyone needing discreet information." },
@@ -311,11 +313,11 @@ export default function DetectiveProfile() {
                           <div className="text-right">
                             {PACKAGES.basic.offerPrice ? (
                               <>
-                                <span className="text-2xl font-bold text-green-600">${PACKAGES.basic.offerPrice}</span>
-                                <span className="text-sm text-gray-400 line-through ml-2">${PACKAGES.basic.price}</span>
+                                <span className="text-2xl font-bold text-green-600">{formatPrice(PACKAGES.basic.offerPrice)}</span>
+                                <span className="text-sm text-gray-400 line-through ml-2">{formatPrice(PACKAGES.basic.price)}</span>
                               </>
                             ) : (
-                              <span className="text-2xl font-bold text-gray-900">${PACKAGES.basic.price}</span>
+                              <span className="text-2xl font-bold text-gray-900">{formatPrice(PACKAGES.basic.price)}</span>
                             )}
                           </div>
                         </div>
@@ -330,11 +332,11 @@ export default function DetectiveProfile() {
                           <div className="text-right">
                             {PACKAGES.standard.offerPrice ? (
                               <>
-                                <span className="text-2xl font-bold text-green-600">${PACKAGES.standard.offerPrice}</span>
-                                <span className="text-sm text-gray-400 line-through ml-2">${PACKAGES.standard.price}</span>
+                                <span className="text-2xl font-bold text-green-600">{formatPrice(PACKAGES.standard.offerPrice)}</span>
+                                <span className="text-sm text-gray-400 line-through ml-2">{formatPrice(PACKAGES.standard.price)}</span>
                               </>
                             ) : (
-                              <span className="text-2xl font-bold text-gray-900">${PACKAGES.standard.price}</span>
+                              <span className="text-2xl font-bold text-gray-900">{formatPrice(PACKAGES.standard.price)}</span>
                             )}
                           </div>
                         </div>
@@ -349,11 +351,11 @@ export default function DetectiveProfile() {
                           <div className="text-right">
                             {PACKAGES.premium.offerPrice ? (
                               <>
-                                <span className="text-2xl font-bold text-green-600">${PACKAGES.premium.offerPrice}</span>
-                                <span className="text-sm text-gray-400 line-through ml-2">${PACKAGES.premium.price}</span>
+                                <span className="text-2xl font-bold text-green-600">{formatPrice(PACKAGES.premium.offerPrice)}</span>
+                                <span className="text-sm text-gray-400 line-through ml-2">{formatPrice(PACKAGES.premium.price)}</span>
                               </>
                             ) : (
-                              <span className="text-2xl font-bold text-gray-900">${PACKAGES.premium.price}</span>
+                              <span className="text-2xl font-bold text-gray-900">{formatPrice(PACKAGES.premium.price)}</span>
                             )}
                           </div>
                         </div>
