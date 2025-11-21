@@ -260,10 +260,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Search services (public)
   app.get("/api/services", async (req: Request, res: Response) => {
     try {
-      const { categoryId, country, search, minPrice, maxPrice, sortBy, limit = "50", offset = "0" } = req.query;
+      const { category, country, search, minPrice, maxPrice, sortBy, limit = "50", offset = "0" } = req.query;
 
       const services = await storage.searchServices({
-        categoryId: categoryId as string,
+        category: category as string,
         country: country as string,
         searchQuery: search as string,
         minPrice: minPrice ? parseFloat(minPrice as string) : undefined,
