@@ -175,6 +175,7 @@ const CATEGORIES = [
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { SEO } from "@/components/seo";
 
 export default function SearchPage() {
   const searchParams = new URLSearchParams(window.location.search);
@@ -293,6 +294,10 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-gray-900 bg-white">
+      <SEO 
+        title={`Search Results for "${query}" | FindDetectives`}
+        description={`Find the best private investigators for ${query}. Compare ratings, reviews, and prices from verified professionals.`}
+      />
       <Navbar />
       
       <main className="flex-1 pt-20">

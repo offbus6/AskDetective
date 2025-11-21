@@ -4,6 +4,7 @@ import { Hero } from "@/components/home/hero";
 import { ServiceCard } from "@/components/home/service-card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { SEO } from "@/components/seo";
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
@@ -288,6 +289,11 @@ const ASSET_SEARCH_SERVICES = [
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col font-sans text-gray-900">
+      <SEO 
+        title="FindDetectives - Hire Top Private Investigators" 
+        description="The leading marketplace for professional private investigation services. Find verified detectives for surveillance, background checks, and more."
+        keywords={["private investigator", "hire detective", "surveillance", "background checks", "infidelity investigation"]}
+      />
       <Navbar />
       
       <main className="flex-1">

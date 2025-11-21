@@ -114,6 +114,7 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
             <img 
               src={displayImages[currentImageIndex]} 
               alt={title} 
+              loading="lazy"
               className={`object-cover w-full h-full transition-transform duration-300 ${isUnclaimed ? 'grayscale' : ''}`}
             />
             

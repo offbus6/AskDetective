@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { SEO } from "@/components/seo";
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
@@ -204,6 +205,12 @@ export default function DetectiveProfile() {
   
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900">
+      <SEO 
+        title={`${profileData.title} by ${profileData.name}`}
+        description={profileData.description}
+        image={!isUnclaimed ? "https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop" : undefined}
+        type="profile"
+      />
       <Navbar />
       
       <main className="container mx-auto px-6 md:px-12 lg:px-24 py-8 mt-20">
