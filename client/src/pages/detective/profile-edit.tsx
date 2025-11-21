@@ -27,9 +27,14 @@ interface PackageDetails {
   features: string[];
 }
 
+import { Switch } from "@/components/ui/switch";
+
 interface Service {
   name: string;
-  description: string; // General service description
+  title: string;
+  description: string;
+  image: string | null;
+  hasThreeTiers: boolean;
   packages: {
     basic: PackageDetails;
     standard: PackageDetails;
@@ -49,7 +54,10 @@ export default function DetectiveProfileEdit() {
   const [services, setServices] = useState<Service[]>([
     { 
       name: "Surveillance", 
+      title: "I will conduct professional covert surveillance for your case",
       description: "Professional covert surveillance services for personal and corporate matters. We use state-of-the-art equipment to gather evidence discreetly.",
+      image: null,
+      hasThreeTiers: true,
       packages: {
         basic: { ...DEFAULT_PACKAGE, name: "Basic Watch", price: "150", offerPrice: "120", description: "4 hours of surveillance with basic report." },
         standard: { ...DEFAULT_PACKAGE, name: "Standard Day", price: "300", offerPrice: "", description: "8 hours of surveillance with video evidence." },
@@ -58,7 +66,10 @@ export default function DetectiveProfileEdit() {
     },
     { 
       name: "Background Checks", 
+      title: "I will perform a comprehensive background check on any individual",
       description: "Comprehensive background screening services. We verify identity, criminal history, employment, and more using reliable databases.",
+      image: null,
+      hasThreeTiers: true,
       packages: {
         basic: { ...DEFAULT_PACKAGE, name: "Simple Check", price: "100", offerPrice: "", description: "Identity and criminal record check." },
         standard: { ...DEFAULT_PACKAGE, name: "Deep Dive", price: "250", offerPrice: "200", description: "Includes financial and social media analysis." },
@@ -76,7 +87,10 @@ export default function DetectiveProfileEdit() {
     if (newService) {
       setServices([...services, { 
         name: newService, 
+        title: `I will provide ${newService} services`,
         description: "",
+        image: null,
+        hasThreeTiers: true,
         packages: {
           basic: { ...DEFAULT_PACKAGE, name: "Basic Package", price: "100", offerPrice: "" },
           standard: { ...DEFAULT_PACKAGE, name: "Standard Package", price: "200", offerPrice: "" },
@@ -92,8 +106,8 @@ export default function DetectiveProfileEdit() {
     setServices(services.filter(s => s.name !== name));
   };
 
-  const updateServiceDescription = (serviceName: string, desc: string) => {
-    setServices(services.map(s => s.name === serviceName ? { ...s, description: desc } : s));
+  const updateServiceField = (serviceName: string, field: keyof Service, value: any) => {
+    setServices(services.map(s => s.name === serviceName ? { ...s, [field]: value } : s));
   };
 
   const updatePackage = (serviceName: string, tier: PackageTier, field: keyof PackageDetails, value: string) => {
@@ -249,26 +263,73 @@ export default function DetectiveProfileEdit() {
                       </div>
                       
                       <CollapsibleContent className="p-4 space-y-6">
+                        {/* Service Title */}
+                        <div className="space-y-2">
+                           <Label>Service Title</Label>
+                           <Input 
+                              placeholder="e.g., I will conduct a comprehensive background check" 
+                              value={service.title}
+                              onChange={(e) => updateServiceField(service.name, 'title', e.target.value)}
+                           />
+                           <p className="text-xs text-gray-500">Use a catchy title starting with "I will..."</p>
+                        </div>
+
+                        {/* Service Image */}
+                        <div className="space-y-2">
+                           <Label>Service Image</Label>
+                           <div className="flex items-center gap-4">
+                             <div className="h-24 w-40 bg-gray-100 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400 overflow-hidden relative group cursor-pointer hover:border-green-500 hover:text-green-500 transition-colors">
+                                {service.image ? (
+                                  <img src={service.image} alt="Service" className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="flex flex-col items-center text-xs">
+                                    <Upload className="h-5 w-5 mb-1" />
+                                    <span>Upload Photo</span>
+                                  </div>
+                                )}
+                             </div>
+                             <div className="text-sm text-gray-500">
+                               <p>Upload a high-quality image representing this service.</p>
+                               <p className="text-xs mt-1">Supported formats: JPG, PNG. Max size: 5MB.</p>
+                             </div>
+                           </div>
+                        </div>
+
                         {/* General Service Description */}
                         <div className="space-y-2">
                            <Label>About This Service</Label>
                            <Textarea 
                               placeholder="Describe what you offer in this service generally..." 
                               value={service.description}
-                              onChange={(e) => updateServiceDescription(service.name, e.target.value)}
+                              onChange={(e) => updateServiceField(service.name, 'description', e.target.value)}
                               className="h-24"
                            />
                            <p className="text-xs text-gray-500">This text appears at the top of your service page.</p>
                         </div>
 
+                        {/* Package Toggle */}
+                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-md border border-gray-200">
+                          <div className="space-y-0.5">
+                            <Label className="text-base">Three-Tier Packages</Label>
+                            <p className="text-xs text-gray-500">Enable Standard and Premium packages for this service</p>
+                          </div>
+                          <Switch 
+                            checked={service.hasThreeTiers}
+                            onCheckedChange={(checked) => updateServiceField(service.name, 'hasThreeTiers', checked)}
+                          />
+                        </div>
+
                         {/* Packages Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                           {(['basic', 'standard', 'premium'] as PackageTier[]).map((tier) => (
-                              <div key={tier} className={`border rounded-md p-3 space-y-3 ${
-                                 tier === 'basic' ? 'bg-gray-50/50 border-gray-200' : 
-                                 tier === 'standard' ? 'bg-blue-50/30 border-blue-100' : 
-                                 'bg-green-50/30 border-green-100'
-                              }`}>
+                        <div className={`grid grid-cols-1 ${service.hasThreeTiers ? 'md:grid-cols-3' : 'md:grid-cols-1'} gap-4`}>
+                           {(['basic', 'standard', 'premium'] as PackageTier[]).map((tier) => {
+                              if (!service.hasThreeTiers && tier !== 'basic') return null;
+                              
+                              return (
+                                <div key={tier} className={`border rounded-md p-3 space-y-3 ${
+                                   tier === 'basic' ? 'bg-gray-50/50 border-gray-200' : 
+                                   tier === 'standard' ? 'bg-blue-50/30 border-blue-100' : 
+                                   'bg-green-50/30 border-green-100'
+                                }`}>
                                  <div className="font-bold uppercase text-xs tracking-wider text-center pb-2 border-b mb-2">
                                     {tier} Package
                                  </div>
@@ -313,7 +374,8 @@ export default function DetectiveProfileEdit() {
                                     </div>
                                  </div>
                               </div>
-                           ))}
+                           );
+                           })}
                         </div>
                       </CollapsibleContent>
                     </Collapsible>

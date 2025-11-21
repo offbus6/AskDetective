@@ -12,6 +12,7 @@ import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch"; // Added for demo control
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
@@ -51,6 +52,9 @@ const PACKAGES: { basic: PackageDetails, standard: PackageDetails, premium: Pack
 export default function DetectiveProfile() {
   // Mock subscription tier for demo - change this to 'free' or 'agency' to test other views
   const detectiveTier = 'agency' as 'free' | 'pro' | 'agency';
+  
+  // Mock state for package visibility (simulation of the toggle added in edit profile)
+  const [hasThreeTiers, setHasThreeTiers] = useState(true);
 
   const [reviews, setReviews] = useState([
     { id: 1, user: "User_1", rating: 5, text: "Excellent work! Found exactly what I needed in record time. Highly recommended for anyone needing discreet information." },
@@ -284,14 +288,30 @@ export default function DetectiveProfile() {
 
           {/* Right Column - Sticky Sidebar */}
           <div className="lg:w-[380px] flex-shrink-0">
+            {/* Demo Control - Not visible in prod */}
+            <div className="mb-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs flex items-center justify-between">
+              <span className="font-bold text-yellow-800">Demo: Toggle Package Mode</span>
+              <div className="flex items-center gap-2">
+                 <span>Single Pkg</span>
+                 <Switch checked={hasThreeTiers} onCheckedChange={setHasThreeTiers} />
+                 <span>3 Pkgs</span>
+              </div>
+            </div>
+
             <div className="sticky top-24">
               <Card className="border-gray-200 shadow-lg overflow-hidden">
-                <Tabs defaultValue="standard" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3 h-14 rounded-none bg-gray-50 border-b border-gray-200 p-0">
-                    <TabsTrigger value="basic" className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-green-500 data-[state=active]:text-green-600 font-bold text-gray-500 bg-transparent shadow-none">Basic</TabsTrigger>
-                    <TabsTrigger value="standard" className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-green-500 data-[state=active]:text-green-600 font-bold text-gray-500 bg-transparent shadow-none">Standard</TabsTrigger>
-                    <TabsTrigger value="premium" className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-green-500 data-[state=active]:text-green-600 font-bold text-gray-500 bg-transparent shadow-none">Premium</TabsTrigger>
-                  </TabsList>
+                <Tabs defaultValue="basic" className="w-full">
+                  {hasThreeTiers ? (
+                    <TabsList className="grid w-full grid-cols-3 h-14 rounded-none bg-gray-50 border-b border-gray-200 p-0">
+                      <TabsTrigger value="basic" className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-green-500 data-[state=active]:text-green-600 font-bold text-gray-500 bg-transparent shadow-none">Basic</TabsTrigger>
+                      <TabsTrigger value="standard" className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-green-500 data-[state=active]:text-green-600 font-bold text-gray-500 bg-transparent shadow-none">Standard</TabsTrigger>
+                      <TabsTrigger value="premium" className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-green-500 data-[state=active]:text-green-600 font-bold text-gray-500 bg-transparent shadow-none">Premium</TabsTrigger>
+                    </TabsList>
+                  ) : (
+                    <div className="h-14 bg-gray-50 border-b border-gray-200 flex items-center justify-center font-bold text-gray-700">
+                      Service Package
+                    </div>
+                  )}
                   
                   <div className="p-6">
                     <TabsContent value="basic" className="mt-0 space-y-4">
@@ -311,39 +331,43 @@ export default function DetectiveProfile() {
                       <p className="text-sm text-gray-600">{PACKAGES.basic.description}</p>
                     </TabsContent>
                     
-                    <TabsContent value="standard" className="mt-0 space-y-4">
-                      <div className="flex justify-between items-baseline">
-                        <h3 className="font-bold text-lg">{PACKAGES.standard.name}</h3>
-                        <div className="text-right">
-                          {PACKAGES.standard.offerPrice ? (
-                            <>
-                              <span className="text-2xl font-bold text-green-600">${PACKAGES.standard.offerPrice}</span>
-                              <span className="text-sm text-gray-400 line-through ml-2">${PACKAGES.standard.price}</span>
-                            </>
-                          ) : (
-                            <span className="text-2xl font-bold text-gray-900">${PACKAGES.standard.price}</span>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-600">{PACKAGES.standard.description}</p>
-                    </TabsContent>
-                    
-                    <TabsContent value="premium" className="mt-0 space-y-4">
-                      <div className="flex justify-between items-baseline">
-                        <h3 className="font-bold text-lg">{PACKAGES.premium.name}</h3>
-                        <div className="text-right">
-                          {PACKAGES.premium.offerPrice ? (
-                            <>
-                              <span className="text-2xl font-bold text-green-600">${PACKAGES.premium.offerPrice}</span>
-                              <span className="text-sm text-gray-400 line-through ml-2">${PACKAGES.premium.price}</span>
-                            </>
-                          ) : (
-                            <span className="text-2xl font-bold text-gray-900">${PACKAGES.premium.price}</span>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-600">{PACKAGES.premium.description}</p>
-                    </TabsContent>
+                    {hasThreeTiers && (
+                      <>
+                        <TabsContent value="standard" className="mt-0 space-y-4">
+                          <div className="flex justify-between items-baseline">
+                            <h3 className="font-bold text-lg">{PACKAGES.standard.name}</h3>
+                            <div className="text-right">
+                              {PACKAGES.standard.offerPrice ? (
+                                <>
+                                  <span className="text-2xl font-bold text-green-600">${PACKAGES.standard.offerPrice}</span>
+                                  <span className="text-sm text-gray-400 line-through ml-2">${PACKAGES.standard.price}</span>
+                                </>
+                              ) : (
+                                <span className="text-2xl font-bold text-gray-900">${PACKAGES.standard.price}</span>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600">{PACKAGES.standard.description}</p>
+                        </TabsContent>
+                        
+                        <TabsContent value="premium" className="mt-0 space-y-4">
+                          <div className="flex justify-between items-baseline">
+                            <h3 className="font-bold text-lg">{PACKAGES.premium.name}</h3>
+                            <div className="text-right">
+                              {PACKAGES.premium.offerPrice ? (
+                                <>
+                                  <span className="text-2xl font-bold text-green-600">${PACKAGES.premium.offerPrice}</span>
+                                  <span className="text-sm text-gray-400 line-through ml-2">${PACKAGES.premium.price}</span>
+                                </>
+                              ) : (
+                                <span className="text-2xl font-bold text-gray-900">${PACKAGES.premium.price}</span>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600">{PACKAGES.premium.description}</p>
+                        </TabsContent>
+                      </>
+                    )}
 
                     {/* Removed Delivery/Revisions as per user request */}
 
