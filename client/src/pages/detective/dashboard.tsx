@@ -2,6 +2,7 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Star, Eye, MousePointer, DollarSign } from "lucide-react";
 
@@ -33,7 +34,9 @@ export default function DetectiveDashboard() {
                  <Progress value={75} className="h-2 bg-gray-700" /> 
               </div>
             </div>
-            <Button className="bg-green-600 hover:bg-green-700 text-white">Update Profile</Button>
+            <Link href="/detective/profile">
+              <Button className="bg-green-600 hover:bg-green-700 text-white">Update Profile</Button>
+            </Link>
           </CardContent>
         </Card>
 

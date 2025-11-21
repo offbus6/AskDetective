@@ -18,6 +18,7 @@ import DetectiveDashboard from "@/pages/detective/dashboard";
 import DetectiveProfileEdit from "@/pages/detective/profile-edit";
 import DetectiveOrders from "@/pages/detective/orders";
 import DetectiveSubscription from "@/pages/detective/subscription";
+import DetectiveSettings from "@/pages/detective/settings";
 
 function Router() {
   return (
@@ -43,7 +44,7 @@ function Router() {
       <Route path="/detective/profile" component={DetectiveProfileEdit} />
       <Route path="/detective/orders" component={DetectiveOrders} />
       <Route path="/detective/subscription" component={DetectiveSubscription} />
-      <Route path="/detective/settings" component={DetectiveDashboard} /> {/* Placeholder reused */}
+      <Route path="/detective/settings" component={DetectiveSettings} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
