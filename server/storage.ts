@@ -1,38 +1,552 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { db } from "../db";
+import { 
+  users, detectives, services, servicePackages, reviews, orders, favorites, 
+  detectiveApplications, profileClaims, billingHistory,
+  type User, type InsertUser,
+  type Detective, type InsertDetective,
+  type Service, type InsertService,
+  type Review, type InsertReview,
+  type Order, type InsertOrder,
+  type Favorite, type InsertFavorite,
+  type DetectiveApplication, type InsertDetectiveApplication,
+  type ProfileClaim, type InsertProfileClaim,
+  type BillingHistory
+} from "@shared/schema";
+import { eq, and, desc, sql, count, avg, or, ilike, inArray } from "drizzle-orm";
+import bcrypt from "bcrypt";
 
-// modify the interface with any CRUD methods
-// you might need
+const SALT_ROUNDS = 10;
 
 export interface IStorage {
+  // User operations
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
+
+  // Detective operations
+  getDetective(id: string): Promise<Detective | undefined>;
+  getDetectiveByUserId(userId: string): Promise<Detective | undefined>;
+  createDetective(detective: InsertDetective): Promise<Detective>;
+  updateDetective(id: string, updates: Partial<Detective>): Promise<Detective | undefined>;
+  getAllDetectives(limit?: number, offset?: number): Promise<Detective[]>;
+  searchDetectives(filters: {
+    country?: string;
+    status?: string;
+    plan?: string;
+    searchQuery?: string;
+  }, limit?: number, offset?: number): Promise<Detective[]>;
+
+  // Service operations
+  getService(id: string): Promise<Service | undefined>;
+  getServicesByDetective(detectiveId: string): Promise<Service[]>;
+  createService(service: InsertService): Promise<Service>;
+  updateService(id: string, updates: Partial<Service>): Promise<Service | undefined>;
+  deleteService(id: string): Promise<boolean>;
+  searchServices(filters: {
+    category?: string;
+    country?: string;
+    searchQuery?: string;
+    minPrice?: number;
+    maxPrice?: number;
+  }, limit?: number, offset?: number, sortBy?: string): Promise<Array<Service & { detective: Detective, avgRating: number, reviewCount: number }>>;
+  incrementServiceViews(id: string): Promise<void>;
+
+  // Review operations
+  getReview(id: string): Promise<Review | undefined>;
+  getReviewsByService(serviceId: string, limit?: number): Promise<Review[]>;
+  getReviewsByDetective(detectiveId: string, limit?: number): Promise<Review[]>;
+  createReview(review: InsertReview): Promise<Review>;
+  updateReview(id: string, updates: Partial<Review>): Promise<Review | undefined>;
+  deleteReview(id: string): Promise<boolean>;
+  getServiceStats(serviceId: string): Promise<{ avgRating: number, reviewCount: number }>;
+
+  // Order operations
+  getOrder(id: string): Promise<Order | undefined>;
+  getOrdersByUser(userId: string, limit?: number): Promise<Order[]>;
+  getOrdersByDetective(detectiveId: string, limit?: number): Promise<Order[]>;
+  createOrder(order: InsertOrder): Promise<Order>;
+  updateOrder(id: string, updates: Partial<Order>): Promise<Order | undefined>;
+  deleteOrder(id: string): Promise<boolean>;
+
+  // Favorite operations
+  getFavoritesByUser(userId: string): Promise<Array<Favorite & { service: Service }>>;
+  addFavorite(favorite: InsertFavorite): Promise<Favorite>;
+  removeFavorite(userId: string, serviceId: string): Promise<boolean>;
+  isFavorite(userId: string, serviceId: string): Promise<boolean>;
+
+  // Detective Application operations
+  getDetectiveApplication(id: string): Promise<DetectiveApplication | undefined>;
+  getAllDetectiveApplications(status?: string, limit?: number): Promise<DetectiveApplication[]>;
+  createDetectiveApplication(application: InsertDetectiveApplication): Promise<DetectiveApplication>;
+  updateDetectiveApplication(id: string, updates: Partial<DetectiveApplication>): Promise<DetectiveApplication | undefined>;
+
+  // Profile Claim operations
+  getProfileClaim(id: string): Promise<ProfileClaim | undefined>;
+  getAllProfileClaims(status?: string, limit?: number): Promise<ProfileClaim[]>;
+  createProfileClaim(claim: InsertProfileClaim): Promise<ProfileClaim>;
+  updateProfileClaim(id: string, updates: Partial<ProfileClaim>): Promise<ProfileClaim | undefined>;
+
+  // Billing operations
+  getBillingHistory(detectiveId: string, limit?: number): Promise<BillingHistory[]>;
+  createBillingRecord(record: Omit<BillingHistory, 'id' | 'createdAt'>): Promise<BillingHistory>;
+
+  // Analytics
+  getDetectiveStats(detectiveId: string): Promise<{
+    totalOrders: number;
+    totalEarnings: string;
+    avgRating: number;
+    reviewCount: number;
+  }>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
+  // User operations
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return user;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const hashedPassword = await bcrypt.hash(insertUser.password, SALT_ROUNDS);
+    const [user] = await db.insert(users).values({
+      ...insertUser,
+      password: hashedPassword,
+    }).returning();
     return user;
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    const [user] = await db.update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  // Detective operations
+  async getDetective(id: string): Promise<Detective | undefined> {
+    const [detective] = await db.select().from(detectives).where(eq(detectives.id, id)).limit(1);
+    return detective;
+  }
+
+  async getDetectiveByUserId(userId: string): Promise<Detective | undefined> {
+    const [detective] = await db.select().from(detectives).where(eq(detectives.userId, userId)).limit(1);
+    return detective;
+  }
+
+  async createDetective(insertDetective: InsertDetective): Promise<Detective> {
+    const [detective] = await db.insert(detectives).values(insertDetective).returning();
+    return detective;
+  }
+
+  async updateDetective(id: string, updates: Partial<Detective>): Promise<Detective | undefined> {
+    const [detective] = await db.update(detectives)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(detectives.id, id))
+      .returning();
+    return detective;
+  }
+
+  async getAllDetectives(limit: number = 50, offset: number = 0): Promise<Detective[]> {
+    return await db.select()
+      .from(detectives)
+      .orderBy(desc(detectives.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async searchDetectives(filters: {
+    country?: string;
+    status?: string;
+    plan?: string;
+    searchQuery?: string;
+  }, limit: number = 50, offset: number = 0): Promise<Detective[]> {
+    let query = db.select().from(detectives);
+
+    const conditions = [];
+    if (filters.country) conditions.push(eq(detectives.country, filters.country));
+    if (filters.status) conditions.push(eq(detectives.status, filters.status as any));
+    if (filters.plan) conditions.push(eq(detectives.subscriptionPlan, filters.plan as any));
+    if (filters.searchQuery) {
+      conditions.push(
+        or(
+          ilike(detectives.businessName, `%${filters.searchQuery}%`),
+          ilike(detectives.bio, `%${filters.searchQuery}%`)
+        )
+      );
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+
+    return await query.orderBy(desc(detectives.createdAt)).limit(limit).offset(offset);
+  }
+
+  // Service operations
+  async getService(id: string): Promise<Service | undefined> {
+    const [service] = await db.select().from(services).where(eq(services.id, id)).limit(1);
+    return service;
+  }
+
+  async getServicesByDetective(detectiveId: string): Promise<Service[]> {
+    return await db.select()
+      .from(services)
+      .where(eq(services.detectiveId, detectiveId))
+      .orderBy(desc(services.createdAt));
+  }
+
+  async createService(insertService: InsertService): Promise<Service> {
+    const [service] = await db.insert(services).values(insertService).returning();
+    return service;
+  }
+
+  async updateService(id: string, updates: Partial<Service>): Promise<Service | undefined> {
+    const [service] = await db.update(services)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(services.id, id))
+      .returning();
+    return service;
+  }
+
+  async deleteService(id: string): Promise<boolean> {
+    const result = await db.delete(services).where(eq(services.id, id));
+    return result.rowCount! > 0;
+  }
+
+  async searchServices(filters: {
+    category?: string;
+    country?: string;
+    searchQuery?: string;
+    minPrice?: number;
+    maxPrice?: number;
+  }, limit: number = 50, offset: number = 0, sortBy: string = 'recent'): Promise<Array<Service & { detective: Detective, avgRating: number, reviewCount: number }>> {
+    
+    const conditions = [eq(services.isActive, true)];
+    
+    if (filters.category) {
+      conditions.push(ilike(services.category, `%${filters.category}%`));
+    }
+    
+    if (filters.searchQuery) {
+      conditions.push(
+        or(
+          ilike(services.title, `%${filters.searchQuery}%`),
+          ilike(services.description, `%${filters.searchQuery}%`),
+          ilike(services.category, `%${filters.searchQuery}%`)
+        )
+      );
+    }
+
+    let query = db.select({
+      service: services,
+      detective: detectives,
+      avgRating: sql<number>`COALESCE(AVG(${reviews.rating}), 0)`.as('avg_rating'),
+      reviewCount: count(reviews.id).as('review_count'),
+    })
+    .from(services)
+    .leftJoin(detectives, eq(services.detectiveId, detectives.id))
+    .leftJoin(reviews, and(eq(reviews.serviceId, services.id), eq(reviews.isPublished, true)))
+    .where(and(...conditions))
+    .groupBy(services.id, detectives.id);
+
+    if (filters.country) {
+      query = query.having(eq(detectives.country, filters.country)) as any;
+    }
+
+    // Sort
+    if (sortBy === 'popular') {
+      query = query.orderBy(desc(sql`${services.orderCount}`)) as any;
+    } else if (sortBy === 'rating') {
+      query = query.orderBy(desc(sql`avg_rating`)) as any;
+    } else {
+      query = query.orderBy(desc(services.createdAt)) as any;
+    }
+
+    const results = await query.limit(limit).offset(offset);
+    
+    return results.map(r => ({
+      ...r.service,
+      detective: r.detective!,
+      avgRating: Number(r.avgRating),
+      reviewCount: Number(r.reviewCount)
+    }));
+  }
+
+  async incrementServiceViews(id: string): Promise<void> {
+    await db.update(services)
+      .set({ viewCount: sql`${services.viewCount} + 1` })
+      .where(eq(services.id, id));
+  }
+
+  // Review operations
+  async getReview(id: string): Promise<Review | undefined> {
+    const [review] = await db.select().from(reviews).where(eq(reviews.id, id)).limit(1);
+    return review;
+  }
+
+  async getReviewsByService(serviceId: string, limit: number = 50): Promise<Review[]> {
+    return await db.select()
+      .from(reviews)
+      .where(and(eq(reviews.serviceId, serviceId), eq(reviews.isPublished, true)))
+      .orderBy(desc(reviews.createdAt))
+      .limit(limit);
+  }
+
+  async getReviewsByDetective(detectiveId: string, limit: number = 50): Promise<Review[]> {
+    return await db.select({
+      review: reviews,
+    })
+    .from(reviews)
+    .leftJoin(services, eq(reviews.serviceId, services.id))
+    .where(and(eq(services.detectiveId, detectiveId), eq(reviews.isPublished, true)))
+    .orderBy(desc(reviews.createdAt))
+    .limit(limit)
+    .then(results => results.map(r => r.review));
+  }
+
+  async createReview(insertReview: InsertReview): Promise<Review> {
+    const [review] = await db.insert(reviews).values(insertReview).returning();
+    return review;
+  }
+
+  async updateReview(id: string, updates: Partial<Review>): Promise<Review | undefined> {
+    const [review] = await db.update(reviews)
+      .set(updates)
+      .where(eq(reviews.id, id))
+      .returning();
+    return review;
+  }
+
+  async deleteReview(id: string): Promise<boolean> {
+    const result = await db.delete(reviews).where(eq(reviews.id, id));
+    return result.rowCount! > 0;
+  }
+
+  async getServiceStats(serviceId: string): Promise<{ avgRating: number, reviewCount: number }> {
+    const [stats] = await db.select({
+      avgRating: avg(reviews.rating),
+      reviewCount: count(reviews.id),
+    })
+    .from(reviews)
+    .where(and(eq(reviews.serviceId, serviceId), eq(reviews.isPublished, true)));
+
+    return {
+      avgRating: Number(stats.avgRating) || 0,
+      reviewCount: Number(stats.reviewCount) || 0,
+    };
+  }
+
+  // Order operations
+  async getOrder(id: string): Promise<Order | undefined> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
+    return order;
+  }
+
+  async getOrdersByUser(userId: string, limit: number = 50): Promise<Order[]> {
+    return await db.select()
+      .from(orders)
+      .where(eq(orders.userId, userId))
+      .orderBy(desc(orders.createdAt))
+      .limit(limit);
+  }
+
+  async getOrdersByDetective(detectiveId: string, limit: number = 50): Promise<Order[]> {
+    return await db.select()
+      .from(orders)
+      .where(eq(orders.detectiveId, detectiveId))
+      .orderBy(desc(orders.createdAt))
+      .limit(limit);
+  }
+
+  async createOrder(insertOrder: InsertOrder): Promise<Order> {
+    const orderNumber = `ORD-${Date.now()}`;
+    const [order] = await db.insert(orders).values({
+      ...insertOrder,
+      orderNumber,
+    }).returning();
+    return order;
+  }
+
+  async updateOrder(id: string, updates: Partial<Order>): Promise<Order | undefined> {
+    const [order] = await db.update(orders)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(orders.id, id))
+      .returning();
+    return order;
+  }
+
+  async deleteOrder(id: string): Promise<boolean> {
+    const result = await db.delete(orders).where(eq(orders.id, id));
+    return result.rowCount! > 0;
+  }
+
+  // Favorite operations
+  async getFavoritesByUser(userId: string): Promise<Array<Favorite & { service: Service }>> {
+    const results = await db.select({
+      favorite: favorites,
+      service: services,
+    })
+    .from(favorites)
+    .leftJoin(services, eq(favorites.serviceId, services.id))
+    .where(eq(favorites.userId, userId))
+    .orderBy(desc(favorites.createdAt));
+
+    return results.map(r => ({ ...r.favorite, service: r.service! }));
+  }
+
+  async addFavorite(insertFavorite: InsertFavorite): Promise<Favorite> {
+    const [favorite] = await db.insert(favorites).values(insertFavorite).returning();
+    return favorite;
+  }
+
+  async removeFavorite(userId: string, serviceId: string): Promise<boolean> {
+    const result = await db.delete(favorites)
+      .where(and(eq(favorites.userId, userId), eq(favorites.serviceId, serviceId)));
+    return result.rowCount! > 0;
+  }
+
+  async isFavorite(userId: string, serviceId: string): Promise<boolean> {
+    const [favorite] = await db.select()
+      .from(favorites)
+      .where(and(eq(favorites.userId, userId), eq(favorites.serviceId, serviceId)))
+      .limit(1);
+    return !!favorite;
+  }
+
+  // Detective Application operations
+  async getDetectiveApplication(id: string): Promise<DetectiveApplication | undefined> {
+    const [application] = await db.select()
+      .from(detectiveApplications)
+      .where(eq(detectiveApplications.id, id))
+      .limit(1);
+    return application;
+  }
+
+  async getAllDetectiveApplications(status?: string, limit: number = 50): Promise<DetectiveApplication[]> {
+    let query = db.select().from(detectiveApplications);
+    
+    if (status) {
+      query = query.where(eq(detectiveApplications.status, status as any)) as any;
+    }
+
+    return await query.orderBy(desc(detectiveApplications.createdAt)).limit(limit);
+  }
+
+  async createDetectiveApplication(application: InsertDetectiveApplication): Promise<DetectiveApplication> {
+    const [newApplication] = await db.insert(detectiveApplications)
+      .values(application)
+      .returning();
+    return newApplication;
+  }
+
+  async updateDetectiveApplication(id: string, updates: Partial<DetectiveApplication>): Promise<DetectiveApplication | undefined> {
+    const [application] = await db.update(detectiveApplications)
+      .set(updates)
+      .where(eq(detectiveApplications.id, id))
+      .returning();
+    return application;
+  }
+
+  // Profile Claim operations
+  async getProfileClaim(id: string): Promise<ProfileClaim | undefined> {
+    const [claim] = await db.select()
+      .from(profileClaims)
+      .where(eq(profileClaims.id, id))
+      .limit(1);
+    return claim;
+  }
+
+  async getAllProfileClaims(status?: string, limit: number = 50): Promise<ProfileClaim[]> {
+    let query = db.select().from(profileClaims);
+    
+    if (status) {
+      query = query.where(eq(profileClaims.status, status as any)) as any;
+    }
+
+    return await query.orderBy(desc(profileClaims.createdAt)).limit(limit);
+  }
+
+  async createProfileClaim(claim: InsertProfileClaim): Promise<ProfileClaim> {
+    const [newClaim] = await db.insert(profileClaims)
+      .values(claim)
+      .returning();
+    return newClaim;
+  }
+
+  async updateProfileClaim(id: string, updates: Partial<ProfileClaim>): Promise<ProfileClaim | undefined> {
+    const [claim] = await db.update(profileClaims)
+      .set(updates)
+      .where(eq(profileClaims.id, id))
+      .returning();
+    return claim;
+  }
+
+  // Billing operations
+  async getBillingHistory(detectiveId: string, limit: number = 50): Promise<BillingHistory[]> {
+    return await db.select()
+      .from(billingHistory)
+      .where(eq(billingHistory.detectiveId, detectiveId))
+      .orderBy(desc(billingHistory.createdAt))
+      .limit(limit);
+  }
+
+  async createBillingRecord(record: Omit<BillingHistory, 'id' | 'createdAt'>): Promise<BillingHistory> {
+    const [billing] = await db.insert(billingHistory)
+      .values(record as any)
+      .returning();
+    return billing;
+  }
+
+  // Analytics
+  async getDetectiveStats(detectiveId: string): Promise<{
+    totalOrders: number;
+    totalEarnings: string;
+    avgRating: number;
+    reviewCount: number;
+  }> {
+    const [orderStats] = await db.select({
+      totalOrders: count(orders.id),
+      totalEarnings: sql<string>`COALESCE(SUM(${orders.amount}), 0)`,
+    })
+    .from(orders)
+    .where(eq(orders.detectiveId, detectiveId));
+
+    const serviceIds = await db.select({ id: services.id })
+      .from(services)
+      .where(eq(services.detectiveId, detectiveId));
+
+    let avgRating = 0;
+    let reviewCount = 0;
+
+    if (serviceIds.length > 0) {
+      const [reviewStats] = await db.select({
+        avgRating: avg(reviews.rating),
+        reviewCount: count(reviews.id),
+      })
+      .from(reviews)
+      .where(and(
+        inArray(reviews.serviceId, serviceIds.map(s => s.id)),
+        eq(reviews.isPublished, true)
+      ));
+
+      avgRating = Number(reviewStats.avgRating) || 0;
+      reviewCount = Number(reviewStats.reviewCount) || 0;
+    }
+
+    return {
+      totalOrders: Number(orderStats.totalOrders) || 0,
+      totalEarnings: orderStats.totalEarnings || "0",
+      avgRating,
+      reviewCount,
+    };
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
