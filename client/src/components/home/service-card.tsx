@@ -13,13 +13,15 @@ interface ServiceCardProps {
   avatar: string;
   name: string;
   level: string;
+  category?: string;
+  badges?: string[];
   title: string;
   rating: number;
   reviews: number;
   price: number;
 }
 
-export function ServiceCard({ id, images, image, avatar, name, level, title, rating, reviews, price }: ServiceCardProps) {
+export function ServiceCard({ id, images, image, avatar, name, level, category, badges = [], title, rating, reviews, price }: ServiceCardProps) {
   const displayImages = images || (image ? [image] : []);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -89,48 +91,40 @@ export function ServiceCard({ id, images, image, avatar, name, level, title, rat
                 <AvatarFallback>{name[0]}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col overflow-hidden">
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
                   <span className="text-sm font-bold text-gray-900 hover:underline truncate">{name}</span>
                   
-                  <TooltipProvider>
-                    {/* Agency Verified Badge */}
-                    {level === "Agency Verified" && (
-                      <Tooltip>
-                        <TooltipTrigger>
-                           <ShieldCheck className="h-4 w-4 text-blue-500 fill-blue-50 flex-shrink-0" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Agency Verified</p>
-                        </TooltipContent>
-                      </Tooltip>
+                  {/* Badges */}
+                  <div className="flex items-center gap-1">
+                    {badges.includes('verified') && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            {/* Twitter/Facebook Style Blue Tick */}
+                            <BadgeCheck className="h-4 w-4 text-blue-500 fill-blue-500 text-white flex-shrink-0" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Verified Detective</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
 
-                    {/* Pro Detective Badge */}
-                    {level === "Pro Detective" && (
-                      <Tooltip>
-                        <TooltipTrigger>
-                           <BadgeCheck className="h-4 w-4 text-green-600 fill-green-50 flex-shrink-0" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Pro Detective</p>
-                        </TooltipContent>
-                      </Tooltip>
+                    {badges.includes('recommended') && (
+                      <span className="bg-green-100 text-green-800 text-[10px] px-1.5 py-0.5 rounded font-bold">
+                        Recommended
+                      </span>
                     )}
 
-                    {/* Top Rated Badge (Legacy support) */}
-                    {level === "Top Rated Detective" && (
-                      <Tooltip>
-                        <TooltipTrigger>
-                           <Award className="h-4 w-4 text-amber-500 fill-amber-50 flex-shrink-0" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Top Rated</p>
-                        </TooltipContent>
-                      </Tooltip>
+                    {badges.includes('pro') && (
+                      <span className="text-blue-600 text-[10px] font-black border border-blue-200 px-1 rounded bg-blue-50">
+                        PRO
+                      </span>
                     )}
-                  </TooltipProvider>
+                  </div>
                 </div>
-                <span className="text-xs text-gray-500 truncate">{level}</span>
+                {/* Service Category under name */}
+                <span className="text-xs text-gray-500 truncate">{category || level}</span>
               </div>
             </div>
 
