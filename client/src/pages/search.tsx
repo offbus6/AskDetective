@@ -26,7 +26,11 @@ import femaleAvatar from "@assets/generated_images/professional_headshot_of_a_pr
 const RESULTS = [
   {
     id: "1",
-    image: "https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop",
+    images: [
+      "https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1595852879736-2247b25533c8?q=80&w=1000&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1605152276897-4f618f831968?q=80&w=1000&auto=format&fit=crop"
+    ],
     avatar: maleAvatar,
     name: "James Bond",
     level: "Top Rated Detective",
@@ -37,7 +41,11 @@ const RESULTS = [
   },
   {
     id: "2",
-    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1000&auto=format&fit=crop",
+    images: [
+      "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1000&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1000&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1000&auto=format&fit=crop"
+    ],
     avatar: femaleAvatar,
     name: "Sarah Holmes",
     level: "Level 2 Detective",
@@ -48,7 +56,11 @@ const RESULTS = [
   },
   {
     id: "3",
-    image: "https://images.unsplash.com/photo-1563206767-5b1d972d9fb7?q=80&w=1000&auto=format&fit=crop",
+    images: [
+      "https://images.unsplash.com/photo-1563206767-5b1d972d9fb7?q=80&w=1000&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1553531384-cc64ac80f931?q=80&w=1000&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=1000&auto=format&fit=crop"
+    ],
     avatar: maleAvatar,
     name: "Mike Hammer",
     level: "Level 2 Detective",
@@ -59,7 +71,11 @@ const RESULTS = [
   },
   {
     id: "4",
-    image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop",
+    images: [
+      "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?q=80&w=1000&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?q=80&w=1000&auto=format&fit=crop"
+    ],
     avatar: femaleAvatar,
     name: "Nancy Drew",
     level: "Top Rated Detective",
@@ -70,7 +86,11 @@ const RESULTS = [
   },
   {
     id: "5",
-    image: "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1000&auto=format&fit=crop",
+    images: [
+      "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1000&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=1000&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=1000&auto=format&fit=crop"
+    ],
     avatar: maleAvatar,
     name: "Thomas Magnum",
     level: "Level 1 Detective",
@@ -81,7 +101,11 @@ const RESULTS = [
   },
   {
     id: "6",
-    image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=1000&auto=format&fit=crop",
+    images: [
+      "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=1000&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1000&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=1000&auto=format&fit=crop"
+    ],
     avatar: femaleAvatar,
     name: "Jessica Jones",
     level: "Top Rated Detective",
@@ -103,6 +127,8 @@ const CATEGORIES = [
   "Forensics",
   "Due Diligence"
 ];
+
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function SearchPage() {
   const searchParams = new URLSearchParams(window.location.search);
@@ -133,191 +159,186 @@ export default function SearchPage() {
         </div>
 
         <div className="container mx-auto px-4 py-8">
-          {/* Search Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold font-heading mb-2">Results for "{query}"</h1>
-            <div className="flex items-center gap-2 text-gray-500 text-sm">
-               <span className="font-semibold text-gray-900">2,451</span> services available
-            </div>
-          </div>
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Left Sidebar Filters */}
+            <aside className="w-full lg:w-64 flex-shrink-0 space-y-6">
+               <div className="flex items-center gap-2 font-bold text-lg pb-2 border-b">
+                 <Filter className="h-5 w-5" /> Filters
+               </div>
 
-          {/* Horizontal Filters Bar */}
-          <div className="flex flex-wrap items-center gap-3 mb-8 sticky top-[116px] z-30 bg-white py-2">
-            {/* Category Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="h-10 gap-2 rounded-lg border-gray-300 font-semibold hover:border-black">
-                  Category <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="start">
-                <DropdownMenuLabel>Select Category</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {CATEGORIES.slice(0, 5).map((cat) => (
-                  <DropdownMenuCheckboxItem key={cat}>
-                    {cat}
-                  </DropdownMenuCheckboxItem>
+               <Accordion type="multiple" defaultValue={["category", "budget", "location"]} className="w-full">
+                 {/* Category Filter */}
+                 <AccordionItem value="category">
+                   <AccordionTrigger className="font-bold text-sm">Category</AccordionTrigger>
+                   <AccordionContent>
+                     <div className="space-y-2 pt-1">
+                       {CATEGORIES.slice(0, 8).map((cat) => (
+                         <div key={cat} className="flex items-center space-x-2">
+                           <Checkbox id={`cat-${cat}`} />
+                           <label htmlFor={`cat-${cat}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-600 cursor-pointer hover:text-gray-900">
+                             {cat}
+                           </label>
+                         </div>
+                       ))}
+                     </div>
+                   </AccordionContent>
+                 </AccordionItem>
+
+                 {/* Budget Filter */}
+                 <AccordionItem value="budget">
+                   <AccordionTrigger className="font-bold text-sm">Budget</AccordionTrigger>
+                   <AccordionContent>
+                     <div className="space-y-3 pt-1">
+                       <div className="grid grid-cols-2 gap-2">
+                         <div className="space-y-1">
+                           <Label className="text-xs text-gray-500">MIN</Label>
+                           <Input type="number" placeholder="$" className="h-8 text-sm" />
+                         </div>
+                         <div className="space-y-1">
+                           <Label className="text-xs text-gray-500">MAX</Label>
+                           <Input type="number" placeholder="$" className="h-8 text-sm" />
+                         </div>
+                       </div>
+                       <Button size="sm" variant="outline" className="w-full h-8">Apply Price</Button>
+                     </div>
+                   </AccordionContent>
+                 </AccordionItem>
+
+                 {/* Location Filter */}
+                 <AccordionItem value="location">
+                   <AccordionTrigger className="font-bold text-sm">Location</AccordionTrigger>
+                   <AccordionContent>
+                     <div className="space-y-3 pt-1">
+                       <div className="space-y-1.5">
+                         <Label className="text-xs text-gray-500">Country</Label>
+                         <Input placeholder="e.g. USA" className="h-8 text-sm" />
+                       </div>
+                       <div className="space-y-1.5">
+                         <Label className="text-xs text-gray-500">State / City</Label>
+                         <Input placeholder="e.g. New York" className="h-8 text-sm" />
+                       </div>
+                       <div className="flex items-center space-x-2 pt-2">
+                         <Switch id="local-only" />
+                         <Label htmlFor="local-only" className="text-sm">Local Sellers Only</Label>
+                       </div>
+                     </div>
+                   </AccordionContent>
+                 </AccordionItem>
+
+                 {/* Service Options */}
+                 <AccordionItem value="options">
+                   <AccordionTrigger className="font-bold text-sm">Service Options</AccordionTrigger>
+                   <AccordionContent>
+                     <div className="space-y-2 pt-1">
+                       <div className="flex items-center space-x-2">
+                         <Switch id="pro-only" />
+                         <Label htmlFor="pro-only" className="text-sm font-semibold text-gray-700">Pro Services</Label>
+                       </div>
+                       <div className="flex items-center space-x-2">
+                         <Switch id="online-only" />
+                         <Label htmlFor="online-only" className="text-sm">Online Now</Label>
+                       </div>
+                       <div className="pt-2 space-y-2">
+                         <div className="flex items-center space-x-2">
+                           <Checkbox id="express" />
+                           <label htmlFor="express" className="text-sm text-gray-600">Express Delivery (24h)</label>
+                         </div>
+                       </div>
+                     </div>
+                   </AccordionContent>
+                 </AccordionItem>
+
+                 {/* Seller Details */}
+                 <AccordionItem value="seller">
+                   <AccordionTrigger className="font-bold text-sm">Seller Details</AccordionTrigger>
+                   <AccordionContent>
+                     <div className="space-y-3 pt-1">
+                       <div>
+                         <Label className="text-xs font-semibold text-gray-500 mb-1.5 block">Seller Level</Label>
+                         <div className="space-y-1.5">
+                           <div className="flex items-center space-x-2">
+                             <Checkbox id="level-top" />
+                             <label htmlFor="level-top" className="text-sm text-gray-600">Top Rated</label>
+                           </div>
+                           <div className="flex items-center space-x-2">
+                             <Checkbox id="level-2" />
+                             <label htmlFor="level-2" className="text-sm text-gray-600">Level 2</label>
+                           </div>
+                           <div className="flex items-center space-x-2">
+                             <Checkbox id="level-1" />
+                             <label htmlFor="level-1" className="text-sm text-gray-600">Level 1</label>
+                           </div>
+                         </div>
+                       </div>
+                       
+                       <div className="pt-2">
+                         <Label className="text-xs font-semibold text-gray-500 mb-1.5 block">Language</Label>
+                         <div className="space-y-1.5">
+                           <div className="flex items-center space-x-2">
+                             <Checkbox id="lang-en" />
+                             <label htmlFor="lang-en" className="text-sm text-gray-600">English</label>
+                           </div>
+                           <div className="flex items-center space-x-2">
+                             <Checkbox id="lang-es" />
+                             <label htmlFor="lang-es" className="text-sm text-gray-600">Spanish</label>
+                           </div>
+                           <div className="flex items-center space-x-2">
+                             <Checkbox id="lang-fr" />
+                             <label htmlFor="lang-fr" className="text-sm text-gray-600">French</label>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                   </AccordionContent>
+                 </AccordionItem>
+               </Accordion>
+            </aside>
+
+            {/* Main Results Area */}
+            <div className="flex-1">
+              {/* Search Header */}
+              <div className="mb-6">
+                <h1 className="text-3xl font-bold font-heading mb-2">Results for "{query}"</h1>
+                <div className="flex justify-between items-center">
+                   <div className="flex items-center gap-2 text-gray-500 text-sm">
+                      <span className="font-semibold text-gray-900">2,451</span> services available
+                   </div>
+                   
+                   <div className="flex items-center gap-2 text-sm">
+                      <span className="text-gray-500">Sort by:</span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                           <span className="font-bold cursor-pointer flex items-center gap-1">Recommended <ChevronDown className="h-3 w-3" /></span>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                           <DropdownMenuCheckboxItem checked>Recommended</DropdownMenuCheckboxItem>
+                           <DropdownMenuCheckboxItem>Best Selling</DropdownMenuCheckboxItem>
+                           <DropdownMenuCheckboxItem>Newest Arrivals</DropdownMenuCheckboxItem>
+                           <DropdownMenuCheckboxItem>Price: Low to High</DropdownMenuCheckboxItem>
+                           <DropdownMenuCheckboxItem>Price: High to Low</DropdownMenuCheckboxItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                   </div>
+                </div>
+              </div>
+
+              {/* Active Filters (Example) */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                 {/* Can be dynamic later */}
+              </div>
+
+              {/* Results Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {RESULTS.map((service) => (
+                  <ServiceCard key={service.id} {...service} />
                 ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </div>
 
-            {/* Service Options (Delivery, etc - Generic Placeholder) */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="h-10 gap-2 rounded-lg border-gray-300 font-semibold hover:border-black">
-                  Service Options <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="start">
-                <DropdownMenuLabel>Delivery Time</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem>Express 24H</DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem>Up to 3 Days</DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem>Up to 7 Days</DropdownMenuCheckboxItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Seller Details (Levels, Language) */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="h-10 gap-2 rounded-lg border-gray-300 font-semibold hover:border-black">
-                  Seller Details <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-64" align="start">
-                <DropdownMenuLabel>Seller Level</DropdownMenuLabel>
-                <div className="p-2 space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="top_rated" />
-                    <label htmlFor="top_rated" className="text-sm font-medium leading-none">Top Rated</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="level_2" />
-                    <label htmlFor="level_2" className="text-sm font-medium leading-none">Level 2</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="level_1" />
-                    <label htmlFor="level_1" className="text-sm font-medium leading-none">Level 1</label>
-                  </div>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Seller Speaks</DropdownMenuLabel>
-                <div className="p-2 space-y-2">
-                  <div className="flex items-center space-x-2">
-                     <Checkbox id="lang_en" />
-                     <label htmlFor="lang_en" className="text-sm font-medium leading-none">English</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                     <Checkbox id="lang_es" />
-                     <label htmlFor="lang_es" className="text-sm font-medium leading-none">Spanish</label>
-                  </div>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Budget */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="h-10 gap-2 rounded-lg border-gray-300 font-semibold hover:border-black">
-                  Budget <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-80 p-4" align="start">
-                 <div className="space-y-4">
-                   <h4 className="font-medium text-sm">Price Range</h4>
-                   <div className="flex items-center gap-4">
-                     <div className="space-y-1.5">
-                       <Label className="text-xs text-gray-500">MIN ($)</Label>
-                       <Input type="number" placeholder="0" className="h-9" />
-                     </div>
-                     <div className="space-y-1.5">
-                       <Label className="text-xs text-gray-500">MAX ($)</Label>
-                       <Input type="number" placeholder="Any" className="h-9" />
-                     </div>
-                   </div>
-                   <div className="flex justify-end gap-2">
-                     <Button variant="ghost" size="sm">Clear</Button>
-                     <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">Apply</Button>
-                   </div>
-                 </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Location Filter */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="h-10 gap-2 rounded-lg border-gray-300 font-semibold hover:border-black">
-                  Location <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-72 p-4" align="start">
-                <div className="space-y-4">
-                   <div className="space-y-2">
-                     <Label>Country</Label>
-                     <Input placeholder="Enter Country" className="h-9" />
-                   </div>
-                   <div className="space-y-2">
-                     <Label>State/City</Label>
-                     <Input placeholder="Enter City or State" className="h-9" />
-                   </div>
-                   <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white">Apply Location</Button>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Toggles (Pro, Local, etc) */}
-            <div className="flex items-center gap-4 ml-2 border-l pl-4 h-8">
-               <div className="flex items-center space-x-2">
-                 <Switch id="pro-services" />
-                 <Label htmlFor="pro-services" className="font-semibold cursor-pointer">Pro Services</Label>
-               </div>
-               <div className="flex items-center space-x-2">
-                 <Switch id="local-sellers" />
-                 <Label htmlFor="local-sellers" className="font-semibold cursor-pointer">Local Sellers</Label>
+               <div className="mt-12 flex justify-center">
+                 <Button variant="outline" className="px-8 border-black text-black hover:bg-gray-50">Load More</Button>
                </div>
             </div>
           </div>
-
-          {/* Applied Filters Tags (Example) */}
-          <div className="flex flex-wrap gap-2 mb-6">
-             {/* Only show if active - hardcoded example */}
-             {/* 
-             <div className="bg-gray-100 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 text-gray-700">
-               Budget: $100 - $500 <X className="h-3 w-3 cursor-pointer" />
-             </div>
-             */}
-          </div>
-
-          {/* Sort Bar & Results Count */}
-          <div className="flex justify-between items-center mb-6">
-             <div className="flex items-center gap-2 text-sm text-gray-500">
-                <span className="font-bold text-black">{RESULTS.length}</span> services found
-             </div>
-             <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-500">Sort by:</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                     <span className="font-bold cursor-pointer flex items-center gap-1">Recommended <ChevronDown className="h-3 w-3" /></span>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                     <DropdownMenuCheckboxItem checked>Recommended</DropdownMenuCheckboxItem>
-                     <DropdownMenuCheckboxItem>Best Selling</DropdownMenuCheckboxItem>
-                     <DropdownMenuCheckboxItem>Newest Arrivals</DropdownMenuCheckboxItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-             </div>
-          </div>
-
-          {/* Results Grid - Full Width */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {RESULTS.map((service) => (
-              <ServiceCard key={service.id} {...service} />
-            ))}
-          </div>
-
-           <div className="mt-12 flex justify-center">
-             <Button variant="outline" className="px-8 border-black text-black hover:bg-gray-50">Load More</Button>
-           </div>
         </div>
       </main>
       
