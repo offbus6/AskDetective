@@ -94,7 +94,7 @@ const PACKAGES: { basic: PackageDetails, standard: PackageDetails, premium: Pack
     name: "Simple Check",
     description: "Basic criminal record check and address verification for one individual.",
     price: 150,
-    offerPrice: null,
+    offerPrice: 120,
     features: ["Background Check", "Report Included", "Confidentiality Guaranteed"],
     enabled: true
   },
@@ -102,7 +102,7 @@ const PACKAGES: { basic: PackageDetails, standard: PackageDetails, premium: Pack
     name: "Deep Dive",
     description: "Includes Basic + Social media analysis, employment verification, and asset search.",
     price: 300,
-    offerPrice: null,
+    offerPrice: 250,
     features: ["Background Check", "Report Included", "Confidentiality Guaranteed", "Social Media Analysis"],
     enabled: true
   },
@@ -110,7 +110,7 @@ const PACKAGES: { basic: PackageDetails, standard: PackageDetails, premium: Pack
     name: "Full Investigation",
     description: "Complete 360° profile including on-site verification if needed (local only) and detailed report.",
     price: 800,
-    offerPrice: null,
+    offerPrice: 750,
     features: ["Background Check", "Report Included", "Confidentiality Guaranteed", "Social Media Analysis", "On-site Verification"],
     enabled: true
   }

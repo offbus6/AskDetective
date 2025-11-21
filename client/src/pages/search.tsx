@@ -41,6 +41,7 @@ const RESULTS = [
     rating: 5.0,
     reviews: 1254,
     price: 150,
+    offerPrice: 120,
   },
   {
     id: "2",
@@ -59,6 +60,7 @@ const RESULTS = [
     rating: 4.9,
     reviews: 843,
     price: 300,
+    offerPrice: null,
   },
   {
     id: "3",
@@ -77,6 +79,7 @@ const RESULTS = [
     rating: 4.8,
     reviews: 420,
     price: 500,
+    offerPrice: 450,
   },
   {
     id: "4",

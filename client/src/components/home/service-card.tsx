@@ -19,6 +19,7 @@ interface ServiceCardProps {
   rating: number;
   reviews: number;
   price: number;
+  offerPrice?: number | null;
   isUnclaimed?: boolean;
 }
 
@@ -29,7 +30,7 @@ import { Button } from "@/components/ui/button";
 
 import { useToast } from "@/hooks/use-toast";
 
-export function ServiceCard({ id, images, image, avatar, name, level, category, badges = [], title, rating, reviews, price, isUnclaimed }: ServiceCardProps) {
+export function ServiceCard({ id, images, image, avatar, name, level, category, badges = [], title, rating, reviews, price, offerPrice, isUnclaimed }: ServiceCardProps) {
   const displayImages = images || (image ? [image] : []);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -224,7 +225,14 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
             
             <div className="flex flex-col items-end">
               <span className="text-xs text-gray-500 uppercase font-semibold">Starting at</span>
-              <span className="text-lg font-bold text-gray-900">{formatPrice(price)}</span>
+              {offerPrice ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400 line-through font-medium">{formatPrice(price)}</span>
+                  <span className="text-lg font-bold text-green-600">{formatPrice(offerPrice)}</span>
+                </div>
+              ) : (
+                <span className="text-lg font-bold text-gray-900">{formatPrice(price)}</span>
+              )}
             </div>
           </CardFooter>
         </Card>

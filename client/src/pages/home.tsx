@@ -21,6 +21,8 @@ const POPULAR_SERVICES = [
     rating: 5.0,
     reviews: 1254,
     price: 150,
+    offerPrice: 120,
+    badges: ["verified", "recommended"],
   },
   {
     id: "2",
@@ -32,6 +34,8 @@ const POPULAR_SERVICES = [
     rating: 4.9,
     reviews: 843,
     price: 300,
+    offerPrice: null,
+    badges: ["pro"],
   },
   {
     id: "3",
@@ -43,6 +47,8 @@ const POPULAR_SERVICES = [
     rating: 4.8,
     reviews: 420,
     price: 500,
+    offerPrice: 450,
+    badges: ["pro"],
   },
   {
     id: "4",
@@ -54,6 +60,8 @@ const POPULAR_SERVICES = [
     rating: 5.0,
     reviews: 2100,
     price: 200,
+    offerPrice: 180,
+    badges: ["verified", "recommended"],
   },
 ];
 
