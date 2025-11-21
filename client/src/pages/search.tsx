@@ -148,6 +148,8 @@ const CATEGORIES = [
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+
 export default function SearchPage() {
   const searchParams = new URLSearchParams(window.location.search);
   const query = searchParams.get("q") || "All Services";
@@ -157,6 +159,111 @@ export default function SearchPage() {
     if (countryFilter && service.country !== countryFilter) return false;
     return true;
   });
+
+  const FilterContent = () => (
+     <Accordion type="multiple" defaultValue={["category", "budget", "location"]} className="w-full">
+       {/* Category Filter */}
+       <AccordionItem value="category">
+         <AccordionTrigger className="font-bold text-sm">Category</AccordionTrigger>
+         <AccordionContent>
+           <div className="space-y-2 pt-1">
+             {CATEGORIES.slice(0, 8).map((cat) => (
+               <div key={cat} className="flex items-center space-x-2">
+                 <Checkbox id={`cat-${cat}`} />
+                 <label htmlFor={`cat-${cat}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-600 cursor-pointer hover:text-gray-900">
+                   {cat}
+                 </label>
+               </div>
+             ))}
+           </div>
+         </AccordionContent>
+       </AccordionItem>
+
+       {/* Budget Filter */}
+       <AccordionItem value="budget">
+         <AccordionTrigger className="font-bold text-sm">Budget</AccordionTrigger>
+         <AccordionContent>
+           <div className="space-y-3 pt-1">
+             <div className="grid grid-cols-2 gap-2">
+               <div className="space-y-1">
+                 <Label className="text-xs text-gray-500">MIN</Label>
+                 <Input type="number" placeholder="$" className="h-8 text-sm" />
+               </div>
+               <div className="space-y-1">
+                 <Label className="text-xs text-gray-500">MAX</Label>
+                 <Input type="number" placeholder="$" className="h-8 text-sm" />
+               </div>
+             </div>
+             <Button size="sm" variant="outline" className="w-full h-8">Apply Price</Button>
+           </div>
+         </AccordionContent>
+       </AccordionItem>
+
+       {/* Location Filter */}
+       <AccordionItem value="location">
+         <AccordionTrigger className="font-bold text-sm">Location</AccordionTrigger>
+         <AccordionContent>
+           <div className="space-y-3 pt-1">
+             <div className="space-y-1.5">
+               <Label className="text-xs text-gray-500">Country</Label>
+               <Input placeholder="e.g. USA" className="h-8 text-sm" />
+             </div>
+             <div className="space-y-1.5">
+               <Label className="text-xs text-gray-500">State / City</Label>
+               <Input placeholder="e.g. New York" className="h-8 text-sm" />
+             </div>
+             <div className="flex items-center space-x-2 pt-2">
+               <Switch id="local-only" />
+               <Label htmlFor="local-only" className="text-sm">Local Sellers Only</Label>
+             </div>
+           </div>
+         </AccordionContent>
+       </AccordionItem>
+
+       {/* Service Options */}
+       <AccordionItem value="options">
+         <AccordionTrigger className="font-bold text-sm">Service Options</AccordionTrigger>
+         <AccordionContent>
+           <div className="space-y-2 pt-1">
+             <div className="flex items-center space-x-2">
+               <Switch id="pro-only" />
+               <Label htmlFor="pro-only" className="text-sm font-semibold text-gray-700">Pro Detectives</Label>
+             </div>
+             <div className="flex items-center space-x-2">
+               <Switch id="agency-only" />
+               <Label htmlFor="agency-only" className="text-sm font-semibold text-gray-700">Agency Verified</Label>
+             </div>
+           </div>
+         </AccordionContent>
+       </AccordionItem>
+
+       {/* Seller Details */}
+       <AccordionItem value="seller">
+         <AccordionTrigger className="font-bold text-sm">Seller Details</AccordionTrigger>
+         <AccordionContent>
+           <div className="space-y-3 pt-1">
+             <div>
+               <Label className="text-xs font-semibold text-gray-500 mb-1.5 block">Language</Label>
+               <div className="space-y-1.5">
+                 <div className="flex items-center space-x-2">
+                   <Checkbox id="lang-en" />
+                   <label htmlFor="lang-en" className="text-sm text-gray-600">English</label>
+                 </div>
+                 <div className="flex items-center space-x-2">
+                   <Checkbox id="lang-es" />
+                   <label htmlFor="lang-es" className="text-sm text-gray-600">Spanish</label>
+                 </div>
+                 <div className="flex items-center space-x-2">
+                   <Checkbox id="lang-fr" />
+                   <label htmlFor="lang-fr" className="text-sm text-gray-600">French</label>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </AccordionContent>
+       </AccordionItem>
+     </Accordion>
+  );
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-gray-900 bg-white">
@@ -184,114 +291,29 @@ export default function SearchPage() {
 
         <div className="container mx-auto px-6 md:px-12 lg:px-16 py-8">
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Left Sidebar Filters */}
-            <aside className="w-full lg:w-64 flex-shrink-0 space-y-6">
+            {/* Mobile Filter Trigger */}
+            <div className="lg:hidden mb-2">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="w-full flex gap-2 border-gray-300">
+                    <Filter className="h-4 w-4" /> Filter Results
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] overflow-y-auto">
+                   <div className="flex items-center gap-2 font-bold text-lg pb-4 border-b mb-4">
+                     <Filter className="h-5 w-5" /> Filters
+                   </div>
+                   <FilterContent />
+                </SheetContent>
+              </Sheet>
+            </div>
+
+            {/* Desktop Sidebar */}
+            <aside className="hidden lg:block w-64 flex-shrink-0 space-y-6">
                <div className="flex items-center gap-2 font-bold text-lg pb-2 border-b">
                  <Filter className="h-5 w-5" /> Filters
                </div>
-
-               <Accordion type="multiple" defaultValue={["category", "budget", "location"]} className="w-full">
-                 {/* Category Filter */}
-                 <AccordionItem value="category">
-                   <AccordionTrigger className="font-bold text-sm">Category</AccordionTrigger>
-                   <AccordionContent>
-                     <div className="space-y-2 pt-1">
-                       {CATEGORIES.slice(0, 8).map((cat) => (
-                         <div key={cat} className="flex items-center space-x-2">
-                           <Checkbox id={`cat-${cat}`} />
-                           <label htmlFor={`cat-${cat}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-600 cursor-pointer hover:text-gray-900">
-                             {cat}
-                           </label>
-                         </div>
-                       ))}
-                     </div>
-                   </AccordionContent>
-                 </AccordionItem>
-
-                 {/* Budget Filter */}
-                 <AccordionItem value="budget">
-                   <AccordionTrigger className="font-bold text-sm">Budget</AccordionTrigger>
-                   <AccordionContent>
-                     <div className="space-y-3 pt-1">
-                       <div className="grid grid-cols-2 gap-2">
-                         <div className="space-y-1">
-                           <Label className="text-xs text-gray-500">MIN</Label>
-                           <Input type="number" placeholder="$" className="h-8 text-sm" />
-                         </div>
-                         <div className="space-y-1">
-                           <Label className="text-xs text-gray-500">MAX</Label>
-                           <Input type="number" placeholder="$" className="h-8 text-sm" />
-                         </div>
-                       </div>
-                       <Button size="sm" variant="outline" className="w-full h-8">Apply Price</Button>
-                     </div>
-                   </AccordionContent>
-                 </AccordionItem>
-
-                 {/* Location Filter */}
-                 <AccordionItem value="location">
-                   <AccordionTrigger className="font-bold text-sm">Location</AccordionTrigger>
-                   <AccordionContent>
-                     <div className="space-y-3 pt-1">
-                       <div className="space-y-1.5">
-                         <Label className="text-xs text-gray-500">Country</Label>
-                         <Input placeholder="e.g. USA" className="h-8 text-sm" />
-                       </div>
-                       <div className="space-y-1.5">
-                         <Label className="text-xs text-gray-500">State / City</Label>
-                         <Input placeholder="e.g. New York" className="h-8 text-sm" />
-                       </div>
-                       <div className="flex items-center space-x-2 pt-2">
-                         <Switch id="local-only" />
-                         <Label htmlFor="local-only" className="text-sm">Local Sellers Only</Label>
-                       </div>
-                     </div>
-                   </AccordionContent>
-                 </AccordionItem>
-
-                 {/* Service Options */}
-                 <AccordionItem value="options">
-                   <AccordionTrigger className="font-bold text-sm">Service Options</AccordionTrigger>
-                   <AccordionContent>
-                     <div className="space-y-2 pt-1">
-                       <div className="flex items-center space-x-2">
-                         <Switch id="pro-only" />
-                         <Label htmlFor="pro-only" className="text-sm font-semibold text-gray-700">Pro Detectives</Label>
-                       </div>
-                       <div className="flex items-center space-x-2">
-                         <Switch id="agency-only" />
-                         <Label htmlFor="agency-only" className="text-sm font-semibold text-gray-700">Agency Verified</Label>
-                       </div>
-                     </div>
-                   </AccordionContent>
-                 </AccordionItem>
-
-                 {/* Seller Details */}
-                 <AccordionItem value="seller">
-                   <AccordionTrigger className="font-bold text-sm">Seller Details</AccordionTrigger>
-                   <AccordionContent>
-                     <div className="space-y-3 pt-1">
-                       <div>
-                         <Label className="text-xs font-semibold text-gray-500 mb-1.5 block">Language</Label>
-                         <div className="space-y-1.5">
-                           <div className="flex items-center space-x-2">
-                             <Checkbox id="lang-en" />
-                             <label htmlFor="lang-en" className="text-sm text-gray-600">English</label>
-                           </div>
-                           <div className="flex items-center space-x-2">
-                             <Checkbox id="lang-es" />
-                             <label htmlFor="lang-es" className="text-sm text-gray-600">Spanish</label>
-                           </div>
-                           <div className="flex items-center space-x-2">
-                             <Checkbox id="lang-fr" />
-                             <label htmlFor="lang-fr" className="text-sm text-gray-600">French</label>
-                           </div>
-                         </div>
-                       </div>
-                     </div>
-                   </AccordionContent>
-                 </AccordionItem>
-               </Accordion>
+               <FilterContent />
             </aside>
 
             {/* Main Results Area */}
