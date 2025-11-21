@@ -27,12 +27,15 @@ import { useUser } from "@/lib/user-context";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { useToast } from "@/hooks/use-toast";
+
 export function ServiceCard({ id, images, image, avatar, name, level, category, badges = [], title, rating, reviews, price, isUnclaimed }: ServiceCardProps) {
   const displayImages = images || (image ? [image] : []);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const { formatPrice } = useCurrency();
   const { user, isFavorite, toggleFavorite } = useUser();
+  const { toast } = useToast();
 
   // Always route to the public service profile page
   // The unclaimed query param will trigger the "Claim this profile" banner
@@ -53,6 +56,15 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to save favorites.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     toggleFavorite({
       id,
@@ -79,19 +91,17 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
           {/* Image Slider */}
           <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
             
-            {/* Favorite Button - Visible on hover or if favorited, only if logged in */}
-            {user && (
-               <button
-                 onClick={handleFavoriteClick}
-                 className={`absolute top-2 right-2 z-20 p-2 rounded-full shadow-sm transition-all duration-200 ${
-                   isFavorite(id) 
-                     ? "bg-white text-red-500 opacity-100" 
-                     : "bg-black/30 text-white hover:bg-white hover:text-red-500 opacity-0 group-hover/card:opacity-100"
-                 }`}
-               >
-                 <Heart className={`h-4 w-4 ${isFavorite(id) ? "fill-red-500" : ""}`} />
-               </button>
-            )}
+            {/* Favorite Button - Always visible, handles auth internally */}
+            <button
+              onClick={handleFavoriteClick}
+              className={`absolute top-2 right-2 z-20 p-2 rounded-full shadow-sm transition-all duration-200 ${
+                isFavorite(id) 
+                  ? "bg-white text-red-500 opacity-100" 
+                  : "bg-black/30 text-white hover:bg-white hover:text-red-500 opacity-100 md:opacity-0 md:group-hover/card:opacity-100"
+              }`}
+            >
+              <Heart className={`h-4 w-4 ${isFavorite(id) ? "fill-red-500" : ""}`} />
+            </button>
 
             {isUnclaimed && (
               <div className="absolute inset-0 z-10 bg-black/10 flex items-center justify-center">
@@ -207,14 +217,10 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
 
           <CardFooter className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
              {/* Footer heart icon - can also serve as favorite toggle or just visual */}
-             {user ? (
-               <Heart 
-                 className={`h-4 w-4 hover:scale-110 transition-transform cursor-pointer ${isFavorite(id) ? "fill-red-500 text-red-500" : "text-gray-400 hover:text-red-500"}`}
-                 onClick={handleFavoriteClick}
-               />
-             ) : (
-               <Heart className="h-4 w-4 text-gray-300" />
-             )}
+             <Heart 
+               className={`h-4 w-4 hover:scale-110 transition-transform cursor-pointer ${isFavorite(id) ? "fill-red-500 text-red-500" : "text-gray-400 hover:text-red-500"}`}
+               onClick={handleFavoriteClick}
+             />
             
             <div className="flex flex-col items-end">
               <span className="text-xs text-gray-500 uppercase font-semibold">Starting at</span>

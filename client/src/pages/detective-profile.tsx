@@ -159,6 +159,15 @@ export default function DetectiveProfile() {
   };
 
   const handleToggleFavorite = () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to save favorites.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     toggleFavorite({
       id: profileData.id,
       name: profileData.name,
@@ -280,17 +289,15 @@ export default function DetectiveProfile() {
                  {profileData.title}
                </h1>
                
-               {/* Favorite Button for Profile */}
-               {user && (
-                 <Button 
-                   variant="outline" 
-                   size="icon" 
-                   className="ml-4 flex-shrink-0 rounded-full border-gray-200 hover:bg-red-50 hover:border-red-200 hover:text-red-500"
-                   onClick={handleToggleFavorite}
-                 >
-                   <Heart className={`h-5 w-5 ${isFavorite(profileData.id) ? "fill-red-500 text-red-500" : ""}`} />
-                 </Button>
-               )}
+               {/* Favorite Button for Profile - Always show */}
+               <Button 
+                 variant="outline" 
+                 size="icon" 
+                 className={`ml-4 flex-shrink-0 rounded-full border-gray-200 hover:bg-red-50 hover:border-red-200 hover:text-red-500 ${isFavorite(profileData.id) ? "text-red-500 bg-red-50 border-red-200" : ""}`}
+                 onClick={handleToggleFavorite}
+               >
+                 <Heart className={`h-5 w-5 ${isFavorite(profileData.id) ? "fill-red-500 text-red-500" : ""}`} />
+               </Button>
             </div>
 
             {/* Author Meta */}
