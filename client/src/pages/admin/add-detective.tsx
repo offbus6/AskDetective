@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,21 +8,65 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Upload, Plus, MapPin, DollarSign, Globe } from "lucide-react";
-import { COUNTRIES } from "@/lib/currency-context";
-
+import { ArrowLeft, Upload, Plus, MapPin, DollarSign, Globe, Shield, Check } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+
+// Reuse the detailed countries list from signup for consistent experience
+const COUNTRIES = [
+  {
+    name: "United States",
+    code: "US",
+    currency: "$",
+    states: ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
+  },
+  {
+    name: "United Kingdom",
+    code: "UK",
+    currency: "£",
+    states: ["England", "Scotland", "Wales", "Northern Ireland"]
+  },
+  {
+    name: "India",
+    code: "IN",
+    currency: "₹",
+    states: ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi"]
+  },
+  {
+    name: "Canada",
+    code: "CA",
+    currency: "CA$",
+    states: ["Alberta", "British Columbia", "Manitoba", "New Brunswick", "Newfoundland and Labrador", "Nova Scotia", "Ontario", "Prince Edward Island", "Quebec", "Saskatchewan"]
+  },
+  {
+    name: "Australia",
+    code: "AU",
+    currency: "AU$",
+    states: ["New South Wales", "Queensland", "South Australia", "Tasmania", "Victoria", "Western Australia", "Australian Capital Territory", "Northern Territory"]
+  },
+  {
+    name: "Germany",
+    code: "DE",
+    currency: "€",
+    states: ["Baden-Württemberg", "Bavaria", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hesse", "Lower Saxony", "Mecklenburg-Vorpommern", "North Rhine-Westphalia", "Rhineland-Palatinate", "Saarland", "Saxony", "Saxony-Anhalt", "Schleswig-Holstein", "Thuringia"]
+  },
+  {
+    name: "France",
+    code: "FR",
+    currency: "€",
+    states: ["Île-de-France", "Auvergne-Rhône-Alpes", "Bourgogne-Franche-Comté", "Brittany", "Centre-Val de Loire", "Corsica", "Grand Est", "Hauts-de-France", "Normandy", "Nouvelle-Aquitaine", "Occitanie", "Pays de la Loire", "Provence-Alpes-Côte d'Azur"]
+  },
+];
 
 const SERVICE_OPTIONS = [
   "Surveillance",
   "Background Checks",
-  "Infidelity Investigations",
   "Missing Persons",
+  "Infidelity",
+  "Corporate Fraud",
   "Cyber Investigation",
   "Asset Search",
   "Due Diligence",
   "Legal Support",
-  "Counter Surveillance",
   "Process Serving"
 ];
 
@@ -30,7 +74,15 @@ export default function AdminAddDetective() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Form State
+  const [country, setCountry] = useState("US");
+  const [state, setState] = useState("");
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+
+  const selectedCountryData = COUNTRIES.find(c => c.code === country) || COUNTRIES[0];
+  const currencySymbol = selectedCountryData.currency;
+  const availableStates = selectedCountryData.states || [];
 
   const toggleService = (service: string) => {
     setSelectedServices(prev => 
@@ -49,7 +101,7 @@ export default function AdminAddDetective() {
       setIsLoading(false);
       toast({
         title: "Detective Added Successfully",
-        description: `Profile created with ${selectedServices.length} services assigned.`,
+        description: `Unclaimed profile created with ${selectedServices.length} services assigned.`,
       });
       setLocation("/admin/detectives");
     }, 1000);
@@ -64,129 +116,210 @@ export default function AdminAddDetective() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold font-heading">Add Detective Manually</h1>
-            <p className="text-gray-500">Create a new detective profile. This will be marked as "Unclaimed".</p>
+            <p className="text-gray-500">Create a new detective profile. This will be marked as "Unclaimed" until claimed by the owner.</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Basic Info */}
+          
+          {/* Account Info Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
+              <CardTitle>Account Information</CardTitle>
+              <CardDescription>Login details for the detective (if you are creating an account for them).</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Detective / Agency Name</Label>
-                  <Input id="name" placeholder="e.g. Sherlock Holmes" required />
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input id="firstName" placeholder="e.g. Sherlock" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email (Optional)</Label>
-                  <Input id="email" type="email" placeholder="For claiming invitation" />
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input id="lastName" placeholder="e.g. Holmes" />
                 </div>
               </div>
-
               <div className="space-y-2">
-                <Label>Services Offered</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 border border-gray-200 rounded-md">
-                  {SERVICE_OPTIONS.map((service) => (
-                    <div key={service} className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={`service-${service}`} 
-                        checked={selectedServices.includes(service)}
-                        onCheckedChange={() => toggleService(service)}
-                      />
-                      <label 
-                        htmlFor={`service-${service}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                      >
-                        {service}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground">Select all services provided by this detective.</p>
+                <Label htmlFor="email">Email Address</Label>
+                <Input id="email" type="email" placeholder="email@agency.com" />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="experience">Years of Experience</Label>
-                <Input id="experience" placeholder="e.g. 10 years" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password (Temporary)</Label>
+                  <Input id="password" type="password" placeholder="••••••••" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Input id="confirmPassword" type="password" placeholder="••••••••" />
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Location & Pricing */}
+          {/* Company Details Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Location & Pricing</CardTitle>
+              <CardTitle>Company Details</CardTitle>
+              <CardDescription>Business registration and location information.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Company Name / Individual Name</Label>
+                <Input id="companyName" placeholder="e.g. Sherlock Investigations Ltd. or John Doe" required />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Country</Label>
-                  <Select defaultValue="US">
+                  <Select value={country} onValueChange={setCountry}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select country" />
+                      <SelectValue placeholder="Select Country" />
                     </SelectTrigger>
                     <SelectContent>
-                      {COUNTRIES.filter(c => c.code !== 'ALL').map(country => (
-                        <SelectItem key={country.code} value={country.code}>
-                          {country.flag} {country.name}
-                        </SelectItem>
+                      {COUNTRIES.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="city">City / Region</Label>
-                  <Input id="city" placeholder="e.g. New York, NY" />
+                  <Label>State / Region</Label>
+                  {availableStates.length > 0 ? (
+                    <Select value={state} onValueChange={setState}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select State" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableStates.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input 
+                      placeholder="State, Province, or Region" 
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                    />
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="price">Starting Price ($ USD)</Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                    <Input id="price" type="number" className="pl-9" placeholder="150" />
-                  </div>
+                  <Label htmlFor="registeredDate">Date Registered</Label>
+                  <Input id="registeredDate" type="date" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="license">License Number</Label>
-                  <Input id="license" placeholder="e.g. PI-12345-AB" />
+                  <Label htmlFor="regNumber">Registration Number or GST</Label>
+                  <Input id="regNumber" placeholder="Company Reg. No. / GST" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Registered Address</Label>
+                <Textarea id="address" placeholder="Full registered office address..." className="h-20" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Professional Profile Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Professional Profile</CardTitle>
+              <CardDescription>Public facing profile details.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="title">Professional Title</Label>
+                <Input id="title" placeholder="e.g. Senior Private Investigator | Ex-Police" required />
+                <p className="text-xs text-gray-500">This will appear under the name in search results.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="experience">Years of Experience</Label>
+                  <Input id="experience" type="number" placeholder="e.g. 5" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="languages">Languages Spoken</Label>
+                  <Input id="languages" placeholder="e.g. English, Spanish" />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="bio">Professional Bio</Label>
+                <Textarea id="bio" placeholder="Describe experience, specialties, and approach..." className="h-32" />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Specializations & Pricing</Label>
+                <p className="text-xs text-gray-500 mb-2">Select services and set price ranges.</p>
+                <div className="grid gap-3">
+                  {SERVICE_OPTIONS.map((spec) => (
+                    <div key={spec} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border p-3 rounded-md hover:bg-gray-50 gap-3">
+                      <div className="flex items-center space-x-2 flex-1">
+                        <Checkbox 
+                          id={`service-${spec}`}
+                          checked={selectedServices.includes(spec)}
+                          onCheckedChange={() => toggleService(spec)}
+                        />
+                        <label htmlFor={`service-${spec}`} className="text-sm font-medium leading-none cursor-pointer">
+                          {spec}
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="flex flex-col flex-1 sm:flex-none">
+                          <span className="text-[10px] text-gray-500">Starting (Req)</span>
+                          <div className="flex items-center">
+                            <span className="text-xs text-gray-500 mr-1">{currencySymbol}</span>
+                            <Input type="number" className="w-full sm:w-20 h-8 text-sm" placeholder="100" disabled={!selectedServices.includes(spec)} />
+                          </div>
+                        </div>
+                        <div className="flex flex-col flex-1 sm:flex-none">
+                          <span className="text-[10px] text-gray-500">Ending (Opt)</span>
+                          <div className="flex items-center">
+                            <span className="text-xs text-gray-500 mr-1">{currencySymbol}</span>
+                            <Input type="number" className="w-full sm:w-20 h-8 text-sm" placeholder="Max" disabled={!selectedServices.includes(spec)} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Profile Details */}
+          {/* Verification Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Profile Details</CardTitle>
+              <CardTitle>Documents & Verification</CardTitle>
+              <CardDescription>Upload any available documents for this detective.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Service Title</Label>
-                <Input id="title" placeholder="e.g. I will conduct professional surveillance..." required />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea 
-                  id="description" 
-                  placeholder="Describe the services offered..." 
-                  className="min-h-[150px]"
-                />
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer">
+                  <Upload className="h-6 w-6 mx-auto text-gray-400 mb-2" />
+                  <h4 className="font-bold text-sm text-gray-700">Profile Photo / Logo</h4>
+                  <p className="text-xs text-gray-500 mt-1">JPG or PNG (Max 2MB)</p>
+                </div>
 
-              <div className="space-y-2">
-                <Label>Profile Image</Label>
-                <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
-                  <div className="flex flex-col items-center gap-2">
-                    <Upload className="h-8 w-8 text-gray-400" />
-                    <span className="text-sm text-gray-600">Click to upload or drag and drop</span>
-                    <span className="text-xs text-gray-400">JPG, PNG up to 5MB</span>
-                  </div>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer">
+                  <Upload className="h-6 w-6 mx-auto text-gray-400 mb-2" />
+                  <h4 className="font-bold text-sm text-gray-700">Incorporation Certificate</h4>
+                  <p className="text-xs text-gray-500 mt-1">Official Document</p>
+                </div>
+
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer">
+                  <Upload className="h-6 w-6 mx-auto text-gray-400 mb-2" />
+                  <h4 className="font-bold text-sm text-gray-700">Director's ID</h4>
+                  <p className="text-xs text-gray-500 mt-1">Passport / License</p>
+                </div>
+
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer">
+                  <Upload className="h-6 w-6 mx-auto text-gray-400 mb-2" />
+                  <h4 className="font-bold text-sm text-gray-700">PI License</h4>
+                  <p className="text-xs text-gray-500 mt-1">PDF or Image</p>
                 </div>
               </div>
             </CardContent>
