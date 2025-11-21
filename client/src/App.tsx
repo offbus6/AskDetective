@@ -7,25 +7,43 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import DetectiveProfile from "@/pages/detective-profile";
 import Login from "@/pages/auth/login";
+import DetectiveSignup from "@/pages/detective-signup";
+import SearchPage from "@/pages/search";
+
 import AdminDashboard from "@/pages/admin/dashboard";
+import AdminSignups from "@/pages/admin/signups";
+import AdminDetectives from "@/pages/admin/detectives";
+
 import DetectiveDashboard from "@/pages/detective/dashboard";
+import DetectiveProfileEdit from "@/pages/detective/profile-edit";
+import DetectiveOrders from "@/pages/detective/orders";
+import DetectiveSubscription from "@/pages/detective/subscription";
 
 function Router() {
   return (
     <Switch>
+      {/* Public Routes */}
       <Route path="/" component={Home} />
       <Route path="/service/:id" component={DetectiveProfile} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Login} />
+      <Route path="/detective-signup" component={DetectiveSignup} />
+      <Route path="/search" component={SearchPage} />
+      <Route path="/category/:name" component={SearchPage} />
       
       {/* Admin Routes */}
       <Route path="/admin/dashboard" component={AdminDashboard} />
-      <Route path="/admin/signups" component={AdminDashboard} /> {/* Placeholder */}
-      <Route path="/admin/detectives" component={AdminDashboard} /> {/* Placeholder */}
+      <Route path="/admin/signups" component={AdminSignups} />
+      <Route path="/admin/detectives" component={AdminDetectives} />
+      <Route path="/admin/subscriptions" component={AdminDashboard} /> {/* Placeholder reused */}
+      <Route path="/admin/settings" component={AdminDashboard} /> {/* Placeholder reused */}
       
       {/* Detective Routes */}
       <Route path="/detective/dashboard" component={DetectiveDashboard} />
-      <Route path="/detective/profile" component={DetectiveDashboard} /> {/* Placeholder */}
+      <Route path="/detective/profile" component={DetectiveProfileEdit} />
+      <Route path="/detective/orders" component={DetectiveOrders} />
+      <Route path="/detective/subscription" component={DetectiveSubscription} />
+      <Route path="/detective/settings" component={DetectiveDashboard} /> {/* Placeholder reused */}
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
