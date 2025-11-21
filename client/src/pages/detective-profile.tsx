@@ -5,9 +5,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, MapPin, Check, Clock, RefreshCw, MessageSquare, Mail, Phone, MessageCircle, ShieldCheck, Upload, FileText } from "lucide-react";
+import { Star, MapPin, Check, Clock, RefreshCw, MessageSquare, Mail, Phone, MessageCircle, ShieldCheck, Upload, FileText, Heart } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useCurrency } from "@/lib/currency-context";
+import { useUser } from "@/lib/user-context";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ import maleAvatar from "@assets/generated_images/professional_headshot_of_a_priv
 
 // Mock data for unclaimed vs claimed profile
 const CLAIMED_PROFILE = {
+  id: "p_123",
   name: "James Bond",
   avatar: maleAvatar,
   title: "I will conduct a comprehensive background check for any individual",
@@ -38,10 +40,12 @@ const CLAIMED_PROFILE = {
   about: "Former MI6 operative turned private investigator. Specializing in high-stakes surveillance, asset recovery, and deep-dive background checks. I have access to databases that others don't. When you need the truth, I'm the one you call.",
   rating: 5.0,
   reviews: 1254,
-  tier: 'agency'
+  tier: 'agency',
+  price: 150
 };
 
 const UNCLAIMED_PROFILE = {
+  id: "p_unclaimed_001",
   name: "Unknown Detective Agency",
   avatar: "", // No avatar
   title: "Professional Investigation Services - Agency Profile",
@@ -51,7 +55,8 @@ const UNCLAIMED_PROFILE = {
   about: "This business profile is currently unclaimed. If you are the owner, you can claim this profile to manage your information and respond to customer inquiries.",
   rating: 0,
   reviews: 0,
-  tier: 'free'
+  tier: 'free',
+  price: 100
 };
 
 interface PackageDetails {
@@ -101,6 +106,7 @@ export default function DetectiveProfile() {
   // Mock subscription tier for demo - change this to 'free' or 'agency' to test other views
   const detectiveTier = profileData.tier as 'free' | 'pro' | 'agency';
   const { formatPrice } = useCurrency();
+  const { user, isFavorite, toggleFavorite } = useUser();
   const { toast } = useToast();
   const [isClaimDialogOpen, setIsClaimDialogOpen] = useState(false);
   const [claimFormData, setClaimFormData] = useState({
@@ -150,6 +156,21 @@ export default function DetectiveProfile() {
       setNewReview({ rating: 5, text: "", name: "" });
       setIsSubmitting(false);
     }, 500);
+  };
+
+  const handleToggleFavorite = () => {
+    toggleFavorite({
+      id: profileData.id,
+      name: profileData.name,
+      title: profileData.title,
+      image: isUnclaimed ? undefined : "https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop",
+      avatar: profileData.avatar,
+      rating: profileData.rating,
+      reviews: profileData.reviews,
+      price: profileData.price,
+      location: profileData.location,
+      badges: detectiveTier === 'agency' ? ['verified', 'recommended'] : []
+    });
   };
   
   return (
@@ -254,19 +275,33 @@ export default function DetectiveProfile() {
           
           {/* Left Column - Main Content */}
           <div className="flex-1">
-            <h1 className="text-2xl md:text-3xl font-bold font-heading mb-4 text-gray-900">
-              I will conduct a comprehensive background check for any individual
-            </h1>
+            <div className="flex justify-between items-start">
+               <h1 className="text-2xl md:text-3xl font-bold font-heading mb-4 text-gray-900 flex-1">
+                 {profileData.title}
+               </h1>
+               
+               {/* Favorite Button for Profile */}
+               {user && (
+                 <Button 
+                   variant="outline" 
+                   size="icon" 
+                   className="ml-4 flex-shrink-0 rounded-full border-gray-200 hover:bg-red-50 hover:border-red-200 hover:text-red-500"
+                   onClick={handleToggleFavorite}
+                 >
+                   <Heart className={`h-5 w-5 ${isFavorite(profileData.id) ? "fill-red-500 text-red-500" : ""}`} />
+                 </Button>
+               )}
+            </div>
 
             {/* Author Meta */}
             <div className="flex items-center gap-4 mb-6">
               <Avatar className="h-12 w-12">
-                <AvatarImage src={maleAvatar} />
-                <AvatarFallback>JB</AvatarFallback>
+                <AvatarImage src={profileData.avatar} />
+                <AvatarFallback>{profileData.name[0]}</AvatarFallback>
               </Avatar>
               <div>
                 <div className="font-bold text-lg flex items-center gap-2">
-                  James Bond
+                  {profileData.name}
                   {detectiveTier === 'agency' && (
                      <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100 gap-1 text-xs px-2 py-0.5">
                         <ShieldCheck className="h-3 w-3" /> Recommended
@@ -274,23 +309,36 @@ export default function DetectiveProfile() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <span className="text-yellow-500 font-bold flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-500" /> 5.0
-                  </span>
-                  <span>(1,254 reviews)</span>
-                  <span>•</span>
-                  <span>Top Rated Detective</span>
+                  {isUnclaimed ? (
+                    <span className="text-gray-400 italic">Unclaimed Profile</span>
+                  ) : (
+                    <>
+                      <span className="text-yellow-500 font-bold flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-yellow-500" /> {profileData.rating.toFixed(1)}
+                      </span>
+                      <span>({profileData.reviews} reviews)</span>
+                      <span>•</span>
+                      <span>Top Rated Detective</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Gallery - Placeholder for Carousel */}
             <div className="w-full aspect-video bg-gray-100 rounded-lg overflow-hidden mb-8">
-              <img 
-                src="https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop" 
-                alt="Service Preview" 
-                className="w-full h-full object-cover"
-              />
+              {isUnclaimed ? (
+                <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 flex-col gap-2">
+                  <FileText className="h-12 w-12 opacity-50" />
+                  <span className="font-medium">No images available</span>
+                </div>
+              ) : (
+                <img 
+                  src="https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop" 
+                  alt="Service Preview" 
+                  className="w-full h-full object-cover"
+                />
+              )}
             </div>
 
             {/* About This Service */}
@@ -298,7 +346,7 @@ export default function DetectiveProfile() {
               <h2 className="text-xl font-bold font-heading">About This Service</h2>
               <div className="prose max-w-none text-gray-700 leading-relaxed">
                 <p>
-                  Need to know who you are really dealing with? I provide professional, discreet, and comprehensive background checks for individuals and businesses.
+                  {profileData.description}
                 </p>
                 
                 <div className="mt-6 mb-6">
@@ -323,7 +371,7 @@ export default function DetectiveProfile() {
                   <li>Civil litigation records</li>
                 </ul>
                 <p className="mt-4">
-                  I am a licensed private investigator with over 15 years of experience in law enforcement and private security. All investigations are conducted legally and ethically.
+                  {profileData.about}
                 </p>
               </div>
             </section>
@@ -335,18 +383,18 @@ export default function DetectiveProfile() {
               <h2 className="text-xl font-bold font-heading mb-6">About The Detective</h2>
               <div className="flex gap-6">
                 <Avatar className="h-24 w-24">
-                  <AvatarImage src={maleAvatar} />
-                  <AvatarFallback>JB</AvatarFallback>
+                  <AvatarImage src={profileData.avatar} />
+                  <AvatarFallback>{profileData.name[0]}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-4 text-sm">
                     <div>
                       <span className="text-gray-500 block">From</span>
-                      <span className="font-bold">United Kingdom</span>
+                      <span className="font-bold">{profileData.location}</span>
                     </div>
                     <div>
                       <span className="text-gray-500 block">Member since</span>
-                      <span className="font-bold">May 2018</span>
+                      <span className="font-bold">{profileData.memberSince}</span>
                     </div>
                     <div>
                       <span className="text-gray-500 block">Avg. response time</span>
@@ -362,7 +410,7 @@ export default function DetectiveProfile() {
                     </div>
                   </div>
                   <p className="text-gray-700 leading-relaxed">
-                    Former MI6 operative turned private investigator. Specializing in high-stakes surveillance, asset recovery, and deep-dive background checks. I have access to databases that others don't. When you need the truth, I'm the one you call.
+                    {profileData.about}
                   </p>
                   
                   {/* Contact Methods - Conditional Display */}
@@ -380,10 +428,16 @@ export default function DetectiveProfile() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold font-heading">Reviews</h2>
                 <div className="flex items-center gap-2">
-                  <span className="text-yellow-500 font-bold flex items-center gap-1">
-                    <Star className="h-5 w-5 fill-yellow-500" /> 5.0
-                  </span>
-                  <span className="text-gray-500">({reviews.length} reviews)</span>
+                  {isUnclaimed ? (
+                    <span className="text-gray-500 text-sm">No reviews yet</span>
+                  ) : (
+                    <>
+                      <span className="text-yellow-500 font-bold flex items-center gap-1">
+                        <Star className="h-5 w-5 fill-yellow-500" /> {profileData.rating.toFixed(1)}
+                      </span>
+                      <span className="text-gray-500">({reviews.length} reviews)</span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -516,7 +570,7 @@ export default function DetectiveProfile() {
                         <p className="text-sm text-gray-600">{PACKAGES.standard.description}</p>
                       </TabsContent>
                     )}
-                    
+
                     {PACKAGES.premium.enabled && (
                       <TabsContent value="premium" className="mt-0 space-y-4">
                         <div className="flex justify-between items-baseline">
@@ -536,39 +590,44 @@ export default function DetectiveProfile() {
                       </TabsContent>
                     )}
 
-                    {/* Removed Delivery/Revisions as per user request */}
+                    <div className="mt-6 space-y-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-600 font-semibold">
+                        <Clock className="h-4 w-4" /> 
+                        <span>2 Days Delivery</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 font-semibold">
+                        <RefreshCw className="h-4 w-4" /> 
+                        <span>1 Revision</span>
+                      </div>
 
-                    <div className="mt-4 space-y-2">
-                       {/* Dynamic features based on selected tab would be ideal, for now showing a generic list or we can map if we state which tab is active */}
-                       <div className="flex items-center gap-2 text-sm text-gray-500"><Check className="h-4 w-4 text-green-500" /> <span>Background Check</span></div>
-                       <div className="flex items-center gap-2 text-sm text-gray-500"><Check className="h-4 w-4 text-green-500" /> <span>Report Included</span></div>
-                       <div className="flex items-center gap-2 text-sm text-gray-500"><Check className="h-4 w-4 text-green-500" /> <span>Confidentiality Guaranteed</span></div>
-                    </div>
-                    
-                    <div className="mt-6 space-y-3">
-                      <Button className="w-full gap-2" variant="outline">
-                        <Mail className="h-4 w-4" /> Contact via Email
+                      <div className="space-y-2 mt-4">
+                        {PACKAGES.basic.features.map((feature, i) => (
+                          <div key={i} className="flex items-start gap-2 text-sm text-gray-500">
+                            <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span>{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <Button className="w-full bg-green-600 hover:bg-green-700 text-lg font-bold h-12 mt-4">
+                        Continue ({formatPrice(PACKAGES.basic.offerPrice || PACKAGES.basic.price)})
                       </Button>
                       
-                      {detectiveTier !== 'free' && (
-                        <>
-                          <Button className="w-full gap-2" variant="outline">
-                            <Phone className="h-4 w-4" /> Call Detective
-                          </Button>
-                          <Button className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white">
-                            <MessageCircle className="h-4 w-4" /> WhatsApp
-                          </Button>
-                        </>
-                      )}
+                      <Button variant="ghost" className="w-full text-gray-500">
+                        Compare Packages
+                      </Button>
                     </div>
                   </div>
                 </Tabs>
               </Card>
               
               <div className="mt-6 text-center">
-                 <Button variant="ghost" className="text-gray-500 text-sm">
-                   <MessageSquare className="h-4 w-4 mr-2" /> Report this Service
-                 </Button>
+                <Button variant="outline" className="w-full mb-2 border-gray-300 text-gray-600 font-semibold">
+                  Contact Detective
+                </Button>
+                <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
+                  <ShieldCheck className="h-3 w-3" /> 100% Secure & Confidential
+                </p>
               </div>
             </div>
           </div>

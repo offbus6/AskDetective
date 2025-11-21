@@ -26,6 +26,10 @@ import DetectiveSubscription from "@/pages/detective/subscription";
 import DetectiveBilling from "@/pages/detective/billing";
 import DetectiveSettings from "@/pages/detective/settings";
 import UserDashboard from "@/pages/user/dashboard";
+import FavoritesPage from "@/pages/user/favorites";
+
+import { CurrencyProvider } from "./lib/currency-context";
+import { UserProvider } from "./lib/user-context";
 
 function Router() {
   return (
@@ -48,7 +52,7 @@ function Router() {
       <Route path="/admin/claims" component={AdminClaims} />
       <Route path="/admin/services" component={AdminServices} />
       <Route path="/admin/subscriptions" component={AdminSubscriptions} />
-      <Route path="/admin/settings" component={AdminDashboard} /> {/* Placeholder reused */}
+      <Route path="/admin/settings" component={AdminDashboard} />
       
       {/* Detective Routes */}
       <Route path="/detective/dashboard" component={DetectiveDashboard} />
@@ -60,6 +64,7 @@ function Router() {
 
       {/* User Routes */}
       <Route path="/user/dashboard" component={UserDashboard} />
+      <Route path="/user/favorites" component={FavoritesPage} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
@@ -67,17 +72,17 @@ function Router() {
   );
 }
 
-import { CurrencyProvider } from "./lib/currency-context";
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <CurrencyProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </CurrencyProvider>
+      <UserProvider>
+        <CurrencyProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </CurrencyProvider>
+      </UserProvider>
     </QueryClientProvider>
   );
 }

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Search, Menu, X, Globe, ChevronDown } from "lucide-react";
+import { Search, Menu, X, Globe, ChevronDown, Heart, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
@@ -9,18 +9,20 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { useCurrency, COUNTRIES } from "@/lib/currency-context";
+import { useUser } from "@/lib/user-context";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [location, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const { selectedCountry, setCountry } = useCurrency();
-
-  // Removed local useEffect for URL parsing as it's handled in Context (or shared)
-  // Actually, context handles initialization, so we rely on that.
+  const { user, logout, favorites } = useUser();
 
   const handleSearch = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
@@ -127,17 +129,70 @@ export function Navbar() {
           <Link href="/detective-signup">
             <a className="hover:text-green-500 transition-colors">Become a Detective</a>
           </Link>
-          <Link href="/login">
-            <a className="hover:text-green-500 transition-colors">Sign In</a>
-          </Link>
-          <Link href="/signup">
-            <Button 
-              variant={isScrolled || location !== '/' ? "outline" : "outline"} 
-              className={`${isScrolled || location !== '/' ? "text-green-500 border-green-500 hover:bg-green-50" : "text-white border-white hover:bg-white hover:text-green-500"} transition-colors`}
-            >
-              Join
-            </Button>
-          </Link>
+
+          {user ? (
+            <>
+              {/* Favorites Icon */}
+              <Link href="/user/favorites">
+                <a className={`relative hover:text-green-500 transition-colors ${isScrolled || location !== '/' ? "text-gray-600" : "text-white"}`}>
+                  <Heart className={`h-6 w-6 ${favorites.length > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+                  {favorites.length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
+                      {favorites.length}
+                    </span>
+                  )}
+                </a>
+              </Link>
+
+              {/* User Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                   <Avatar className="h-9 w-9 cursor-pointer border border-gray-200">
+                     <AvatarImage src={user.avatar} />
+                     <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                   </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {user.role === 'admin' ? (
+                    <Link href="/admin/dashboard">
+                       <DropdownMenuItem className="cursor-pointer">Admin Dashboard</DropdownMenuItem>
+                    </Link>
+                  ) : user.role === 'detective' ? (
+                     <Link href="/detective/dashboard">
+                       <DropdownMenuItem className="cursor-pointer">Dashboard</DropdownMenuItem>
+                     </Link>
+                  ) : (
+                     <Link href="/user/dashboard">
+                       <DropdownMenuItem className="cursor-pointer">Dashboard</DropdownMenuItem>
+                     </Link>
+                  )}
+                  <Link href="/user/favorites">
+                    <DropdownMenuItem className="cursor-pointer">Favorites</DropdownMenuItem>
+                  </Link>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} className="cursor-pointer text-red-600 focus:text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" /> Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <>
+              <Link href="/login">
+                <a className="hover:text-green-500 transition-colors">Sign In</a>
+              </Link>
+              <Link href="/signup">
+                <Button 
+                  variant={isScrolled || location !== '/' ? "outline" : "outline"} 
+                  className={`${isScrolled || location !== '/' ? "text-green-500 border-green-500 hover:bg-green-50" : "text-white border-white hover:bg-white hover:text-green-500"} transition-colors`}
+                >
+                  Join
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu */}
@@ -172,12 +227,42 @@ export function Navbar() {
                   </DropdownMenu>
                 </div>
 
-                <Link href="/login">
-                  <a className="text-lg font-medium">Sign In</a>
-                </Link>
-                <Link href="/signup">
-                  <a className="text-lg font-medium text-green-600">Join</a>
-                </Link>
+                {user ? (
+                  <>
+                    <div className="flex items-center gap-3 mb-4">
+                       <Avatar className="h-10 w-10 border border-gray-200">
+                         <AvatarImage src={user.avatar} />
+                         <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                       </Avatar>
+                       <div className="flex flex-col">
+                         <span className="font-bold">{user.name}</span>
+                         <span className="text-sm text-gray-500">{user.email}</span>
+                       </div>
+                    </div>
+                    
+                    <Link href="/user/favorites">
+                      <a className="text-lg font-medium flex items-center gap-2">
+                        <Heart className="h-5 w-5 text-red-500" /> My Favorites
+                      </a>
+                    </Link>
+                    <Link href="/user/dashboard">
+                      <a className="text-lg font-medium">Dashboard</a>
+                    </Link>
+                    <button onClick={logout} className="text-lg font-medium text-left text-red-600">
+                      Log Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login">
+                      <a className="text-lg font-medium">Sign In</a>
+                    </Link>
+                    <Link href="/signup">
+                      <a className="text-lg font-medium text-green-600">Join</a>
+                    </Link>
+                  </>
+                )}
+
                 <Link href="/detective-signup">
                   <a className="text-lg font-medium">Become a Detective</a>
                 </Link>

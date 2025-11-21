@@ -23,13 +23,16 @@ interface ServiceCardProps {
 }
 
 import { useCurrency } from "@/lib/currency-context";
+import { useUser } from "@/lib/user-context";
 import { AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function ServiceCard({ id, images, image, avatar, name, level, category, badges = [], title, rating, reviews, price, isUnclaimed }: ServiceCardProps) {
   const displayImages = images || (image ? [image] : []);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const { formatPrice } = useCurrency();
+  const { user, isFavorite, toggleFavorite } = useUser();
 
   // Always route to the public service profile page
   // The unclaimed query param will trigger the "Claim this profile" banner
@@ -46,17 +49,50 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
     e.stopPropagation();
     setCurrentImageIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length);
   };
+  
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    toggleFavorite({
+      id,
+      name,
+      title,
+      image: displayImages[0],
+      avatar,
+      rating,
+      reviews,
+      price,
+      location: category,
+      badges
+    });
+  };
 
   return (
     <Link href={profileLink}>
-      <a className="block h-full">
+      <a className="block h-full relative group/card">
         <Card 
-          className={`h-full overflow-hidden border-gray-200 hover:shadow-md transition-shadow group cursor-pointer flex flex-col ${isUnclaimed ? 'opacity-90 border-dashed border-2' : ''}`}
+          className={`h-full overflow-hidden border-gray-200 hover:shadow-md transition-shadow cursor-pointer flex flex-col ${isUnclaimed ? 'opacity-90 border-dashed border-2' : ''}`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
           {/* Image Slider */}
           <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+            
+            {/* Favorite Button - Visible on hover or if favorited, only if logged in */}
+            {user && (
+               <button
+                 onClick={handleFavoriteClick}
+                 className={`absolute top-2 right-2 z-20 p-2 rounded-full shadow-sm transition-all duration-200 ${
+                   isFavorite(id) 
+                     ? "bg-white text-red-500 opacity-100" 
+                     : "bg-black/30 text-white hover:bg-white hover:text-red-500 opacity-0 group-hover/card:opacity-100"
+                 }`}
+               >
+                 <Heart className={`h-4 w-4 ${isFavorite(id) ? "fill-red-500" : ""}`} />
+               </button>
+            )}
+
             {isUnclaimed && (
               <div className="absolute inset-0 z-10 bg-black/10 flex items-center justify-center">
                 <div className="bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-gray-600 flex items-center gap-1 shadow-sm">
@@ -151,7 +187,7 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
             </div>
 
             {/* Title */}
-            <h3 className="text-gray-700 hover:text-green-600 line-clamp-2 text-base mb-2 group-hover:underline decoration-green-600">
+            <h3 className="text-gray-700 hover:text-green-600 line-clamp-2 text-base mb-2 group-hover/card:underline decoration-green-600">
               {title}
             </h3>
 
@@ -170,7 +206,16 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
           </CardContent>
 
           <CardFooter className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
-            <Heart className="h-4 w-4 text-gray-400 hover:fill-red-500 hover:text-red-500 transition-colors cursor-pointer" />
+             {/* Footer heart icon - can also serve as favorite toggle or just visual */}
+             {user ? (
+               <Heart 
+                 className={`h-4 w-4 hover:scale-110 transition-transform cursor-pointer ${isFavorite(id) ? "fill-red-500 text-red-500" : "text-gray-400 hover:text-red-500"}`}
+                 onClick={handleFavoriteClick}
+               />
+             ) : (
+               <Heart className="h-4 w-4 text-gray-300" />
+             )}
+            
             <div className="flex flex-col items-end">
               <span className="text-xs text-gray-500 uppercase font-semibold">Starting at</span>
               <span className="text-lg font-bold text-gray-900">{formatPrice(price)}</span>
