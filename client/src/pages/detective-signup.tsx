@@ -10,6 +10,7 @@ import { Footer } from "@/components/layout/footer";
 import { Link, useLocation } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useServiceCategories } from "@/lib/hooks";
 
 const COUNTRIES = [
   {
@@ -63,6 +64,9 @@ export default function DetectiveSignup() {
   const [showLiabilityDialog, setShowLiabilityDialog] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [, setLocation] = useLocation();
+  
+  const { data: categoriesData } = useServiceCategories();
+  const serviceCategories = categoriesData?.categories?.filter(cat => cat.isActive) || [];
   
   const selectedCountry = COUNTRIES.find(c => c.code === country) || COUNTRIES[0];
   const currencySymbol = selectedCountry.currency;
@@ -243,12 +247,12 @@ export default function DetectiveSignup() {
                       <Label>Specializations & Pricing</Label>
                       <p className="text-xs text-gray-500 mb-2">Select your services and set a price range.</p>
                       <div className="grid gap-3">
-                        {["Surveillance", "Background Checks", "Missing Persons", "Infidelity", "Corporate Fraud", "Cyber Investigation"].map((spec) => (
-                          <div key={spec} className="flex items-center justify-between border p-3 rounded-md hover:bg-gray-50">
+                        {serviceCategories.map((category) => (
+                          <div key={category.id} className="flex items-center justify-between border p-3 rounded-md hover:bg-gray-50">
                             <div className="flex items-center space-x-2 flex-1">
-                              <input type="checkbox" id={spec} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-                              <label htmlFor={spec} className="text-sm font-medium leading-none cursor-pointer">
-                                {spec}
+                              <input type="checkbox" id={category.id} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                              <label htmlFor={category.id} className="text-sm font-medium leading-none cursor-pointer">
+                                {category.name}
                               </label>
                             </div>
                             <div className="flex items-center gap-2">

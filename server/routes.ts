@@ -11,11 +11,13 @@ import {
   insertFavoriteSchema,
   insertDetectiveApplicationSchema,
   insertProfileClaimSchema,
+  insertServiceCategorySchema,
   updateUserSchema,
   updateDetectiveSchema,
   updateServiceSchema,
   updateReviewSchema,
   updateOrderSchema,
+  updateServiceCategorySchema,
   type User
 } from "@shared/schema";
 import { z } from "zod";
@@ -258,10 +260,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Search services (public)
   app.get("/api/services", async (req: Request, res: Response) => {
     try {
-      const { category, country, search, minPrice, maxPrice, sortBy, limit = "50", offset = "0" } = req.query;
+      const { categoryId, country, search, minPrice, maxPrice, sortBy, limit = "50", offset = "0" } = req.query;
 
       const services = await storage.searchServices({
-        category: category as string,
+        categoryId: categoryId as string,
         country: country as string,
         searchQuery: search as string,
         minPrice: minPrice ? parseFloat(minPrice as string) : undefined,
@@ -692,6 +694,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get billing history error:", error);
       res.status(500).json({ error: "Failed to get billing history" });
+    }
+  });
+
+  // ============== SERVICE CATEGORY ROUTES ==============
+
+  // Get all service categories (public, with optional active filter)
+  app.get("/api/service-categories", async (req: Request, res: Response) => {
+    try {
+      const { activeOnly } = req.query;
+      const categories = await storage.getAllServiceCategories(activeOnly === "true");
+      res.json({ categories });
+    } catch (error) {
+      console.error("Get service categories error:", error);
+      res.status(500).json({ error: "Failed to get service categories" });
+    }
+  });
+
+  // Get service category by ID (public)
+  app.get("/api/service-categories/:id", async (req: Request, res: Response) => {
+    try {
+      const category = await storage.getServiceCategory(req.params.id);
+      if (!category) {
+        return res.status(404).json({ error: "Service category not found" });
+      }
+      res.json({ category });
+    } catch (error) {
+      console.error("Get service category error:", error);
+      res.status(500).json({ error: "Failed to get service category" });
+    }
+  });
+
+  // Create service category (admin only)
+  app.post("/api/service-categories", requireRole("admin"), async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertServiceCategorySchema.parse(req.body);
+      const category = await storage.createServiceCategory(validatedData);
+      res.status(201).json({ category });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).message });
+      }
+      console.error("Create service category error:", error);
+      res.status(500).json({ error: "Failed to create service category" });
+    }
+  });
+
+  // Update service category (admin only)
+  app.patch("/api/service-categories/:id", requireRole("admin"), async (req: Request, res: Response) => {
+    try {
+      const category = await storage.getServiceCategory(req.params.id);
+      if (!category) {
+        return res.status(404).json({ error: "Service category not found" });
+      }
+
+      const validatedData = updateServiceCategorySchema.parse(req.body);
+      const updatedCategory = await storage.updateServiceCategory(req.params.id, validatedData);
+      res.json({ category: updatedCategory });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).message });
+      }
+      console.error("Update service category error:", error);
+      res.status(500).json({ error: "Failed to update service category" });
+    }
+  });
+
+  // Delete service category (admin only) - soft delete by marking as inactive
+  app.delete("/api/service-categories/:id", requireRole("admin"), async (req: Request, res: Response) => {
+    try {
+      const category = await storage.getServiceCategory(req.params.id);
+      if (!category) {
+        return res.status(404).json({ error: "Service category not found" });
+      }
+
+      await storage.deleteServiceCategory(req.params.id);
+      res.json({ message: "Service category deleted successfully" });
+    } catch (error) {
+      console.error("Delete service category error:", error);
+      res.status(500).json({ error: "Failed to delete service category" });
     }
   });
 

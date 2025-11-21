@@ -1,7 +1,7 @@
 import { db } from "@db";
 import { 
   users, detectives, services, servicePackages, reviews, orders, favorites, 
-  detectiveApplications, profileClaims, billingHistory,
+  detectiveApplications, profileClaims, billingHistory, serviceCategories,
   type User, type InsertUser,
   type Detective, type InsertDetective,
   type Service, type InsertService,
@@ -10,7 +10,8 @@ import {
   type Favorite, type InsertFavorite,
   type DetectiveApplication, type InsertDetectiveApplication,
   type ProfileClaim, type InsertProfileClaim,
-  type BillingHistory
+  type BillingHistory,
+  type ServiceCategory, type InsertServiceCategory
 } from "@shared/schema";
 import { eq, and, desc, sql, count, avg, or, ilike, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
@@ -45,12 +46,12 @@ export interface IStorage {
   updateService(id: string, updates: Partial<Service>): Promise<Service | undefined>;
   deleteService(id: string): Promise<boolean>;
   searchServices(filters: {
-    category?: string;
+    categoryId?: string;
     country?: string;
     searchQuery?: string;
     minPrice?: number;
     maxPrice?: number;
-  }, limit?: number, offset?: number, sortBy?: string): Promise<Array<Service & { detective: Detective, avgRating: number, reviewCount: number }>>;
+  }, limit?: number, offset?: number, sortBy?: string): Promise<Array<Service & { detective: Detective, avgRating: number, reviewCount: number, categoryName?: string }>>;
   incrementServiceViews(id: string): Promise<void>;
 
   // Review operations
@@ -99,6 +100,13 @@ export interface IStorage {
     avgRating: number;
     reviewCount: number;
   }>;
+
+  // Service Category operations
+  getServiceCategory(id: string): Promise<ServiceCategory | undefined>;
+  getAllServiceCategories(activeOnly?: boolean): Promise<ServiceCategory[]>;
+  createServiceCategory(category: InsertServiceCategory): Promise<ServiceCategory>;
+  updateServiceCategory(id: string, updates: Partial<ServiceCategory>): Promise<ServiceCategory | undefined>;
+  deleteServiceCategory(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -222,8 +230,22 @@ export class DatabaseStorage implements IStorage {
 
   // Service operations
   async getService(id: string): Promise<Service | undefined> {
-    const [service] = await db.select().from(services).where(eq(services.id, id)).limit(1);
-    return service;
+    const result = await db
+      .select({
+        service: services,
+        categoryName: serviceCategories.name,
+      })
+      .from(services)
+      .leftJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
+      .where(eq(services.id, id))
+      .limit(1);
+
+    if (!result[0]) return undefined;
+
+    return {
+      ...result[0].service,
+      categoryName: result[0].categoryName || "Unknown",
+    } as any;
   }
 
   async getServicesByDetective(detectiveId: string): Promise<Service[]> {
@@ -240,7 +262,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateService(id: string, updates: Partial<Service>): Promise<Service | undefined> {
     // Whitelist only allowed fields - prevent modification of protected columns
-    const allowedFields: (keyof Service)[] = ['title', 'description', 'category', 'basePrice', 'offerPrice', 'images', 'isActive'];
+    const allowedFields: (keyof Service)[] = ['title', 'description', 'categoryId', 'basePrice', 'offerPrice', 'images', 'isActive'];
     const safeUpdates: Partial<Service> = {};
     
     for (const key of allowedFields) {
@@ -262,27 +284,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchServices(filters: {
-    category?: string;
+    categoryId?: string;
     country?: string;
     searchQuery?: string;
     minPrice?: number;
     maxPrice?: number;
-  }, limit: number = 50, offset: number = 0, sortBy: string = 'recent'): Promise<Array<Service & { detective: Detective, avgRating: number, reviewCount: number }>> {
+  }, limit: number = 50, offset: number = 0, sortBy: string = 'recent'): Promise<Array<Service & { detective: Detective, avgRating: number, reviewCount: number, categoryName?: string }>> {
     
     const conditions = [
       eq(services.isActive, true),
       eq(detectives.status, 'active')
     ];
     
-    if (filters.category) {
-      conditions.push(ilike(services.category, `%${filters.category}%`));
+    if (filters.categoryId) {
+      conditions.push(eq(services.categoryId, filters.categoryId));
     }
     
     if (filters.searchQuery) {
       const searchCondition = or(
         ilike(services.title, `%${filters.searchQuery}%`),
         ilike(services.description, `%${filters.searchQuery}%`),
-        ilike(services.category, `%${filters.searchQuery}%`)
+        ilike(serviceCategories.name, `%${filters.searchQuery}%`)
       );
       if (searchCondition) {
         conditions.push(searchCondition);
@@ -292,14 +314,16 @@ export class DatabaseStorage implements IStorage {
     let query = db.select({
       service: services,
       detective: detectives,
+      categoryName: serviceCategories.name,
       avgRating: sql<number>`COALESCE(AVG(${reviews.rating}), 0)`.as('avg_rating'),
       reviewCount: count(reviews.id).as('review_count'),
     })
     .from(services)
     .innerJoin(detectives, eq(services.detectiveId, detectives.id))
+    .leftJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
     .leftJoin(reviews, and(eq(reviews.serviceId, services.id), eq(reviews.isPublished, true)))
     .where(and(...conditions))
-    .groupBy(services.id, detectives.id);
+    .groupBy(services.id, detectives.id, serviceCategories.name);
 
     if (filters.country) {
       query = query.having(eq(detectives.country, filters.country)) as any;
@@ -319,6 +343,7 @@ export class DatabaseStorage implements IStorage {
     return results.map((r: any) => ({
       ...r.service,
       detective: r.detective!,
+      categoryName: r.categoryName || undefined,
       avgRating: Number(r.avgRating),
       reviewCount: Number(r.reviewCount)
     }));
@@ -616,6 +641,52 @@ export class DatabaseStorage implements IStorage {
       avgRating,
       reviewCount,
     };
+  }
+
+  // Service Category operations
+  async getServiceCategory(id: string): Promise<ServiceCategory | undefined> {
+    const [category] = await db.select().from(serviceCategories).where(eq(serviceCategories.id, id)).limit(1);
+    return category;
+  }
+
+  async getAllServiceCategories(activeOnly: boolean = false): Promise<ServiceCategory[]> {
+    let query = db.select().from(serviceCategories);
+    
+    if (activeOnly) {
+      query = query.where(eq(serviceCategories.isActive, true)) as any;
+    }
+
+    return await query.orderBy(desc(serviceCategories.createdAt));
+  }
+
+  async createServiceCategory(category: InsertServiceCategory): Promise<ServiceCategory> {
+    const [newCategory] = await db.insert(serviceCategories).values(category).returning();
+    return newCategory;
+  }
+
+  async updateServiceCategory(id: string, updates: Partial<ServiceCategory>): Promise<ServiceCategory | undefined> {
+    const allowedFields: (keyof ServiceCategory)[] = ['name', 'description', 'isActive'];
+    const safeUpdates: Partial<ServiceCategory> = {};
+    
+    for (const key of allowedFields) {
+      if (key in updates) {
+        (safeUpdates as any)[key] = updates[key];
+      }
+    }
+    
+    const [category] = await db.update(serviceCategories)
+      .set({ ...safeUpdates, updatedAt: new Date() })
+      .where(eq(serviceCategories.id, id))
+      .returning();
+    return category;
+  }
+
+  async deleteServiceCategory(id: string): Promise<boolean> {
+    const [category] = await db.update(serviceCategories)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(serviceCategories.id, id))
+      .returning();
+    return !!category;
   }
 }
 

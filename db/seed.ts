@@ -1,5 +1,5 @@
 import { db } from "./index";
-import { users, detectives, services, servicePackages, reviews, orders } from "@shared/schema";
+import { users, detectives, services, servicePackages, reviews, orders, serviceCategories } from "@shared/schema";
 import bcrypt from "bcrypt";
 
 async function seed() {
@@ -16,6 +16,41 @@ async function seed() {
   }).returning();
 
   console.log("✅ Admin user created");
+
+  await db.insert(serviceCategories).values([
+    {
+      name: "Surveillance",
+      description: "Discreet monitoring and observation services for individuals or locations",
+      isActive: true,
+    },
+    {
+      name: "Background Checks",
+      description: "Comprehensive background investigations for employment, relationships, or due diligence",
+      isActive: true,
+    },
+    {
+      name: "Missing Persons",
+      description: "Specialized investigations to locate missing individuals or lost contacts",
+      isActive: true,
+    },
+    {
+      name: "Infidelity Investigations",
+      description: "Discreet investigations of suspected relationship infidelity",
+      isActive: true,
+    },
+    {
+      name: "Corporate Fraud",
+      description: "Investigation of corporate fraud, embezzlement, and business misconduct",
+      isActive: true,
+    },
+    {
+      name: "Cyber Investigation",
+      description: "Digital forensics and investigation of cybercrime, hacking, and online fraud",
+      isActive: true,
+    },
+  ]);
+
+  console.log("✅ Service categories created");
 
   const detectiveUsers = await db.insert(users).values([
     {
@@ -94,30 +129,40 @@ async function seed() {
 
   console.log("✅ Detective profiles created");
 
+  // Fetch category IDs for services
+  const categories = await db.select().from(serviceCategories);
+  const backgroundChecksCategory = categories.find(c => c.name === "Background Checks");
+  const cyberInvestigationCategory = categories.find(c => c.name === "Cyber Investigation");
+  const corporateFraudCategory = categories.find(c => c.name === "Corporate Fraud");
+
+  if (!backgroundChecksCategory || !cyberInvestigationCategory || !corporateFraudCategory) {
+    throw new Error("Required service categories not found. Make sure serviceCategories were created successfully.");
+  }
+
   const servicesList = await db.insert(services).values([
     {
       detectiveId: detectiveProfiles[0].id,
+      categoryId: backgroundChecksCategory.id,
       title: "Background Check Investigation",
       description: "Comprehensive background investigation for employment or personal matters.",
-      category: "Background Checks",
       basePrice: "500.00",
       images: ["https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800"],
       isActive: true,
     },
     {
       detectiveId: detectiveProfiles[1].id,
+      categoryId: cyberInvestigationCategory.id,
       title: "Cybercrime Investigation",
       description: "Professional investigation of cyber crimes, hacking, and digital fraud.",
-      category: "Cybercrime",
       basePrice: "2000.00",
       images: ["https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800"],
       isActive: true,
     },
     {
       detectiveId: detectiveProfiles[2].id,
+      categoryId: corporateFraudCategory.id,
       title: "Corporate Investigation",
       description: "Enterprise-level investigation services for corporate fraud and compliance.",
-      category: "Corporate Investigation",
       basePrice: "5000.00",
       images: ["https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800"],
       isActive: true,
@@ -196,6 +241,7 @@ async function seed() {
   console.log("\n🎉 Database seeding completed successfully!");
   console.log("\n📊 Summary:");
   console.log(`- 1 Admin user`);
+  console.log(`- 6 Service categories`);
   console.log(`- 3 Detective users (Free, Pro, Agency plans)`);
   console.log(`- 1 Client user`);
   console.log(`- 3 Detective profiles`);

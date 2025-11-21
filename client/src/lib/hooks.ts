@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
-import type { User, Detective, Service, Review, Order, DetectiveApplication, ProfileClaim, InsertDetective, InsertService, InsertReview, InsertOrder } from "@shared/schema";
+import type { User, Detective, Service, Review, Order, DetectiveApplication, ProfileClaim, ServiceCategory, InsertDetective, InsertService, InsertReview, InsertOrder, InsertServiceCategory } from "@shared/schema";
 
 export function useAuth() {
   return useQuery({
@@ -97,7 +97,7 @@ export function useServices(limit?: number, offset?: number) {
 }
 
 export function useSearchServices(params?: {
-  category?: string;
+  categoryId?: string;
   country?: string;
   search?: string;
   minPrice?: number;
@@ -344,6 +344,53 @@ export function useUpdateClaimStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["claims"] });
       queryClient.invalidateQueries({ queryKey: ["detectives"] });
+    },
+  });
+}
+
+export function useServiceCategories(activeOnly?: boolean) {
+  return useQuery({
+    queryKey: ["serviceCategories", activeOnly],
+    queryFn: () => api.serviceCategories.getAll(activeOnly),
+  });
+}
+
+export function useServiceCategory(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ["serviceCategories", id],
+    queryFn: () => api.serviceCategories.getById(id!),
+    enabled: !!id,
+  });
+}
+
+export function useCreateServiceCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: InsertServiceCategory) => api.serviceCategories.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["serviceCategories"] });
+    },
+  });
+}
+
+export function useUpdateServiceCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<ServiceCategory> }) =>
+      api.serviceCategories.update(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["serviceCategories", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["serviceCategories"] });
+    },
+  });
+}
+
+export function useDeleteServiceCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.serviceCategories.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["serviceCategories"] });
     },
   });
 }

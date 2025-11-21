@@ -15,7 +15,7 @@ import maleAvatar from "@assets/generated_images/professional_headshot_of_a_priv
 // @ts-ignore
 import femaleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_female.png";
 
-function mapServiceToCard(service: Service & { detective: Detective; avgRating: number; reviewCount: number }) {
+function mapServiceToCard(service: Service & { detective: Detective; avgRating: number; reviewCount: number; categoryName?: string }) {
   const levelMap = {
     free: "Free Member",
     pro: "Pro Detective",
@@ -45,7 +45,7 @@ function mapServiceToCard(service: Service & { detective: Detective; avgRating: 
     avatar: avatarMap[detectiveName] || maleAvatar,
     name: detectiveName,
     level: levelMap[service.detective.subscriptionPlan] || "Free Member",
-    category: service.category,
+    category: service.categoryName,
     badges,
     title: service.title,
     rating: service.avgRating,
@@ -62,12 +62,12 @@ export default function Home() {
   });
 
   const { data: backgroundChecksData, isLoading: isLoadingBackground } = useSearchServices({ 
-    category: "Background Checks", 
+    search: "Background Checks", 
     limit: 4 
   });
 
   const { data: surveillanceData, isLoading: isLoadingSurveillance } = useSearchServices({ 
-    category: "Surveillance", 
+    search: "Surveillance", 
     limit: 4 
   });
 

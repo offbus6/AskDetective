@@ -50,12 +50,24 @@ export const detectives = pgTable("detectives", {
   planIdx: index("detectives_plan_idx").on(table.subscriptionPlan),
 }));
 
+export const serviceCategories = pgTable("service_categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  nameIdx: index("service_categories_name_idx").on(table.name),
+  activeIdx: index("service_categories_active_idx").on(table.isActive),
+}));
+
 export const services = pgTable("services", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   detectiveId: varchar("detective_id").notNull().references(() => detectives.id, { onDelete: "cascade" }),
+  categoryId: varchar("category_id").notNull().references(() => serviceCategories.id, { onDelete: "restrict" }),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  category: text("category").notNull(),
   images: text("images").array().default(sql`ARRAY[]::text[]`),
   basePrice: decimal("base_price", { precision: 10, scale: 2 }).notNull(),
   offerPrice: decimal("offer_price", { precision: 10, scale: 2 }),
@@ -66,7 +78,7 @@ export const services = pgTable("services", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({
   detectiveIdIdx: index("services_detective_id_idx").on(table.detectiveId),
-  categoryIdx: index("services_category_idx").on(table.category),
+  categoryIdx: index("services_category_idx").on(table.categoryId),
   activeIdx: index("services_active_idx").on(table.isActive),
   orderCountIdx: index("services_order_count_idx").on(table.orderCount),
 }));
@@ -208,7 +220,7 @@ export const insertDetectiveSchema = createInsertSchema(detectives, {
 export const insertServiceSchema = createInsertSchema(services, {
   title: z.string().min(10).max(200),
   description: z.string().min(50),
-  category: z.string(),
+  categoryId: z.string(),
   basePrice: z.string().regex(/^\d+(\.\d{1,2})?$/),
 }).omit({ id: true, createdAt: true, updatedAt: true, viewCount: true, orderCount: true });
 
@@ -253,7 +265,7 @@ export const updateDetectiveSchema = z.object({
 export const updateServiceSchema = z.object({
   title: z.string().min(10).max(200).optional(),
   description: z.string().min(50).optional(),
-  category: z.string().optional(),
+  categoryId: z.string().optional(),
   basePrice: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
   offerPrice: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
   images: z.array(z.string().url()).optional(),
@@ -278,6 +290,20 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Detective = typeof detectives.$inferSelect;
 export type InsertDetective = z.infer<typeof insertDetectiveSchema>;
+
+export const insertServiceCategorySchema = createInsertSchema(serviceCategories, {
+  name: z.string().min(3).max(100),
+  description: z.string().optional(),
+}).omit({ id: true, createdAt: true, updatedAt: true });
+
+export const updateServiceCategorySchema = z.object({
+  name: z.string().min(3).max(100).optional(),
+  description: z.string().optional(),
+  isActive: z.boolean().optional(),
+}).strict();
+
+export type ServiceCategory = typeof serviceCategories.$inferSelect;
+export type InsertServiceCategory = z.infer<typeof insertServiceCategorySchema>;
 
 export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;

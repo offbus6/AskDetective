@@ -1,4 +1,4 @@
-import type { User, Detective, Service, Review, Order, DetectiveApplication, ProfileClaim, InsertDetective, InsertService, InsertReview, InsertOrder } from "@shared/schema";
+import type { User, Detective, Service, Review, Order, DetectiveApplication, ProfileClaim, ServiceCategory, InsertDetective, InsertService, InsertReview, InsertOrder, InsertServiceCategory } from "@shared/schema";
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -98,7 +98,7 @@ export const api = {
 
   services: {
     search: async (params?: {
-      category?: string;
+      categoryId?: string;
       country?: string;
       search?: string;
       minPrice?: number;
@@ -106,9 +106,9 @@ export const api = {
       sortBy?: string;
       limit?: number;
       offset?: number;
-    }): Promise<{ services: Array<Service & { detective: Detective; avgRating: number; reviewCount: number }> }> => {
+    }): Promise<{ services: Array<Service & { detective: Detective; avgRating: number; reviewCount: number; categoryName?: string }> }> => {
       const queryParams = new URLSearchParams();
-      if (params?.category) queryParams.append("category", params.category);
+      if (params?.categoryId) queryParams.append("categoryId", params.categoryId);
       if (params?.country) queryParams.append("country", params.country);
       if (params?.search) queryParams.append("search", params.search);
       if (params?.minPrice !== undefined) queryParams.append("minPrice", params.minPrice.toString());
@@ -345,6 +345,51 @@ export const api = {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+  },
+
+  serviceCategories: {
+    getAll: async (activeOnly?: boolean): Promise<{ categories: ServiceCategory[] }> => {
+      const queryParams = activeOnly ? "?activeOnly=true" : "";
+      const response = await fetch(`/api/service-categories${queryParams}`, {
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+
+    getById: async (id: string): Promise<{ category: ServiceCategory }> => {
+      const response = await fetch(`/api/service-categories/${id}`, {
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+
+    create: async (data: InsertServiceCategory): Promise<{ category: ServiceCategory }> => {
+      const response = await fetch("/api/service-categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+
+    update: async (id: string, data: Partial<ServiceCategory>): Promise<{ category: ServiceCategory }> => {
+      const response = await fetch(`/api/service-categories/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+
+    delete: async (id: string): Promise<{ message: string }> => {
+      const response = await fetch(`/api/service-categories/${id}`, {
+        method: "DELETE",
         credentials: "include",
       });
       return handleResponse(response);

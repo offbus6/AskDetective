@@ -213,20 +213,14 @@ export default function DetectiveProfile() {
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   {isUnclaimed ? (
                     <span className="text-gray-400 italic" data-testid="text-unclaimed">Unclaimed Profile</span>
-                  ) : (
-                    reviewCount > 0 ? (
-                      <>
-                        <span className="text-yellow-500 font-bold flex items-center gap-1" data-testid="text-rating">
-                          <Star className="h-4 w-4 fill-yellow-500" /> {avgRating.toFixed(1)}
-                        </span>
-                        <span data-testid="text-review-count">({reviewCount} reviews)</span>
-                        <span>•</span>
-                        <span data-testid="text-category">{service.category}</span>
-                      </>
-                    ) : (
-                      <span data-testid="text-category">{service.category}</span>
-                    )
-                  )}
+                  ) : reviewCount > 0 ? (
+                    <>
+                      <span className="text-yellow-500 font-bold flex items-center gap-1" data-testid="text-rating">
+                        <Star className="h-4 w-4 fill-yellow-500" /> {avgRating.toFixed(1)}
+                      </span>
+                      <span data-testid="text-review-count">({reviewCount} reviews)</span>
+                    </>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -258,9 +252,9 @@ export default function DetectiveProfile() {
                 )}
 
                 <div className="mt-6 mb-6">
-                  <h3 className="text-lg font-bold mb-3 text-gray-900">Category</h3>
+                  <h3 className="text-lg font-bold mb-3 text-gray-900">Service Type</h3>
                   <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1 text-sm border-green-100" data-testid="badge-category">
-                    {service.category}
+                    {service.title}
                   </Badge>
                 </div>
               </div>
