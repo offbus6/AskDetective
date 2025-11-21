@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Check, Upload, Shield, ArrowRight, ArrowLeft } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const COUNTRIES = [
   {
@@ -59,6 +60,9 @@ export default function DetectiveSignup() {
   const [step, setStep] = useState(1);
   const [country, setCountry] = useState("US");
   const [state, setState] = useState("");
+  const [showLiabilityDialog, setShowLiabilityDialog] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [, setLocation] = useLocation();
   
   const selectedCountry = COUNTRIES.find(c => c.code === country) || COUNTRIES[0];
   const currencySymbol = selectedCountry.currency;
@@ -66,6 +70,20 @@ export default function DetectiveSignup() {
 
   const nextStep = () => setStep(step + 1);
   const prevStep = () => setStep(step - 1);
+
+  const handleSubmit = () => {
+    setShowLiabilityDialog(true);
+  };
+
+  const handleAgree = () => {
+    setShowLiabilityDialog(false);
+    setShowSuccessDialog(true);
+  };
+
+  const handleCloseSuccess = () => {
+    setShowSuccessDialog(false);
+    setLocation("/detective/dashboard");
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -300,17 +318,56 @@ export default function DetectiveSignup() {
                   Continue <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
-                <Link href="/detective/dashboard">
-                   <Button className="bg-green-600 hover:bg-green-700">
-                     Submit Application
-                   </Button>
-                </Link>
+                <Button className="bg-green-600 hover:bg-green-700" onClick={handleSubmit}>
+                  Submit Application
+                </Button>
               )}
             </CardFooter>
           </Card>
         </div>
       </main>
       <Footer />
+
+      {/* Liability Dialog */}
+      <Dialog open={showLiabilityDialog} onOpenChange={setShowLiabilityDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Terms of Responsibility</DialogTitle>
+            <DialogDescription className="space-y-4 pt-4">
+              <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
+                <p className="text-amber-800 font-medium">Important Declaration</p>
+              </div>
+              <p>
+                All the information given are completely by my responsibility, platform has nothing to do with the data provided. I take complete responsibility of the data displayed in my profile.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowLiabilityDialog(false)}>Cancel</Button>
+            <Button onClick={handleAgree} className="bg-green-600 hover:bg-green-700">I Agree</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={handleCloseSuccess}>
+        <DialogContent>
+          <DialogHeader>
+            <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
+              <Check className="h-6 w-6 text-green-600" />
+            </div>
+            <DialogTitle className="text-center">Application Submitted!</DialogTitle>
+            <DialogDescription className="text-center pt-2">
+              Within 24 to 48 hours the application will be analyzed and approved to get it displayed in the platform.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button onClick={handleCloseSuccess} className="w-full sm:w-auto bg-green-600 hover:bg-green-700">
+              Go to Dashboard
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
