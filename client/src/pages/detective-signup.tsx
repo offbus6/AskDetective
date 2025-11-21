@@ -259,12 +259,6 @@ export default function DetectiveSignup() {
                   <div className="space-y-4">
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
                       <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                      <h4 className="font-bold text-gray-700">Upload Private Investigator License</h4>
-                      <p className="text-xs text-gray-500 mt-1">PDF, JPG, or PNG (Max 5MB)</p>
-                    </div>
-
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
-                      <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                       <h4 className="font-bold text-gray-700">Upload Company Incorporation Certificate</h4>
                       <p className="text-xs text-gray-500 mt-1">Official Government Document</p>
                     </div>
@@ -273,6 +267,12 @@ export default function DetectiveSignup() {
                       <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                       <h4 className="font-bold text-gray-700">Upload Director's Government ID</h4>
                       <p className="text-xs text-gray-500 mt-1">Passport or Driver's License of Director</p>
+                    </div>
+
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
+                      <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                      <h4 className="font-bold text-gray-700">Upload Private Investigator License (Optional)</h4>
+                      <p className="text-xs text-gray-500 mt-1">PDF, JPG, or PNG (Max 5MB)</p>
                     </div>
                   </div>
 
