@@ -20,148 +20,16 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Link } from "wouter";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { SEO } from "@/components/seo";
+import { useSearchServices } from "@/lib/hooks";
+import type { Service, Detective } from "@shared/schema";
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
 // @ts-ignore
 import femaleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_female.png";
-
-const RESULTS = [
-  {
-    id: "1",
-    images: [
-      "https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1595852879736-2247b25533c8?q=80&w=1000&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1605152276897-4f618f831968?q=80&w=1000&auto=format&fit=crop"
-    ],
-    avatar: maleAvatar,
-    name: "James Bond",
-    level: "Agency Verified",
-    badges: ["verified", "recommended"],
-    category: "Background Checks",
-    country: "US",
-    title: "I will conduct a comprehensive background check for any individual",
-    rating: 5.0,
-    reviews: 1254,
-    price: 150,
-    offerPrice: 120,
-  },
-  {
-    id: "2",
-    images: [
-      "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1000&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1000&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1000&auto=format&fit=crop"
-    ],
-    avatar: femaleAvatar,
-    name: "Sarah Holmes",
-    level: "Pro Detective",
-    badges: ["pro"],
-    category: "Surveillance",
-    country: "UK",
-    title: "I will perform discreet surveillance and provide video evidence",
-    rating: 4.9,
-    reviews: 843,
-    price: 300,
-    offerPrice: null,
-  },
-  {
-    id: "3",
-    images: [
-      "https://images.unsplash.com/photo-1563206767-5b1d972d9fb7?q=80&w=1000&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1553531384-cc64ac80f931?q=80&w=1000&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=1000&auto=format&fit=crop"
-    ],
-    avatar: maleAvatar,
-    name: "Mike Hammer",
-    level: "Pro Detective",
-    badges: ["pro"],
-    category: "Missing Persons",
-    country: "US",
-    title: "I will find missing persons and reconnect families",
-    rating: 4.8,
-    reviews: 420,
-    price: 500,
-    offerPrice: 450,
-  },
-  {
-    id: "4",
-    images: [
-      "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?q=80&w=1000&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?q=80&w=1000&auto=format&fit=crop"
-    ],
-    avatar: femaleAvatar,
-    name: "Nancy Drew",
-    level: "Agency Verified",
-    badges: ["verified", "recommended"],
-    category: "Cyber Investigation",
-    country: "CA",
-    title: "I will investigate cyber bullying and online harassment",
-    rating: 5.0,
-    reviews: 2100,
-    price: 200,
-    offerPrice: 180,
-  },
-  {
-    id: "5",
-    images: [
-      "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1000&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=1000&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=1000&auto=format&fit=crop"
-    ],
-    avatar: maleAvatar,
-    name: "Thomas Magnum",
-    level: "Free Member",
-    badges: [],
-    category: "Corporate Fraud",
-    country: "US",
-    title: "I will handle corporate fraud investigations and embezzlement",
-    rating: 4.7,
-    reviews: 156,
-    price: 600,
-    offerPrice: null,
-  },
-  {
-    id: "6",
-    images: [
-      "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=1000&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1000&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=1000&auto=format&fit=crop"
-    ],
-    avatar: femaleAvatar,
-    name: "Jessica Jones",
-    level: "Agency Verified",
-    badges: ["verified"],
-    category: "Asset Search",
-    country: "UK",
-    title: "I will locate assets and hidden funds for divorce cases",
-    rating: 4.9,
-    reviews: 980,
-    price: 450,
-    offerPrice: 399,
-  },
-  {
-    id: "7",
-    images: [
-      "https://images.unsplash.com/photo-1577563908411-5077b6dc7624?q=80&w=1000&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1555861496-0666c8981751?q=80&w=1000&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1575089976121-8ed7b2a54265?q=80&w=1000&auto=format&fit=crop"
-    ],
-    avatar: maleAvatar,
-    name: "Unknown Detective Agency",
-    level: "Unclaimed Profile",
-    badges: [],
-    category: "Private Investigation",
-    country: "US",
-    title: "Professional Investigation Services - Agency Profile",
-    rating: 0,
-    reviews: 0,
-    price: 100,
-    offerPrice: null,
-    isUnclaimed: true
-  }
-];
 
 const CATEGORIES = [
   "Surveillance", 
@@ -175,51 +43,68 @@ const CATEGORIES = [
   "Due Diligence"
 ];
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+function mapServiceToCard(service: Service & { detective: Detective; avgRating: number; reviewCount: number }) {
+  const levelMap = {
+    free: "Free Member",
+    pro: "Pro Detective",
+    agency: "Agency Verified",
+  };
 
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { SEO } from "@/components/seo";
+  const badges: string[] = [];
+  if (service.detective.isVerified) badges.push("verified");
+  if (service.detective.subscriptionPlan === "agency") badges.push("recommended");
+  if (service.detective.subscriptionPlan === "pro") badges.push("pro");
+
+  const avatarMap: { [key: string]: string } = {
+    "John Holmes": maleAvatar,
+    "Sarah Chen": femaleAvatar,
+    "Mike Torres": maleAvatar,
+  };
+
+  const detectiveName = service.detective.businessName || "Unknown Detective";
+
+  const images = service.images && service.images.length > 0 ? service.images : undefined;
+  const defaultImage = "https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop";
+  
+  return {
+    id: service.id,
+    images,
+    image: images ? images[0] : defaultImage,
+    avatar: avatarMap[detectiveName] || maleAvatar,
+    name: detectiveName,
+    level: levelMap[service.detective.subscriptionPlan] || "Free Member",
+    category: service.category,
+    badges,
+    title: service.title,
+    rating: service.avgRating,
+    reviews: service.reviewCount,
+    price: Number(service.basePrice),
+    offerPrice: service.offerPrice ? Number(service.offerPrice) : null,
+  };
+}
 
 export default function SearchPage() {
   const searchParams = new URLSearchParams(window.location.search);
   const query = searchParams.get("q") || "All Services";
   const countryFilter = searchParams.get("country");
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [query, countryFilter]);
-
-  const filteredResults = RESULTS.filter(service => {
-    if (countryFilter && service.country !== countryFilter) return false;
-    
-    // Simple search filtering
-    if (query !== "All Services") {
-      const searchLower = query.toLowerCase();
-      const matchesCategory = service.category.toLowerCase().includes(searchLower);
-      const matchesTitle = service.title.toLowerCase().includes(searchLower);
-      const matchesName = service.name.toLowerCase().includes(searchLower);
-      
-      if (!matchesCategory && !matchesTitle && !matchesName) return false;
-    }
-    
-    return true;
+  
+  const { data: servicesData, isLoading } = useSearchServices({
+    search: query !== "All Services" ? query : undefined,
+    country: countryFilter || undefined,
+    limit: 50,
   });
+
+  const results = servicesData?.services.map(mapServiceToCard) || [];
 
   const FilterContent = () => (
      <Accordion type="multiple" defaultValue={["category", "budget", "location"]} className="w-full">
-       {/* Category Filter */}
        <AccordionItem value="category">
          <AccordionTrigger className="font-bold text-sm">Category</AccordionTrigger>
          <AccordionContent>
            <div className="space-y-2 pt-1">
              {CATEGORIES.slice(0, 8).map((cat) => (
                <div key={cat} className="flex items-center space-x-2">
-                 <Checkbox id={`cat-${cat}`} />
+                 <Checkbox id={`cat-${cat}`} data-testid={`checkbox-category-${cat.toLowerCase().replace(/\s+/g, '-')}`} />
                  <label htmlFor={`cat-${cat}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-600 cursor-pointer hover:text-gray-900">
                    {cat}
                  </label>
@@ -229,7 +114,6 @@ export default function SearchPage() {
          </AccordionContent>
        </AccordionItem>
 
-       {/* Budget Filter */}
        <AccordionItem value="budget">
          <AccordionTrigger className="font-bold text-sm">Budget</AccordionTrigger>
          <AccordionContent>
@@ -237,57 +121,54 @@ export default function SearchPage() {
              <div className="grid grid-cols-2 gap-2">
                <div className="space-y-1">
                  <Label className="text-xs text-gray-500">MIN</Label>
-                 <Input type="number" placeholder="$" className="h-8 text-sm" />
+                 <Input type="number" placeholder="$" className="h-8 text-sm" data-testid="input-min-price" />
                </div>
                <div className="space-y-1">
                  <Label className="text-xs text-gray-500">MAX</Label>
-                 <Input type="number" placeholder="$" className="h-8 text-sm" />
+                 <Input type="number" placeholder="$" className="h-8 text-sm" data-testid="input-max-price" />
                </div>
              </div>
-             <Button size="sm" variant="outline" className="w-full h-8">Apply Price</Button>
+             <Button size="sm" variant="outline" className="w-full h-8" data-testid="button-apply-price">Apply Price</Button>
            </div>
          </AccordionContent>
        </AccordionItem>
 
-       {/* Location Filter */}
        <AccordionItem value="location">
          <AccordionTrigger className="font-bold text-sm">Location</AccordionTrigger>
          <AccordionContent>
            <div className="space-y-3 pt-1">
              <div className="space-y-1.5">
                <Label className="text-xs text-gray-500">Country</Label>
-               <Input placeholder="e.g. USA" className="h-8 text-sm" />
+               <Input placeholder="e.g. USA" className="h-8 text-sm" data-testid="input-country-filter" />
              </div>
              <div className="space-y-1.5">
                <Label className="text-xs text-gray-500">State / City</Label>
-               <Input placeholder="e.g. New York" className="h-8 text-sm" />
+               <Input placeholder="e.g. New York" className="h-8 text-sm" data-testid="input-city-filter" />
              </div>
              <div className="flex items-center space-x-2 pt-2">
-               <Switch id="local-only" />
+               <Switch id="local-only" data-testid="switch-local-only" />
                <Label htmlFor="local-only" className="text-sm">Local Sellers Only</Label>
              </div>
            </div>
          </AccordionContent>
        </AccordionItem>
 
-       {/* Service Options */}
        <AccordionItem value="options">
          <AccordionTrigger className="font-bold text-sm">Service Options</AccordionTrigger>
          <AccordionContent>
            <div className="space-y-2 pt-1">
              <div className="flex items-center space-x-2">
-               <Switch id="pro-only" />
+               <Switch id="pro-only" data-testid="switch-pro-only" />
                <Label htmlFor="pro-only" className="text-sm font-semibold text-gray-700">Pro Detectives</Label>
              </div>
              <div className="flex items-center space-x-2">
-               <Switch id="agency-only" />
+               <Switch id="agency-only" data-testid="switch-agency-only" />
                <Label htmlFor="agency-only" className="text-sm font-semibold text-gray-700">Agency Verified</Label>
              </div>
            </div>
          </AccordionContent>
        </AccordionItem>
 
-       {/* Seller Details */}
        <AccordionItem value="seller">
          <AccordionTrigger className="font-bold text-sm">Seller Details</AccordionTrigger>
          <AccordionContent>
@@ -296,15 +177,15 @@ export default function SearchPage() {
                <Label className="text-xs font-semibold text-gray-500 mb-1.5 block">Language</Label>
                <div className="space-y-1.5">
                  <div className="flex items-center space-x-2">
-                   <Checkbox id="lang-en" />
+                   <Checkbox id="lang-en" data-testid="checkbox-lang-english" />
                    <label htmlFor="lang-en" className="text-sm text-gray-600">English</label>
                  </div>
                  <div className="flex items-center space-x-2">
-                   <Checkbox id="lang-es" />
+                   <Checkbox id="lang-es" data-testid="checkbox-lang-spanish" />
                    <label htmlFor="lang-es" className="text-sm text-gray-600">Spanish</label>
                  </div>
                  <div className="flex items-center space-x-2">
-                   <Checkbox id="lang-fr" />
+                   <Checkbox id="lang-fr" data-testid="checkbox-lang-french" />
                    <label htmlFor="lang-fr" className="text-sm text-gray-600">French</label>
                  </div>
                </div>
@@ -324,7 +205,6 @@ export default function SearchPage() {
       <Navbar />
       
       <main className="flex-1 pt-20">
-        {/* Top Category Slider */}
         <div className="border-b border-gray-200 bg-white sticky top-20 z-40">
           <div className="container mx-auto px-6 md:px-12 lg:px-16">
             <ScrollArea className="w-full whitespace-nowrap py-3">
@@ -333,6 +213,7 @@ export default function SearchPage() {
                   <button
                     key={cat}
                     className="px-4 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors border border-gray-200"
+                    data-testid={`button-category-${cat.toLowerCase().replace(/\s+/g, '-')}`}
                   >
                     {cat}
                   </button>
@@ -345,11 +226,10 @@ export default function SearchPage() {
 
         <div className="container mx-auto px-6 md:px-12 lg:px-16 py-8">
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Mobile Filter Trigger */}
             <div className="lg:hidden mb-2">
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline" className="w-full flex gap-2 border-gray-300">
+                  <Button variant="outline" className="w-full flex gap-2 border-gray-300" data-testid="button-filter-mobile">
                     <Filter className="h-4 w-4" /> Filter Results
                   </Button>
                 </SheetTrigger>
@@ -362,7 +242,6 @@ export default function SearchPage() {
               </Sheet>
             </div>
 
-            {/* Desktop Sidebar */}
             <aside className="hidden lg:block w-64 flex-shrink-0 space-y-6">
                <div className="flex items-center gap-2 font-bold text-lg pb-2 border-b">
                  <Filter className="h-5 w-5" /> Filters
@@ -370,59 +249,56 @@ export default function SearchPage() {
                <FilterContent />
             </aside>
 
-            {/* Main Results Area */}
             <div className="flex-1">
-              {/* Search Header */}
               <div className="mb-6">
-                <h1 className="text-3xl font-bold font-heading mb-2">Results for "{query}"</h1>
+                <h1 className="text-3xl font-bold font-heading mb-2" data-testid="text-search-heading">Results for "{query}"</h1>
                 <div className="flex justify-between items-center">
                    <div className="flex items-center gap-2 text-gray-500 text-sm">
-                      <span className="font-semibold text-gray-900">{isLoading ? '...' : filteredResults.length}</span> services available
+                      <span className="font-semibold text-gray-900" data-testid="text-results-count">{isLoading ? '...' : results.length}</span> services available
                    </div>
                    
                    <div className="flex items-center gap-2 text-sm">
                       <span className="text-gray-500">Sort by:</span>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                           <span className="font-bold cursor-pointer flex items-center gap-1">Recommended <ChevronDown className="h-3 w-3" /></span>
+                           <span className="font-bold cursor-pointer flex items-center gap-1" data-testid="button-sort-dropdown">Recommended <ChevronDown className="h-3 w-3" /></span>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                           <DropdownMenuCheckboxItem checked>Recommended</DropdownMenuCheckboxItem>
-                           <DropdownMenuCheckboxItem>Best Selling</DropdownMenuCheckboxItem>
-                           <DropdownMenuCheckboxItem>Newest Arrivals</DropdownMenuCheckboxItem>
-                           <DropdownMenuCheckboxItem>Price: Low to High</DropdownMenuCheckboxItem>
-                           <DropdownMenuCheckboxItem>Price: High to Low</DropdownMenuCheckboxItem>
+                           <DropdownMenuCheckboxItem checked data-testid="sort-recommended">Recommended</DropdownMenuCheckboxItem>
+                           <DropdownMenuCheckboxItem data-testid="sort-best-selling">Best Selling</DropdownMenuCheckboxItem>
+                           <DropdownMenuCheckboxItem data-testid="sort-newest">Newest Arrivals</DropdownMenuCheckboxItem>
+                           <DropdownMenuCheckboxItem data-testid="sort-price-low">Price: Low to High</DropdownMenuCheckboxItem>
+                           <DropdownMenuCheckboxItem data-testid="sort-price-high">Price: High to Low</DropdownMenuCheckboxItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                    </div>
                 </div>
               </div>
 
-              {/* Results Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {isLoading ? (
                   [1, 2, 3, 4, 5, 6].map((i) => (
                     <ServiceCardSkeleton key={i} />
                   ))
-                ) : filteredResults.length > 0 ? (
-                  filteredResults.map((service) => (
+                ) : results.length > 0 ? (
+                  results.map((service) => (
                     <ServiceCard key={service.id} {...service} />
                   ))
                 ) : (
-                  <div className="col-span-full flex flex-col items-center justify-center py-16 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                  <div className="col-span-full flex flex-col items-center justify-center py-16 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200" data-testid="empty-search-results">
                     <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
                       <Globe className="h-8 w-8 text-gray-400" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">No detectives found here</h3>
                     <p className="text-gray-500 mb-6 text-center max-w-md">
-                      We couldn't find any detectives matching your filters in {countryFilter || "this region"}.
+                      We couldn't find any detectives matching your search for "{query}"{countryFilter ? ` in ${countryFilter}` : ""}.
                     </p>
                     <Button 
                       onClick={() => {
-                        // Clear filters logic could go here
                         window.location.href = "/search"; 
                       }}
                       variant="outline"
+                      data-testid="button-clear-filters"
                     >
                       Clear Filters & Search All
                     </Button>
@@ -430,9 +306,9 @@ export default function SearchPage() {
                 )}
               </div>
 
-               {!isLoading && filteredResults.length > 0 && (
+               {!isLoading && results.length > 0 && (
                  <div className="mt-12 flex justify-center">
-                   <Button variant="outline" className="px-8 border-black text-black hover:bg-gray-50">Load More</Button>
+                   <Button variant="outline" className="px-8 border-black text-black hover:bg-gray-50" data-testid="button-load-more">Load More</Button>
                  </div>
                )}
             </div>

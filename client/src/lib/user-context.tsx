@@ -1,22 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useToast } from "@/hooks/use-toast";
+import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
+import { useAuth } from "./hooks";
+import type { User } from "@shared/schema";
 
-// Define User Type
-type UserRole = "user" | "detective" | "admin";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  avatar?: string;
-}
-
-interface Detective {
+interface FavoriteService {
   id: string;
   name: string;
   title: string;
-  image?: string;
+  image: string;
   avatar: string;
   rating: number;
   reviews: number;
@@ -27,94 +17,49 @@ interface Detective {
 
 interface UserContextType {
   user: User | null;
-  favorites: Detective[];
-  login: (email: string, role?: UserRole) => void;
-  logout: () => void;
-  toggleFavorite: (detective: Detective) => void;
+  isLoading: boolean;
+  isAuthenticated: boolean;
   isFavorite: (id: string) => boolean;
+  toggleFavorite: (service: FavoriteService) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [favorites, setFavorites] = useState<Detective[]>([]);
-  const { toast } = useToast();
+  const { data, isLoading } = useAuth();
+  const [favorites, setFavorites] = useState<FavoriteService[]>([]);
+  
+  const user = data?.user || null;
+  const isAuthenticated = !!user;
 
-  // Load from local storage on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem("mock_user");
-    const storedFavorites = localStorage.getItem("mock_favorites");
-    
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    
-    if (storedFavorites) {
-      setFavorites(JSON.parse(storedFavorites));
+    const stored = localStorage.getItem("favorites");
+    if (stored) {
+      try {
+        setFavorites(JSON.parse(stored));
+      } catch (e) {
+        console.error("Failed to parse favorites", e);
+      }
     }
   }, []);
 
-  const login = (email: string, role: UserRole = "user") => {
-    const mockUser: User = {
-      id: "u_12345",
-      name: email.split("@")[0],
-      email,
-      role,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
-    };
-    
-    setUser(mockUser);
-    localStorage.setItem("mock_user", JSON.stringify(mockUser));
-    
-    toast({
-      title: "Welcome back!",
-      description: `Logged in as ${mockUser.name}`,
-    });
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("mock_user");
-    toast({
-      title: "Logged out",
-      description: "See you soon!",
-    });
-  };
-
-  const toggleFavorite = (detective: Detective) => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to save favorites.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setFavorites(prev => {
-      const exists = prev.find(f => f.id === detective.id);
-      let newFavorites;
-      
-      if (exists) {
-        newFavorites = prev.filter(f => f.id !== detective.id);
-        toast({ description: "Removed from favorites" });
-      } else {
-        newFavorites = [...prev, detective];
-        toast({ description: "Added to favorites" });
-      }
-      
-      localStorage.setItem("mock_favorites", JSON.stringify(newFavorites));
-      return newFavorites;
-    });
-  };
-
   const isFavorite = (id: string) => {
-    return favorites.some(f => f.id === id);
+    return favorites.some(fav => fav.id === id);
+  };
+
+  const toggleFavorite = (service: FavoriteService) => {
+    setFavorites(prev => {
+      const exists = prev.some(fav => fav.id === service.id);
+      const updated = exists 
+        ? prev.filter(fav => fav.id !== service.id)
+        : [...prev, service];
+      localStorage.setItem("favorites", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   return (
-    <UserContext.Provider value={{ user, favorites, login, logout, toggleFavorite, isFavorite }}>
+    <UserContext.Provider value={{ user, isLoading, isAuthenticated, isFavorite, toggleFavorite }}>
       {children}
     </UserContext.Provider>
   );

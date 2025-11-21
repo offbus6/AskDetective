@@ -2,31 +2,54 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useLocation } from "wouter";
-import { useUser } from "@/lib/user-context";
 import { useState } from "react";
+import { useLogin } from "@/lib/hooks";
+import { useToast } from "@/hooks/use-toast";
 
 // @ts-ignore
 import heroBg from "@assets/generated_images/professional_modern_city_skyline_at_dusk_with_subtle_mystery_vibes.png";
 
 export default function Login() {
-  const { login } = useUser();
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const loginMutation = useLogin();
+  const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !password) {
+      toast({
+        title: "Error",
+        description: "Please enter both email and password",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    // Basic check to see if admin login
-    const role = email.includes("admin") ? "admin" : "user";
-    
-    login(email, role);
-    
-    if (role === "admin") {
-      setLocation("/admin/dashboard");
-    } else {
-      setLocation("/");
+    try {
+      const result = await loginMutation.mutateAsync({ email, password });
+      const user = result.user;
+      
+      toast({
+        title: "Welcome back!",
+        description: `Logged in as ${user.name}`,
+      });
+      
+      // Redirect based on role
+      if (user.role === "admin") {
+        setLocation("/admin/dashboard");
+      } else if (user.role === "detective") {
+        setLocation("/detective/dashboard");
+      } else {
+        setLocation("/");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid email or password",
+        variant: "destructive",
+      });
     }
   };
 
@@ -82,7 +105,14 @@ export default function Login() {
               />
             </div>
 
-            <Button type="submit" className="w-full h-12 bg-green-600 hover:bg-green-700 text-lg font-bold">Continue</Button>
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-green-600 hover:bg-green-700 text-lg font-bold"
+              disabled={loginMutation.isPending}
+              data-testid="button-login"
+            >
+              {loginMutation.isPending ? "Signing in..." : "Continue"}
+            </Button>
             
             <div className="relative">
               <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-200"></span></div>

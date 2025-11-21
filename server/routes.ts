@@ -43,7 +43,7 @@ const requireRole = (...roles: string[]) => {
     if (!req.session.userId) {
       return res.status(401).json({ error: "Unauthorized - Please log in" });
     }
-    if (!roles.includes(req.session.userRole)) {
+    if (!roles.includes(req.session.userRole || "")) {
       return res.status(403).json({ error: "Forbidden - Insufficient permissions" });
     }
     next();
@@ -515,7 +515,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate request body - only allow whitelisted fields
       const validatedData = updateOrderSchema.parse(req.body);
-      const updatedOrder = await storage.updateOrder(req.params.id, validatedData);
+      // Type assertion is safe because storage.updateOrder handles string-to-Date conversion internally
+      const updatedOrder = await storage.updateOrder(req.params.id, validatedData as any);
       res.json({ order: updatedOrder });
     } catch (error) {
       if (error instanceof z.ZodError) {
