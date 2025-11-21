@@ -11,14 +11,15 @@ const PLANS = [
   {
     id: "free",
     name: "Free",
-    price: 0,
+    monthlyPrice: 0,
+    yearlyPrice: 0,
     description: "Basic visibility for new detectives.",
     features: [
       "Basic Profile Listing",
       "Email Contact Only",
-      "1 Service Category",
+      "2 Service Categories",
       "Standard Search Ranking",
-      "5% Platform Fee"
+      "No Phone/WhatsApp Displayed"
     ],
     highlight: false,
     buttonText: "Get Started"
@@ -26,14 +27,14 @@ const PLANS = [
   {
     id: "pro",
     name: "Pro",
-    price: 29,
+    monthlyPrice: 29,
+    yearlyPrice: 290,
     description: "Enhanced tools for growing agencies.",
     features: [
       "Verified Badge",
       "Phone & WhatsApp Contact",
-      "3 Service Categories",
+      "4 Service Categories",
       "Boosted Search Ranking",
-      "2% Platform Fee",
       "Priority Support"
     ],
     highlight: true,
@@ -43,15 +44,15 @@ const PLANS = [
   {
     id: "agency",
     name: "Agency",
-    price: 99,
+    monthlyPrice: 99,
+    yearlyPrice: 990,
     description: "Maximum exposure for top firms.",
     features: [
       "Agency Profile (Multiple Detectives)",
       "Unlimited Categories",
-      "Top Search Ranking",
-      "0% Platform Fee",
-      "Dedicated Account Manager",
-      "Featured on Homepage"
+      "Free Blue Tick Included",
+      "Recommended Badge",
+      "Top Search Ranking"
     ],
     highlight: false,
     buttonText: "Go Agency"
@@ -88,7 +89,7 @@ export default function DetectiveSubscription() {
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mt-8">
           {PLANS.map((plan) => {
-            const price = isAnnual ? Math.floor(plan.price * 12 * 0.8) : plan.price;
+            const price = isAnnual ? plan.yearlyPrice : plan.monthlyPrice;
             const period = isAnnual ? "/year" : "/month";
             
             return (
@@ -150,6 +151,34 @@ export default function DetectiveSubscription() {
               </Card>
             );
           })}
+        </div>
+
+        {/* Blue Tick Add-on */}
+        <div className="max-w-xl mx-auto mt-12">
+          <Card className="border-blue-200 bg-blue-50/30">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="bg-blue-100 p-2 rounded-full">
+                    <Check className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Blue Tick Verification</CardTitle>
+                    <CardDescription>Stand out with a verified badge on your profile.</CardDescription>
+                  </div>
+                </div>
+                <div className="text-right">
+                   <div className="text-2xl font-bold text-blue-900">${isAnnual ? "150" : "15"}</div>
+                   <div className="text-xs text-blue-600">{isAnnual ? "/year" : "/month"}</div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardFooter>
+              <Button variant="outline" className="w-full border-blue-200 text-blue-700 hover:bg-blue-100" onClick={() => handleSelectPlan('blue-tick')}>
+                Add Blue Tick Verification
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
 
         <div className="max-w-4xl mx-auto mt-16 bg-gray-900 rounded-2xl p-8 md:p-12 text-center text-white relative overflow-hidden">

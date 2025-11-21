@@ -5,13 +5,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, MapPin, Check, Clock, RefreshCw, MessageSquare } from "lucide-react";
+import { Star, MapPin, Check, Clock, RefreshCw, MessageSquare, Mail, Phone, MessageCircle, ShieldCheck } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
 
 export default function DetectiveProfile() {
+  // Mock subscription tier for demo - change this to 'free' or 'agency' to test other views
+  const detectiveTier = 'agency' as 'free' | 'pro' | 'agency';
+
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900">
       <Navbar />
@@ -32,7 +35,14 @@ export default function DetectiveProfile() {
                 <AvatarFallback>JB</AvatarFallback>
               </Avatar>
               <div>
-                <div className="font-bold text-lg">James Bond</div>
+                <div className="font-bold text-lg flex items-center gap-2">
+                  James Bond
+                  {detectiveTier === 'agency' && (
+                     <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100 gap-1 text-xs px-2 py-0.5">
+                        <ShieldCheck className="h-3 w-3" /> Recommended
+                     </Badge>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <span className="text-yellow-500 font-bold flex items-center gap-1">
                     <Star className="h-4 w-4 fill-yellow-500" /> 5.0
@@ -112,6 +122,23 @@ export default function DetectiveProfile() {
                   <p className="text-gray-700 leading-relaxed">
                     Former MI6 operative turned private investigator. Specializing in high-stakes surveillance, asset recovery, and deep-dive background checks. I have access to databases that others don't. When you need the truth, I'm the one you call.
                   </p>
+                  
+                  {/* Contact Methods - Conditional Display */}
+                  <div className="pt-4 flex gap-3">
+                     <Button variant="outline" className="gap-2">
+                        <Mail className="h-4 w-4" /> Contact via Email
+                     </Button>
+                     {detectiveTier !== 'free' && (
+                       <>
+                         <Button variant="outline" className="gap-2">
+                            <Phone className="h-4 w-4" /> Call
+                         </Button>
+                         <Button variant="outline" className="gap-2 bg-green-50 text-green-600 border-green-200 hover:bg-green-100">
+                            <MessageCircle className="h-4 w-4" /> WhatsApp
+                         </Button>
+                       </>
+                     )}
+                  </div>
                 </div>
               </div>
             </section>

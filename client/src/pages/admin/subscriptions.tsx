@@ -19,8 +19,8 @@ interface PlanFeature {
 interface SubscriptionPlan {
   id: string;
   name: string;
-  price: number;
-  period: string;
+  monthlyPrice: number;
+  yearlyPrice: number;
   description: string;
   features: string[];
   highlight: boolean;
@@ -32,15 +32,15 @@ const INITIAL_PLANS: SubscriptionPlan[] = [
   {
     id: "free",
     name: "Free",
-    price: 0,
-    period: "/month",
+    monthlyPrice: 0,
+    yearlyPrice: 0,
     description: "Basic visibility for new detectives.",
     features: [
       "Basic Profile Listing",
       "Email Contact Only",
-      "1 Service Category",
+      "2 Service Categories",
       "Standard Search Ranking",
-      "5% Platform Fee"
+      "No Phone/WhatsApp Displayed"
     ],
     highlight: false,
     popular: false,
@@ -49,15 +49,14 @@ const INITIAL_PLANS: SubscriptionPlan[] = [
   {
     id: "pro",
     name: "Pro",
-    price: 29,
-    period: "/month",
+    monthlyPrice: 29,
+    yearlyPrice: 290,
     description: "Enhanced tools for growing agencies.",
     features: [
       "Verified Badge",
       "Phone & WhatsApp Contact",
-      "3 Service Categories",
+      "4 Service Categories",
       "Boosted Search Ranking",
-      "2% Platform Fee",
       "Priority Support"
     ],
     highlight: true,
@@ -67,16 +66,15 @@ const INITIAL_PLANS: SubscriptionPlan[] = [
   {
     id: "agency",
     name: "Agency",
-    price: 99,
-    period: "/month",
+    monthlyPrice: 99,
+    yearlyPrice: 990,
     description: "Maximum exposure for top firms.",
     features: [
       "Agency Profile (Multiple Detectives)",
       "Unlimited Categories",
-      "Top Search Ranking",
-      "0% Platform Fee",
-      "Dedicated Account Manager",
-      "Featured on Homepage"
+      "Free Blue Tick Included",
+      "Recommended Badge",
+      "Top Search Ranking"
     ],
     highlight: false,
     popular: false,
@@ -86,6 +84,7 @@ const INITIAL_PLANS: SubscriptionPlan[] = [
 
 export default function AdminSubscriptions() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>(INITIAL_PLANS);
+  const [blueTickPrice, setBlueTickPrice] = useState({ monthly: 15, yearly: 150 });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
@@ -93,7 +92,8 @@ export default function AdminSubscriptions() {
   // Form State
   const [formData, setFormData] = useState<Partial<SubscriptionPlan>>({
     name: "",
-    price: 0,
+    monthlyPrice: 0,
+    yearlyPrice: 0,
     description: "",
     features: [],
     highlight: false,
@@ -110,8 +110,8 @@ export default function AdminSubscriptions() {
       setCurrentPlan(null);
       setFormData({
         name: "",
-        price: 0,
-        period: "/month",
+        monthlyPrice: 0,
+        yearlyPrice: 0,
         description: "",
         features: [],
         highlight: false,
@@ -131,7 +131,6 @@ export default function AdminSubscriptions() {
       const newPlan = {
         ...formData,
         id: formData.name?.toLowerCase().replace(/\s+/g, '-') || `plan-${Date.now()}`,
-        period: "/month"
       } as SubscriptionPlan;
       setPlans([...plans, newPlan]);
     }
@@ -175,6 +174,46 @@ export default function AdminSubscriptions() {
           </Button>
         </div>
 
+        {/* Blue Tick Configuration */}
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100">Add-on Service</Badge>
+              <CardTitle className="text-lg text-blue-900">Blue Tick Verification</CardTitle>
+            </div>
+            <CardDescription className="text-blue-700/80">
+              Set the standalone price for the Blue Tick verification badge (included free in Agency plan).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-4">
+              <div className="space-y-2 w-32">
+                <Label htmlFor="bt-monthly">Monthly ($)</Label>
+                <Input 
+                  id="bt-monthly" 
+                  type="number" 
+                  value={blueTickPrice.monthly} 
+                  onChange={(e) => setBlueTickPrice({...blueTickPrice, monthly: Number(e.target.value)})}
+                  className="bg-white"
+                />
+              </div>
+              <div className="space-y-2 w-32">
+                <Label htmlFor="bt-yearly">Yearly ($)</Label>
+                <Input 
+                  id="bt-yearly" 
+                  type="number" 
+                  value={blueTickPrice.yearly} 
+                  onChange={(e) => setBlueTickPrice({...blueTickPrice, yearly: Number(e.target.value)})}
+                  className="bg-white"
+                />
+              </div>
+              <Button onClick={() => alert("Blue Tick pricing updated!")} className="bg-blue-600 hover:bg-blue-700 text-white">
+                Update Pricing
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Active Plans</CardTitle>
@@ -187,7 +226,8 @@ export default function AdminSubscriptions() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Plan Name</TableHead>
-                  <TableHead>Price</TableHead>
+                  <TableHead>Monthly</TableHead>
+                  <TableHead>Yearly</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Highlights</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -200,7 +240,8 @@ export default function AdminSubscriptions() {
                       <div>{plan.name}</div>
                       <div className="text-xs text-gray-500 truncate max-w-[200px]">{plan.description}</div>
                     </TableCell>
-                    <TableCell>${plan.price}{plan.period}</TableCell>
+                    <TableCell>${plan.monthlyPrice}/mo</TableCell>
+                    <TableCell>${plan.yearlyPrice}/yr</TableCell>
                     <TableCell>
                       <Badge variant={plan.active ? "default" : "secondary"} className={plan.active ? "bg-green-100 text-green-700 hover:bg-green-200" : ""}>
                         {plan.active ? "Active" : "Inactive"}
@@ -240,23 +281,33 @@ export default function AdminSubscriptions() {
             </DialogHeader>
             
             <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Plan Name</Label>
+                <Input 
+                  id="name" 
+                  value={formData.name} 
+                  onChange={(e) => setFormData({...formData, name: e.target.value})} 
+                  placeholder="e.g. Enterprise"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Plan Name</Label>
+                  <Label htmlFor="monthlyPrice">Monthly Price ($)</Label>
                   <Input 
-                    id="name" 
-                    value={formData.name} 
-                    onChange={(e) => setFormData({...formData, name: e.target.value})} 
-                    placeholder="e.g. Enterprise"
+                    id="monthlyPrice" 
+                    type="number" 
+                    value={formData.monthlyPrice} 
+                    onChange={(e) => setFormData({...formData, monthlyPrice: Number(e.target.value)})} 
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="price">Monthly Price ($)</Label>
+                  <Label htmlFor="yearlyPrice">Yearly Price ($)</Label>
                   <Input 
-                    id="price" 
+                    id="yearlyPrice" 
                     type="number" 
-                    value={formData.price} 
-                    onChange={(e) => setFormData({...formData, price: Number(e.target.value)})} 
+                    value={formData.yearlyPrice} 
+                    onChange={(e) => setFormData({...formData, yearlyPrice: Number(e.target.value)})} 
                   />
                 </div>
               </div>
