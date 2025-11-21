@@ -33,7 +33,7 @@ const RESULTS = [
     ],
     avatar: maleAvatar,
     name: "James Bond",
-    level: "Top Rated Detective",
+    level: "Agency Verified",
     title: "I will conduct a comprehensive background check for any individual",
     rating: 5.0,
     reviews: 1254,
@@ -48,7 +48,7 @@ const RESULTS = [
     ],
     avatar: femaleAvatar,
     name: "Sarah Holmes",
-    level: "Level 2 Detective",
+    level: "Pro Detective",
     title: "I will perform discreet surveillance and provide video evidence",
     rating: 4.9,
     reviews: 843,
@@ -63,7 +63,7 @@ const RESULTS = [
     ],
     avatar: maleAvatar,
     name: "Mike Hammer",
-    level: "Level 2 Detective",
+    level: "Pro Detective",
     title: "I will find missing persons and reconnect families",
     rating: 4.8,
     reviews: 420,
@@ -78,7 +78,7 @@ const RESULTS = [
     ],
     avatar: femaleAvatar,
     name: "Nancy Drew",
-    level: "Top Rated Detective",
+    level: "Agency Verified",
     title: "I will investigate cyber bullying and online harassment",
     rating: 5.0,
     reviews: 2100,
@@ -93,7 +93,7 @@ const RESULTS = [
     ],
     avatar: maleAvatar,
     name: "Thomas Magnum",
-    level: "Level 1 Detective",
+    level: "Free Member",
     title: "I will handle corporate fraud investigations and embezzlement",
     rating: 4.7,
     reviews: 156,
@@ -108,7 +108,7 @@ const RESULTS = [
     ],
     avatar: femaleAvatar,
     name: "Jessica Jones",
-    level: "Top Rated Detective",
+    level: "Agency Verified",
     title: "I will locate assets and hidden funds for divorce cases",
     rating: 4.9,
     reviews: 980,
@@ -232,17 +232,11 @@ export default function SearchPage() {
                      <div className="space-y-2 pt-1">
                        <div className="flex items-center space-x-2">
                          <Switch id="pro-only" />
-                         <Label htmlFor="pro-only" className="text-sm font-semibold text-gray-700">Pro Services</Label>
+                         <Label htmlFor="pro-only" className="text-sm font-semibold text-gray-700">Pro Detectives</Label>
                        </div>
                        <div className="flex items-center space-x-2">
-                         <Switch id="online-only" />
-                         <Label htmlFor="online-only" className="text-sm">Online Now</Label>
-                       </div>
-                       <div className="pt-2 space-y-2">
-                         <div className="flex items-center space-x-2">
-                           <Checkbox id="express" />
-                           <label htmlFor="express" className="text-sm text-gray-600">Express Delivery (24h)</label>
-                         </div>
+                         <Switch id="agency-only" />
+                         <Label htmlFor="agency-only" className="text-sm font-semibold text-gray-700">Agency Verified</Label>
                        </div>
                      </div>
                    </AccordionContent>
@@ -254,24 +248,6 @@ export default function SearchPage() {
                    <AccordionContent>
                      <div className="space-y-3 pt-1">
                        <div>
-                         <Label className="text-xs font-semibold text-gray-500 mb-1.5 block">Seller Level</Label>
-                         <div className="space-y-1.5">
-                           <div className="flex items-center space-x-2">
-                             <Checkbox id="level-top" />
-                             <label htmlFor="level-top" className="text-sm text-gray-600">Top Rated</label>
-                           </div>
-                           <div className="flex items-center space-x-2">
-                             <Checkbox id="level-2" />
-                             <label htmlFor="level-2" className="text-sm text-gray-600">Level 2</label>
-                           </div>
-                           <div className="flex items-center space-x-2">
-                             <Checkbox id="level-1" />
-                             <label htmlFor="level-1" className="text-sm text-gray-600">Level 1</label>
-                           </div>
-                         </div>
-                       </div>
-                       
-                       <div className="pt-2">
                          <Label className="text-xs font-semibold text-gray-500 mb-1.5 block">Language</Label>
                          <div className="space-y-1.5">
                            <div className="flex items-center space-x-2">
