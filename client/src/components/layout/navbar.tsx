@@ -126,10 +126,6 @@ export function Navbar() {
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-6 font-medium">
-          <Link href="/detective-signup">
-            <a className="hover:text-green-500 transition-colors">Become a Detective</a>
-          </Link>
-
           {user ? (
             <>
               {/* Favorites Icon */}
@@ -180,17 +176,42 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <Link href="/login">
-                <a className="hover:text-green-500 transition-colors">Sign In</a>
-              </Link>
-              <Link href="/signup">
-                <Button 
-                  variant={isScrolled || location !== '/' ? "outline" : "outline"} 
-                  className={`${isScrolled || location !== '/' ? "text-green-500 border-green-500 hover:bg-green-50" : "text-white border-white hover:bg-white hover:text-green-500"} transition-colors`}
-                >
-                  Join
-                </Button>
-              </Link>
+              {/* Login Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="hover:text-green-500 transition-colors">
+                    Login <ChevronDown className="ml-1 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <Link href="/login">
+                    <DropdownMenuItem className="cursor-pointer">As a General User</DropdownMenuItem>
+                  </Link>
+                  <Link href="/login">
+                    <DropdownMenuItem className="cursor-pointer">As a Detective</DropdownMenuItem>
+                  </Link>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Sign Up Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant={isScrolled || location !== '/' ? "outline" : "outline"} 
+                    className={`${isScrolled || location !== '/' ? "text-green-500 border-green-500 hover:bg-green-50" : "text-white border-white hover:bg-white hover:text-green-500"} transition-colors gap-1`}
+                  >
+                    Sign Up <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <Link href="/signup">
+                    <DropdownMenuItem className="cursor-pointer">As a General User</DropdownMenuItem>
+                  </Link>
+                  <Link href="/detective-signup">
+                    <DropdownMenuItem className="cursor-pointer">As a Detective</DropdownMenuItem>
+                  </Link>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
         </div>
@@ -277,19 +298,39 @@ export function Navbar() {
                     </button>
                   </>
                 ) : (
-                  <>
-                    <Link href="/login">
-                      <a className="text-lg font-medium">Sign In</a>
-                    </Link>
-                    <Link href="/signup">
-                      <a className="text-lg font-medium text-green-600">Join</a>
-                    </Link>
-                  </>
+                  <div className="flex flex-col gap-4">
+                    {/* Mobile Login Dropdown */}
+                    <div className="flex flex-col gap-2">
+                      <span className="text-sm font-semibold text-gray-500">Login</span>
+                      <Link href="/login">
+                        <a className="text-lg font-medium pl-2 border-l-2 border-transparent hover:border-green-500 hover:text-green-600 transition-colors">
+                          As a General User
+                        </a>
+                      </Link>
+                      <Link href="/login">
+                        <a className="text-lg font-medium pl-2 border-l-2 border-transparent hover:border-green-500 hover:text-green-600 transition-colors">
+                          As a Detective
+                        </a>
+                      </Link>
+                    </div>
+
+                    {/* Mobile Sign Up Dropdown */}
+                    <div className="flex flex-col gap-2 mt-2">
+                      <span className="text-sm font-semibold text-gray-500">Sign Up</span>
+                      <Link href="/signup">
+                        <a className="text-lg font-medium pl-2 border-l-2 border-green-500 text-green-600 bg-green-50/50 py-1 rounded-r">
+                          As a General User
+                        </a>
+                      </Link>
+                      <Link href="/detective-signup">
+                        <a className="text-lg font-medium pl-2 border-l-2 border-green-500 text-green-600 bg-green-50/50 py-1 rounded-r">
+                          As a Detective
+                        </a>
+                      </Link>
+                    </div>
+                  </div>
                 )}
 
-                <Link href="/detective-signup">
-                  <a className="text-lg font-medium">Become a Detective</a>
-                </Link>
                 <hr />
                 <div className="flex flex-col gap-2">
                   <h4 className="text-sm font-semibold text-gray-500">Browse Categories</h4>
