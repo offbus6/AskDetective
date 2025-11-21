@@ -132,6 +132,25 @@ const RESULTS = [
     reviews: 980,
     price: 450,
   },
+  {
+    id: "7",
+    images: [
+      "https://images.unsplash.com/photo-1577563908411-5077b6dc7624?q=80&w=1000&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1555861496-0666c8981751?q=80&w=1000&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1575089976121-8ed7b2a54265?q=80&w=1000&auto=format&fit=crop"
+    ],
+    avatar: maleAvatar,
+    name: "Unknown Detective Agency",
+    level: "Unclaimed Profile",
+    badges: [],
+    category: "Private Investigation",
+    country: "US",
+    title: "Professional Investigation Services - Agency Profile",
+    rating: 0,
+    reviews: 0,
+    price: 100,
+    isUnclaimed: true
+  }
 ];
 
 const CATEGORIES = [

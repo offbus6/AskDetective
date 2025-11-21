@@ -19,15 +19,19 @@ interface ServiceCardProps {
   rating: number;
   reviews: number;
   price: number;
+  isUnclaimed?: boolean;
 }
 
 import { useCurrency } from "@/lib/currency-context";
+import { AlertTriangle } from "lucide-react";
 
-export function ServiceCard({ id, images, image, avatar, name, level, category, badges = [], title, rating, reviews, price }: ServiceCardProps) {
+export function ServiceCard({ id, images, image, avatar, name, level, category, badges = [], title, rating, reviews, price, isUnclaimed }: ServiceCardProps) {
   const displayImages = images || (image ? [image] : []);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const { formatPrice } = useCurrency();
+
+  const profileLink = isUnclaimed ? `/detective/profile?unclaimed=true` : `/service/${id}`;
 
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -42,19 +46,26 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
   };
 
   return (
-    <Link href={`/service/${id}`}>
+    <Link href={profileLink}>
       <a className="block h-full">
         <Card 
-          className="h-full overflow-hidden border-gray-200 hover:shadow-md transition-shadow group cursor-pointer flex flex-col"
+          className={`h-full overflow-hidden border-gray-200 hover:shadow-md transition-shadow group cursor-pointer flex flex-col ${isUnclaimed ? 'opacity-90 border-dashed border-2' : ''}`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
           {/* Image Slider */}
           <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+            {isUnclaimed && (
+              <div className="absolute inset-0 z-10 bg-black/10 flex items-center justify-center">
+                <div className="bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-gray-600 flex items-center gap-1 shadow-sm">
+                  <AlertTriangle className="h-3 w-3" /> Unclaimed Profile
+                </div>
+              </div>
+            )}
             <img 
               src={displayImages[currentImageIndex]} 
               alt={title} 
-              className="object-cover w-full h-full transition-transform duration-300"
+              className={`object-cover w-full h-full transition-transform duration-300 ${isUnclaimed ? 'grayscale' : ''}`}
             />
             
             {/* Navigation Arrows - Only show on hover and if multiple images */}
@@ -99,30 +110,36 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
                   
                   {/* Badges */}
                   <div className="flex items-center gap-1">
-                    {badges.includes('verified') && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            {/* Twitter/Facebook Style Blue Tick */}
-                            <BadgeCheck className="h-4 w-4 text-blue-500 fill-blue-500 text-white flex-shrink-0" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Verified Detective</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
+                    {isUnclaimed ? (
+                      <Badge variant="outline" className="text-[10px] h-5 bg-gray-100 text-gray-500 border-gray-300">Unclaimed</Badge>
+                    ) : (
+                      <>
+                        {badges.includes('verified') && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                {/* Twitter/Facebook Style Blue Tick */}
+                                <BadgeCheck className="h-4 w-4 text-blue-500 fill-blue-500 text-white flex-shrink-0" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Verified Detective</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
 
-                    {badges.includes('recommended') && (
-                      <span className="bg-green-100 text-green-800 text-[10px] px-1.5 py-0.5 rounded font-bold">
-                        Recommended
-                      </span>
-                    )}
+                        {badges.includes('recommended') && (
+                          <span className="bg-green-100 text-green-800 text-[10px] px-1.5 py-0.5 rounded font-bold">
+                            Recommended
+                          </span>
+                        )}
 
-                    {badges.includes('pro') && (
-                      <span className="text-blue-600 text-[10px] font-black border border-blue-200 px-1 rounded bg-blue-50">
-                        PRO
-                      </span>
+                        {badges.includes('pro') && (
+                          <span className="text-blue-600 text-[10px] font-black border border-blue-200 px-1 rounded bg-blue-50">
+                            PRO
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -138,9 +155,15 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
 
             {/* Rating */}
             <div className="flex items-center gap-1 text-sm mt-auto">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-bold text-gray-900">{rating}</span>
-              <span className="text-gray-400">({reviews})</span>
+              {isUnclaimed ? (
+                <span className="text-gray-400 text-xs italic">No reviews yet</span>
+              ) : (
+                <>
+                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  <span className="font-bold text-gray-900">{rating}</span>
+                  <span className="text-gray-400">({reviews})</span>
+                </>
+              )}
             </div>
           </CardContent>
 
