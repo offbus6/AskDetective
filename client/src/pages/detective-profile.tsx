@@ -5,28 +5,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, Mail, Phone, MessageCircle, ShieldCheck, Upload, FileText, Heart, Clock, RefreshCw, Check } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { useCurrency } from "@/lib/currency-context";
-import { useUser } from "@/lib/user-context";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
-
-import { useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { Star, Mail, Phone, MessageCircle, ShieldCheck, Upload, FileText, Heart, Clock, RefreshCw, Check, Award } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // @ts-ignore
-import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
+import awardGold from "@assets/generated_images/gold_badge_award_icon.png";
+// @ts-ignore
+import awardSilver from "@assets/generated_images/silver_trophy_cup_icon.png";
 
 // Mock data for unclaimed vs claimed profile
 const CLAIMED_PROFILE = {
@@ -41,7 +26,23 @@ const CLAIMED_PROFILE = {
   rating: 5.0,
   reviews: 1254,
   tier: 'agency',
-  price: 150
+  price: 150,
+  recognitions: [
+    {
+      id: '1',
+      name: "Top Investigator 2024",
+      year: "2024",
+      description: "Awarded for outstanding performance in corporate fraud investigation.",
+      image: awardGold
+    },
+    {
+      id: '2',
+      name: "Excellence in Surveillance",
+      year: "2023",
+      description: "Recognized by the National Association of Private Investigators for adherence to ethical standards.",
+      image: awardSilver
+    }
+  ]
 };
 
 const UNCLAIMED_PROFILE = {
@@ -347,6 +348,44 @@ export default function DetectiveProfile() {
                 />
               )}
             </div>
+            
+            {/* Recognitions Section - Agency Only */}
+            {detectiveTier === 'agency' && !isUnclaimed && CLAIMED_PROFILE.recognitions && (
+              <section className="mb-8">
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <Award className="h-4 w-4" /> Recognitions & Awards
+                </h3>
+                <div className="flex gap-4">
+                  {CLAIMED_PROFILE.recognitions.map((rec) => (
+                    <Popover key={rec.id}>
+                      <PopoverTrigger asChild>
+                        <div className="cursor-pointer hover:scale-105 transition-transform">
+                          <div className="h-16 w-16 bg-white border rounded-full shadow-sm flex items-center justify-center overflow-hidden p-2 hover:shadow-md transition-shadow">
+                            <img src={rec.image} alt={rec.name} className="w-full h-full object-contain" />
+                          </div>
+                        </div>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 p-4">
+                        <div className="flex items-start gap-3">
+                           <div className="h-10 w-10 bg-gray-50 rounded-full flex items-center justify-center flex-shrink-0 border">
+                             <img src={rec.image} alt={rec.name} className="w-full h-full object-contain p-1" />
+                           </div>
+                           <div>
+                             <h4 className="font-bold text-sm leading-tight">{rec.name}</h4>
+                             <Badge variant="secondary" className="mt-1 text-[10px] bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100">
+                               {rec.year}
+                             </Badge>
+                           </div>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-3 leading-relaxed border-t pt-2">
+                          {rec.description}
+                        </p>
+                      </PopoverContent>
+                    </Popover>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* About This Service */}
             <section className="mb-10 space-y-4">

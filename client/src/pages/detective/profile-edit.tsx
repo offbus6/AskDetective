@@ -51,7 +51,69 @@ const DEFAULT_PACKAGE: PackageDetails = {
   enabled: true
 };
 
+import { Award } from "lucide-react";
+// @ts-ignore
+import awardGold from "@assets/generated_images/gold_badge_award_icon.png";
+// @ts-ignore
+import awardSilver from "@assets/generated_images/silver_trophy_cup_icon.png";
+// @ts-ignore
+import awardCert from "@assets/generated_images/certificate_scroll_icon.png";
+
+interface Recognition {
+  id: string;
+  name: string;
+  year: string;
+  description: string;
+  image: string;
+}
+
 export default function DetectiveProfileEdit() {
+  const [recognitions, setRecognitions] = useState<Recognition[]>([
+    {
+      id: '1',
+      name: "Top Investigator 2024",
+      year: "2024",
+      description: "Awarded for outstanding performance in corporate fraud investigation.",
+      image: awardGold
+    },
+    {
+      id: '2',
+      name: "Excellence in Surveillance",
+      year: "2023",
+      description: "Recognized by the National Association of Private Investigators.",
+      image: awardSilver
+    }
+  ]);
+
+  const [newRecognition, setNewRecognition] = useState<Partial<Recognition>>({
+    name: "",
+    year: new Date().getFullYear().toString(),
+    description: "",
+    image: awardCert
+  });
+
+  const addRecognition = () => {
+    if (newRecognition.name && newRecognition.year && newRecognition.description && recognitions.length < 4) {
+      setRecognitions([...recognitions, {
+        id: Date.now().toString(),
+        name: newRecognition.name!,
+        year: newRecognition.year!,
+        description: newRecognition.description!,
+        image: newRecognition.image || awardCert
+      }]);
+      setNewRecognition({
+        name: "",
+        year: new Date().getFullYear().toString(),
+        description: "",
+        image: awardCert
+      });
+    }
+  };
+
+  const removeRecognition = (id: string) => {
+    setRecognitions(recognitions.filter(r => r.id !== id));
+  };
+
   const [services, setServices] = useState<Service[]>([
     { 
       name: "Surveillance", 
@@ -162,6 +224,7 @@ export default function DetectiveProfileEdit() {
             <TabsTrigger value="general">General Info</TabsTrigger>
             <TabsTrigger value="services">Services & Pricing</TabsTrigger>
             <TabsTrigger value="verification">Verification</TabsTrigger>
+            {subscriptionTier === 'agency' && <TabsTrigger value="recognitions">Recognitions</TabsTrigger>}
           </TabsList>
           
           {/* General Info Tab */}
@@ -541,6 +604,93 @@ export default function DetectiveProfileEdit() {
                </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Recognitions Tab (Agency Only) */}
+          {subscriptionTier === 'agency' && (
+            <TabsContent value="recognitions">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recognitions & Awards</CardTitle>
+                  <CardDescription>Showcase your achievements to build trust (Max 4).</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {recognitions.map((rec) => (
+                      <div key={rec.id} className="border rounded-lg p-4 flex gap-4 items-start relative group bg-white shadow-sm">
+                        <div className="h-16 w-16 bg-gray-50 rounded-md flex items-center justify-center flex-shrink-0 border overflow-hidden">
+                          <img src={rec.image} alt={rec.name} className="w-full h-full object-contain p-1" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-bold truncate text-sm">{rec.name}</h4>
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{rec.year}</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{rec.description}</p>
+                        </div>
+                        <button 
+                          onClick={() => removeRecognition(rec.id)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {recognitions.length < 4 && (
+                      <div className="border-2 border-dashed rounded-lg p-4 flex flex-col gap-3 hover:bg-gray-50/50 transition-colors">
+                        <h4 className="font-bold text-sm text-gray-700">Add New Recognition</h4>
+                        <div className="space-y-3">
+                          <div className="flex gap-3">
+                             <div className="h-16 w-16 bg-gray-50 rounded-md flex items-center justify-center flex-shrink-0 border cursor-pointer hover:bg-gray-100 transition-colors overflow-hidden" onClick={() => {
+                               // Cycle through mock images for demo
+                               const images = [awardGold, awardSilver, awardCert];
+                               const currentIdx = images.indexOf(newRecognition.image || awardCert);
+                               const nextIdx = (currentIdx + 1) % images.length;
+                               setNewRecognition({...newRecognition, image: images[nextIdx]});
+                             }}>
+                               <img src={newRecognition.image} alt="Preview" className="w-full h-full object-contain p-1" />
+                               <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/10 transition-colors">
+                                 <span className="text-[10px] bg-white/80 px-1 rounded shadow-sm opacity-0 hover:opacity-100">Change</span>
+                               </div>
+                             </div>
+                             <div className="flex-1 space-y-2">
+                               <Input 
+                                 placeholder="Award Name" 
+                                 value={newRecognition.name}
+                                 onChange={(e) => setNewRecognition({...newRecognition, name: e.target.value})}
+                                 className="h-8 text-sm"
+                               />
+                               <Input 
+                                 placeholder="Year" 
+                                 type="number"
+                                 value={newRecognition.year}
+                                 onChange={(e) => setNewRecognition({...newRecognition, year: e.target.value})}
+                                 className="h-8 text-sm"
+                               />
+                             </div>
+                          </div>
+                          <Textarea 
+                            placeholder="Short description..." 
+                            value={newRecognition.description}
+                            onChange={(e) => setNewRecognition({...newRecognition, description: e.target.value})}
+                            className="h-16 text-sm resize-none"
+                          />
+                          <Button 
+                            size="sm" 
+                            className="w-full bg-blue-600 hover:bg-blue-700"
+                            onClick={addRecognition}
+                            disabled={!newRecognition.name || !newRecognition.description}
+                          >
+                            <Plus className="h-3 w-3 mr-1" /> Add Recognition
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </DashboardLayout>
