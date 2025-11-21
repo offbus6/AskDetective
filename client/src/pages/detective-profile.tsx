@@ -615,14 +615,6 @@ export default function DetectiveProfile() {
                           </div>
                         ))}
                       </div>
-
-                      <Button className="w-full bg-green-600 hover:bg-green-700 text-lg font-bold h-12 mt-4">
-                        Continue ({formatPrice(PACKAGES.basic.offerPrice || PACKAGES.basic.price)})
-                      </Button>
-                      
-                      <Button variant="ghost" className="w-full text-gray-500">
-                        Compare Packages
-                      </Button>
                     </div>
                   </div>
                 </Tabs>
