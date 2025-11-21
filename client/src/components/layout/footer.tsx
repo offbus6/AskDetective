@@ -45,6 +45,15 @@ export function Footer() {
             <Link href="#"><a className="hover:underline">FindDetectives Enterprise</a></Link>
             <Link href="#"><a className="hover:underline">FindDetectives Logo Maker</a></Link>
           </div>
+
+          {/* Quick Links for Demo */}
+          <div className="flex flex-col gap-4">
+            <h4 className="font-bold text-gray-900">Quick Links (Demo)</h4>
+            <Link href="/admin/dashboard"><a className="hover:underline text-blue-600">Super Admin Dashboard</a></Link>
+            <Link href="/detective/dashboard"><a className="hover:underline text-green-600">Detective Dashboard</a></Link>
+            <Link href="/detective/subscription"><a className="hover:underline text-green-600">Subscription Dashboard</a></Link>
+            <Link href="/user/dashboard"><a className="hover:underline text-purple-600">User Dashboard</a></Link>
+          </div>
         </div>
         
         <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">

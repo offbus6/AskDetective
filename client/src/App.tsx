@@ -21,6 +21,7 @@ import DetectiveProfileEdit from "@/pages/detective/profile-edit";
 import DetectiveReviews from "@/pages/detective/reviews";
 import DetectiveSubscription from "@/pages/detective/subscription";
 import DetectiveSettings from "@/pages/detective/settings";
+import UserDashboard from "@/pages/user/dashboard";
 
 function Router() {
   return (
@@ -49,6 +50,9 @@ function Router() {
       <Route path="/detective/reviews" component={DetectiveReviews} />
       <Route path="/detective/subscription" component={DetectiveSubscription} />
       <Route path="/detective/settings" component={DetectiveSettings} />
+
+      {/* User Routes */}
+      <Route path="/user/dashboard" component={UserDashboard} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

@@ -12,7 +12,8 @@ import {
   CreditCard,
   UserCheck,
   Star,
-  Layers
+  Layers,
+  Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,7 +24,7 @@ import maleAvatar from "@assets/generated_images/professional_headshot_of_a_priv
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  role: "admin" | "detective";
+  role: "admin" | "detective" | "user";
 }
 
 export function DashboardLayout({ children, role }: DashboardLayoutProps) {
@@ -47,14 +48,21 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
     { href: "/detective/settings", label: "Settings", icon: Settings },
   ];
 
-  const links = role === "admin" ? adminLinks : detectiveLinks;
+  const userLinks = [
+    { href: "/user/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/", label: "Search Detectives", icon: Search }, // Need to import Search
+  ];
+
+  let links = detectiveLinks;
+  if (role === "admin") links = adminLinks;
+  if (role === "user") links = userLinks;
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-white border-r border-gray-200 text-gray-900">
       <div className="p-6 flex items-center gap-2">
         <Shield className="h-8 w-8 text-green-600" />
         <span className="font-bold text-xl tracking-tight font-heading">
-          {role === "admin" ? "Admin" : "Detective"}
+          {role === "admin" ? "Admin" : role === "detective" ? "Detective" : "User"}
           <span className="text-green-600">Portal</span>
         </span>
       </div>
@@ -112,7 +120,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
                 </SheetContent>
               </Sheet>
               <h1 className="text-lg font-semibold hidden md:block text-gray-700">
-                {role === "admin" ? "Welcome back, Admin" : "Welcome back, Detective"}
+                {role === "admin" ? "Welcome back, Admin" : role === "detective" ? "Welcome back, Detective" : "Welcome back, User"}
               </h1>
           </div>
 
@@ -123,12 +131,18 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
             </Button>
             <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
               <div className="text-right hidden md:block">
-                <div className="text-sm font-bold text-gray-900">{role === "admin" ? "Super Admin" : "James Bond"}</div>
-                <div className="text-xs text-gray-500">{role === "admin" ? "System Owner" : "Pro Member"}</div>
+                <div className="text-sm font-bold text-gray-900">
+                  {role === "admin" ? "Super Admin" : role === "detective" ? "James Bond" : "John Doe"}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {role === "admin" ? "System Owner" : role === "detective" ? "Pro Member" : "Member"}
+                </div>
               </div>
               <Avatar>
                 <AvatarImage src={role === "detective" ? maleAvatar : ""} />
-                <AvatarFallback>{role === "admin" ? "SA" : "JB"}</AvatarFallback>
+                <AvatarFallback>
+                  {role === "admin" ? "SA" : role === "detective" ? "JB" : "JD"}
+                </AvatarFallback>
               </Avatar>
             </div>
           </div>
