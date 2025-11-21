@@ -76,6 +76,8 @@ const BACKGROUND_CHECKS = [
     rating: 4.9,
     reviews: 320,
     price: 120,
+    offerPrice: 99,
+    badges: ["pro"],
   },
   {
     id: "bc2",
@@ -87,6 +89,8 @@ const BACKGROUND_CHECKS = [
     rating: 4.8,
     reviews: 150,
     price: 90,
+    offerPrice: 75,
+    badges: ["verified"],
   },
   {
     id: "bc3",
@@ -98,6 +102,8 @@ const BACKGROUND_CHECKS = [
     rating: 5.0,
     reviews: 560,
     price: 250,
+    offerPrice: null,
+    badges: ["verified", "recommended"],
   },
   {
     id: "bc4",
@@ -109,6 +115,8 @@ const BACKGROUND_CHECKS = [
     rating: 4.9,
     reviews: 410,
     price: 180,
+    offerPrice: 150,
+    badges: ["pro"],
   },
 ];
 
@@ -123,6 +131,8 @@ const INFIDELITY_SERVICES = [
     rating: 5.0,
     reviews: 890,
     price: 350,
+    offerPrice: 299,
+    badges: ["verified", "recommended"],
   },
   {
     id: "inf2",
@@ -134,6 +144,8 @@ const INFIDELITY_SERVICES = [
     rating: 4.8,
     reviews: 230,
     price: 300,
+    offerPrice: null,
+    badges: ["pro"],
   },
   {
     id: "inf3",
@@ -145,6 +157,8 @@ const INFIDELITY_SERVICES = [
     rating: 4.9,
     reviews: 450,
     price: 280,
+    offerPrice: 250,
+    badges: ["verified"],
   },
   {
     id: "inf4",
@@ -156,6 +170,8 @@ const INFIDELITY_SERVICES = [
     rating: 5.0,
     reviews: 670,
     price: 500,
+    offerPrice: 450,
+    badges: ["verified", "recommended"],
   },
 ];
 
@@ -170,6 +186,8 @@ const SURVEILLANCE_SERVICES = [
     rating: 5.0,
     reviews: 1100,
     price: 600,
+    offerPrice: 550,
+    badges: ["pro", "recommended"],
   },
   {
     id: "sur2",
@@ -181,6 +199,8 @@ const SURVEILLANCE_SERVICES = [
     rating: 4.9,
     reviews: 950,
     price: 550,
+    offerPrice: null,
+    badges: ["verified"],
   },
   {
     id: "sur3",
@@ -192,6 +212,8 @@ const SURVEILLANCE_SERVICES = [
     rating: 4.8,
     reviews: 340,
     price: 400,
+    offerPrice: 350,
+    badges: ["verified", "pro"],
   },
   {
     id: "sur4",
@@ -203,6 +225,8 @@ const SURVEILLANCE_SERVICES = [
     rating: 4.7,
     reviews: 210,
     price: 350,
+    offerPrice: 300,
+    badges: ["verified"],
   },
 ];
 
@@ -217,6 +241,8 @@ const ASSET_SEARCH_SERVICES = [
     rating: 5.0,
     reviews: 780,
     price: 450,
+    offerPrice: 399,
+    badges: ["verified", "recommended"],
   },
   {
     id: "as2",
@@ -228,6 +254,8 @@ const ASSET_SEARCH_SERVICES = [
     rating: 4.9,
     reviews: 540,
     price: 380,
+    offerPrice: null,
+    badges: ["pro"],
   },
   {
     id: "as3",
@@ -239,6 +267,8 @@ const ASSET_SEARCH_SERVICES = [
     rating: 4.8,
     reviews: 290,
     price: 420,
+    offerPrice: 380,
+    badges: ["verified"],
   },
   {
     id: "as4",
@@ -250,6 +280,8 @@ const ASSET_SEARCH_SERVICES = [
     rating: 4.9,
     reviews: 360,
     price: 500,
+    offerPrice: 450,
+    badges: ["verified"],
   },
 ];
 

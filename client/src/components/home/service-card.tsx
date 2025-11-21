@@ -224,7 +224,9 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
              />
             
             <div className="flex flex-col items-end">
-              <span className="text-xs text-gray-500 uppercase font-semibold">Starting at</span>
+              <span className="text-xs text-gray-500 uppercase font-semibold">
+                {offerPrice ? "Offer Price" : "Starting at"}
+              </span>
               {offerPrice ? (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-400 line-through font-medium">{formatPrice(price)}</span>
