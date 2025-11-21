@@ -1,4 +1,4 @@
-import type { User, Detective, Service, Review, Order, DetectiveApplication, ProfileClaim, ServiceCategory, InsertDetective, InsertService, InsertReview, InsertOrder, InsertServiceCategory } from "@shared/schema";
+import type { User, Detective, Service, Review, Order, DetectiveApplication, ProfileClaim, ServiceCategory, InsertDetective, InsertService, InsertReview, InsertOrder, InsertServiceCategory, InsertDetectiveApplication } from "@shared/schema";
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -316,6 +316,16 @@ export const api = {
   applications: {
     getAll: async (): Promise<{ applications: DetectiveApplication[] }> => {
       const response = await fetch("/api/applications", {
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+
+    create: async (data: InsertDetectiveApplication): Promise<{ application: DetectiveApplication }> => {
+      const response = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
         credentials: "include",
       });
       return handleResponse(response);

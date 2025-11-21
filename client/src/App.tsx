@@ -15,6 +15,7 @@ const Home = lazy(() => import("@/pages/home"));
 const DetectiveProfile = lazy(() => import("@/pages/detective-profile"));
 const Login = lazy(() => import("@/pages/auth/login"));
 const DetectiveSignup = lazy(() => import("@/pages/detective-signup"));
+const ApplicationUnderReview = lazy(() => import("@/pages/application-under-review"));
 const SearchPage = lazy(() => import("@/pages/search"));
 
 const AdminDashboard = lazy(() => import("@/pages/admin/dashboard"));
@@ -80,6 +81,7 @@ function Router() {
           <Route path="/login" component={Login} />
           <Route path="/signup" component={Login} />
           <Route path="/detective-signup" component={DetectiveSignup} />
+          <Route path="/application-under-review" component={ApplicationUnderReview} />
           <Route path="/search" component={SearchPage} />
           <Route path="/category/:name" component={SearchPage} />
           

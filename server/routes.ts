@@ -628,11 +628,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reviewNotes: z.string().optional(),
       }).strict().parse(req.body);
 
+      // If approving application, create user account and detective profile
+      if (allowedData.status === "approved") {
+        const application = await storage.getDetectiveApplication(req.params.id);
+        if (!application) {
+          return res.status(404).json({ error: "Application not found" });
+        }
+
+        // Check if application was already approved (prevent duplicate accounts)
+        if (application.status === "approved") {
+          return res.status(400).json({ error: "Application already approved" });
+        }
+
+        try {
+          // Create user account with a temporary password
+          const tempPassword = Math.random().toString(36).slice(-12);
+          const hashedPassword = await bcrypt.hash(tempPassword, 10);
+          
+          const user = await storage.createUser({
+            email: application.email,
+            name: application.fullName,
+            password: hashedPassword,
+            role: "detective",
+          });
+
+          // Create detective profile
+          await storage.createDetective({
+            userId: user.id,
+            businessName: application.fullName, // Use fullName as default business name
+            bio: application.experience || "Professional detective ready to help with your case.",
+            subscriptionPlan: "free",
+            isVerified: true,
+            country: "US",
+            location: "United States",
+          });
+
+          // TODO: Send email with temp password to detective
+          // For now, admin should manually communicate credentials
+          console.log(`Detective account created for: ${application.email}`);
+        } catch (createError: any) {
+          console.error("Failed to create detective account:", createError);
+          return res.status(500).json({ 
+            error: "Failed to create detective account. Application not approved.",
+            details: createError.message 
+          });
+        }
+      }
+
       const application = await storage.updateDetectiveApplication(req.params.id, {
         ...allowedData,
         reviewedBy: req.session.userId,
         reviewedAt: new Date(),
       });
+      
       res.json({ application });
     } catch (error) {
       if (error instanceof z.ZodError) {

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
-import type { User, Detective, Service, Review, Order, DetectiveApplication, ProfileClaim, ServiceCategory, InsertDetective, InsertService, InsertReview, InsertOrder, InsertServiceCategory } from "@shared/schema";
+import type { User, Detective, Service, Review, Order, DetectiveApplication, ProfileClaim, ServiceCategory, InsertDetective, InsertService, InsertReview, InsertOrder, InsertServiceCategory, InsertDetectiveApplication } from "@shared/schema";
 
 export function useAuth() {
   return useQuery({
@@ -317,6 +317,17 @@ export function useApplications() {
   return useQuery({
     queryKey: ["applications"],
     queryFn: () => api.applications.getAll(),
+  });
+}
+
+export function useCreateApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: InsertDetectiveApplication) =>
+      api.applications.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+    },
   });
 }
 

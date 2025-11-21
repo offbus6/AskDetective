@@ -4,13 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Check, Upload, Shield, ArrowRight, ArrowLeft } from "lucide-react";
+import { Check, Upload, Shield, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Link, useLocation } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { useServiceCategories } from "@/lib/hooks";
+import { useServiceCategories, useCreateApplication } from "@/lib/hooks";
+import { useToast } from "@/hooks/use-toast";
+import type { InsertDetectiveApplication } from "@shared/schema";
 
 const COUNTRIES = [
   {
@@ -59,34 +61,74 @@ const COUNTRIES = [
 
 export default function DetectiveSignup() {
   const [step, setStep] = useState(1);
-  const [country, setCountry] = useState("US");
-  const [state, setState] = useState("");
   const [showLiabilityDialog, setShowLiabilityDialog] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   
+  // Form data state
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    businessType: "individual" as "individual" | "agency",
+    companyName: "",
+    experience: "",
+    licenseNumber: "",
+  });
+
+  const createApplication = useCreateApplication();
   const { data: categoriesData } = useServiceCategories();
   const serviceCategories = categoriesData?.categories?.filter(cat => cat.isActive) || [];
-  
-  const selectedCountry = COUNTRIES.find(c => c.code === country) || COUNTRIES[0];
-  const currencySymbol = selectedCountry.currency;
-  const availableStates = selectedCountry.states || [];
 
   const nextStep = () => setStep(step + 1);
   const prevStep = () => setStep(step - 1);
 
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   const handleSubmit = () => {
+    // Validate required fields
+    if (!formData.firstName || !formData.lastName || !formData.email) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
     setShowLiabilityDialog(true);
   };
 
-  const handleAgree = () => {
+  const handleAgree = async () => {
     setShowLiabilityDialog(false);
-    setShowSuccessDialog(true);
-  };
+    
+    try {
+      const applicationData: InsertDetectiveApplication = {
+        fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email,
+        phone: formData.phone || undefined,
+        businessType: formData.businessType,
+        experience: formData.experience || undefined,
+        licenseNumber: formData.licenseNumber || undefined,
+      };
 
-  const handleCloseSuccess = () => {
-    setShowSuccessDialog(false);
-    setLocation("/detective/dashboard");
+      await createApplication.mutateAsync(applicationData);
+      
+      toast({
+        title: "Application Submitted!",
+        description: "Your application is under review. We'll notify you within 24-48 hours.",
+      });
+      
+      setLocation("/application-under-review");
+    } catch (error: any) {
+      toast({
+        title: "Submission Failed",
+        description: error.message || "Please try again later.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -134,192 +176,128 @@ export default function DetectiveSignup() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" placeholder="Sherlock" />
+                      <Label htmlFor="firstName">First Name *</Label>
+                      <Input 
+                        id="firstName" 
+                        placeholder="Sherlock"
+                        value={formData.firstName}
+                        onChange={(e) => handleInputChange("firstName", e.target.value)}
+                        data-testid="input-firstName"
+                      />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" placeholder="Holmes" />
+                      <Label htmlFor="lastName">Last Name *</Label>
+                      <Input 
+                        id="lastName" 
+                        placeholder="Holmes"
+                        value={formData.lastName}
+                        onChange={(e) => handleInputChange("lastName", e.target.value)}
+                        data-testid="input-lastName"
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" placeholder="sherlock@bakerstreet.com" />
+                    <Label htmlFor="email">Email Address *</Label>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      placeholder="sherlock@bakerstreet.com"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      data-testid="input-email"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" />
+                    <Label htmlFor="phone">Phone Number (Optional)</Label>
+                    <Input 
+                      id="phone" 
+                      type="tel" 
+                      placeholder="+1 (555) 123-4567"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                      data-testid="input-phone"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password</Label>
-                    <Input id="confirmPassword" type="password" />
+                    <Label htmlFor="businessType">Business Type *</Label>
+                    <Select 
+                      value={formData.businessType} 
+                      onValueChange={(value) => handleInputChange("businessType", value)}
+                    >
+                      <SelectTrigger data-testid="select-businessType">
+                        <SelectValue placeholder="Select business type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="individual">Individual Detective</SelectItem>
+                        <SelectItem value="agency">Detective Agency</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               )}
 
               {step === 2 && (
-                <div className="space-y-6">
-                  <div className="space-y-4 border-b pb-6">
-                    <h3 className="font-bold text-lg">Company Details</h3>
-                    <div className="space-y-2">
-                      <Label htmlFor="companyName">Company Name / Individual Name</Label>
-                      <Input id="companyName" placeholder="e.g. Sherlock Investigations Ltd. or John Doe" />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Country</Label>
-                        <Select value={country} onValueChange={setCountry}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Country" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {COUNTRIES.map((c) => (
-                              <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>State / Region</Label>
-                        {availableStates.length > 0 ? (
-                          <Select value={state} onValueChange={setState}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select State" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableStates.map((s) => (
-                                <SelectItem key={s} value={s}>{s}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input 
-                            placeholder="State, Province, or Region" 
-                            value={state}
-                            onChange={(e) => setState(e.target.value)}
-                          />
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="registeredDate">Date Registered</Label>
-                        <Input id="registeredDate" type="date" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="regNumber">Registration Number or GST</Label>
-                        <Input id="regNumber" placeholder="Company Reg. No. / GST" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Registered Address</Label>
-                      <Textarea id="address" placeholder="Full registered office address..." className="h-20" />
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4 flex gap-3">
+                    <Shield className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-blue-800">
+                      <p className="font-bold">Tell us about your experience</p>
+                      <p>Share your background as a detective to help us evaluate your application.</p>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <h3 className="font-bold text-lg">Professional Profile</h3>
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Professional Title</Label>
-                      <Input id="title" placeholder="e.g. Senior Private Investigator | Ex-Police" />
-                      <p className="text-xs text-gray-500">This will appear under your name in search results.</p>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName">Business/Company Name (Optional)</Label>
+                    <Input 
+                      id="companyName" 
+                      placeholder="e.g. Holmes Investigations Ltd."
+                      value={formData.companyName}
+                      onChange={(e) => handleInputChange("companyName", e.target.value)}
+                      data-testid="input-companyName"
+                    />
+                    <p className="text-xs text-gray-500">If you're an agency, provide your business name.</p>
+                  </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="experience">Years of Experience</Label>
-                        <Input id="experience" type="number" placeholder="e.g. 5" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="languages">Languages Spoken</Label>
-                        <Input id="languages" placeholder="e.g. English, Spanish" />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="bio">Professional Bio</Label>
-                      <Textarea id="bio" placeholder="Describe your experience, specialties, and approach..." className="h-32" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Service Categories</Label>
-                      <p className="text-xs text-gray-500 mb-2">Select your services and set a price range.</p>
-                      <div className="grid gap-3">
-                        {serviceCategories.map((category) => (
-                          <div key={category.id} className="flex items-center justify-between border p-3 rounded-md hover:bg-gray-50">
-                            <div className="flex items-center space-x-2 flex-1">
-                              <input type="checkbox" id={category.id} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-                              <label htmlFor={category.id} className="text-sm font-medium leading-none cursor-pointer">
-                                {category.name}
-                              </label>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="flex flex-col">
-                                <span className="text-[10px] text-gray-500">Starting (Req)</span>
-                                <div className="flex items-center">
-                                  <span className="text-xs text-gray-500 mr-1">{currencySymbol}</span>
-                                  <Input type="number" className="w-20 h-8 text-sm" placeholder="100" />
-                                </div>
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-[10px] text-gray-500">Ending (Opt)</span>
-                                <div className="flex items-center">
-                                  <span className="text-xs text-gray-500 mr-1">{currencySymbol}</span>
-                                  <Input type="number" className="w-20 h-8 text-sm" placeholder="Max" />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="experience">Years of Experience (Optional)</Label>
+                    <Input 
+                      id="experience" 
+                      placeholder="e.g. 5 years as licensed private investigator"
+                      value={formData.experience}
+                      onChange={(e) => handleInputChange("experience", e.target.value)}
+                      data-testid="input-experience"
+                    />
+                    <p className="text-xs text-gray-500">This helps us understand your qualifications.</p>
                   </div>
                 </div>
               )}
 
               {step === 3 && (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   <div className="bg-blue-50 border border-blue-200 rounded-md p-4 flex gap-3">
                     <Shield className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-blue-800">
                       <p className="font-bold">Verification Required</p>
-                      <p>To maintain the integrity of our platform, we manually verify every detective. Your profile will be pending approval until we review your documents.</p>
+                      <p>To maintain the integrity of our platform, we manually verify every detective. Your application will be pending approval until our team reviews it.</p>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
-                      <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                      <h4 className="font-bold text-gray-700">Upload Profile Photo or Company Logo</h4>
-                      <p className="text-xs text-gray-500 mt-1">JPG or PNG (Max 2MB)</p>
-                    </div>
-
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
-                      <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                      <h4 className="font-bold text-gray-700">Upload Company Incorporation Certificate</h4>
-                      <p className="text-xs text-gray-500 mt-1">Official Government Document</p>
-                    </div>
-
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
-                      <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                      <h4 className="font-bold text-gray-700">Upload Director's Government ID</h4>
-                      <p className="text-xs text-gray-500 mt-1">Passport or Driver's License of Director</p>
-                    </div>
-
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
-                      <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                      <h4 className="font-bold text-gray-700">Upload Private Investigator License (Optional)</h4>
-                      <p className="text-xs text-gray-500 mt-1">PDF, JPG, or PNG (Max 5MB)</p>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="licenseNumber">Private Investigator License Number (Optional)</Label>
+                    <Input 
+                      id="licenseNumber" 
+                      placeholder="e.g. PI-123456"
+                      value={formData.licenseNumber}
+                      onChange={(e) => handleInputChange("licenseNumber", e.target.value)}
+                      data-testid="input-licenseNumber"
+                    />
+                    <p className="text-xs text-gray-500">If you have a license, provide the number here for verification.</p>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <input type="checkbox" id="terms" className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-                    <label htmlFor="terms" className="text-sm text-gray-600">
-                      I agree to the <a href="#" className="text-green-600 hover:underline">Terms of Service</a> and <a href="#" className="text-green-600 hover:underline">Privacy Policy</a>.
-                    </label>
+                  <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mt-4">
+                    <p className="text-sm text-amber-800">
+                      <strong>Note:</strong> After submitting, your application will be reviewed by our admin team. You'll be notified once approved (usually within 24-48 hours).
+                    </p>
                   </div>
                 </div>
               )}
@@ -339,8 +317,20 @@ export default function DetectiveSignup() {
                   Continue <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
-                <Button className="bg-green-600 hover:bg-green-700" onClick={handleSubmit}>
-                  Submit Application
+                <Button 
+                  className="bg-green-600 hover:bg-green-700" 
+                  onClick={handleSubmit}
+                  disabled={createApplication.isPending}
+                  data-testid="button-submit-application"
+                >
+                  {createApplication.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    "Submit Application"
+                  )}
                 </Button>
               )}
             </CardFooter>
@@ -349,42 +339,35 @@ export default function DetectiveSignup() {
       </main>
       <Footer />
 
-      {/* Liability Dialog */}
+      {/* Confirmation Dialog */}
       <Dialog open={showLiabilityDialog} onOpenChange={setShowLiabilityDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Terms of Responsibility</DialogTitle>
+            <DialogTitle>Submit Application?</DialogTitle>
             <DialogDescription className="space-y-4 pt-4">
               <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
                 <p className="text-amber-800 font-medium">Important Declaration</p>
               </div>
               <p>
-                All the information given are completely by my responsibility, platform has nothing to do with the data provided. I take complete responsibility of the data displayed in my profile.
+                All the information provided is accurate and complete to the best of my knowledge. I understand that false information may result in application rejection.
               </p>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowLiabilityDialog(false)}>Cancel</Button>
-            <Button onClick={handleAgree} className="bg-green-600 hover:bg-green-700">I Agree</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Success Dialog */}
-      <Dialog open={showSuccessDialog} onOpenChange={handleCloseSuccess}>
-        <DialogContent>
-          <DialogHeader>
-            <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
-              <Check className="h-6 w-6 text-green-600" />
-            </div>
-            <DialogTitle className="text-center">Application Submitted!</DialogTitle>
-            <DialogDescription className="text-center pt-2">
-              Within 24 to 48 hours the application will be analyzed and approved to get it displayed in the platform.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="sm:justify-center">
-            <Button onClick={handleCloseSuccess} className="w-full sm:w-auto bg-green-600 hover:bg-green-700">
-              Go to Dashboard
+            <Button 
+              onClick={handleAgree} 
+              className="bg-green-600 hover:bg-green-700"
+              disabled={createApplication.isPending}
+            >
+              {createApplication.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "I Agree & Submit"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
