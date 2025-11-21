@@ -21,6 +21,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { Link } from "wouter";
+
 const PENDING_SIGNUPS = [
   { id: "APP-001", name: "John Doe", email: "john.doe@gmail.com", type: "Individual", applied: "Oct 24, 2025", status: "Pending" },
   { id: "APP-002", name: "Secure Eyes Agency", email: "contact@secureeyes.com", type: "Agency", applied: "Oct 23, 2025", status: "Pending" },
@@ -69,12 +71,20 @@ export default function AdminSignups() {
               <TableBody>
                 {PENDING_SIGNUPS.map((app) => (
                   <TableRow key={app.id}>
-                    <TableCell className="font-medium">{app.id}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link href={`/admin/signups/${app.id}`}>
+                        <a className="text-green-600 hover:underline hover:text-green-700 cursor-pointer">
+                          {app.id}
+                        </a>
+                      </Link>
+                    </TableCell>
                     <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-gray-900">{app.name}</span>
-                        <span className="text-xs text-gray-500">{app.email}</span>
-                      </div>
+                      <Link href={`/admin/signups/${app.id}`}>
+                        <div className="flex flex-col cursor-pointer group">
+                          <span className="font-bold text-gray-900 group-hover:text-green-600 transition-colors">{app.name}</span>
+                          <span className="text-xs text-gray-500">{app.email}</span>
+                        </div>
+                      </Link>
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">{app.type}</Badge>
@@ -87,9 +97,11 @@ export default function AdminSignups() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" title="View Documents">
-                          <FileText className="h-4 w-4" />
-                        </Button>
+                        <Link href={`/admin/signups/${app.id}`}>
+                          <Button size="sm" variant="outline" title="View Documents">
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </Link>
                         <Button size="sm" className="bg-green-600 hover:bg-green-700" title="Approve">
                           <Check className="h-4 w-4" />
                         </Button>

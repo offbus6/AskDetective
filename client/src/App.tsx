@@ -14,6 +14,7 @@ import AdminDashboard from "@/pages/admin/dashboard";
 import AdminSignups from "@/pages/admin/signups";
 import AdminDetectives from "@/pages/admin/detectives";
 import AdminServices from "@/pages/admin/services";
+import AdminSignupDetails from "@/pages/admin/signup-details";
 
 import DetectiveDashboard from "@/pages/detective/dashboard";
 import DetectiveProfileEdit from "@/pages/detective/profile-edit";
@@ -36,6 +37,7 @@ function Router() {
       {/* Admin Routes */}
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/signups" component={AdminSignups} />
+      <Route path="/admin/signups/:id" component={AdminSignupDetails} />
       <Route path="/admin/detectives" component={AdminDetectives} />
       <Route path="/admin/services" component={AdminServices} />
       <Route path="/admin/subscriptions" component={AdminDashboard} /> {/* Placeholder reused */}
