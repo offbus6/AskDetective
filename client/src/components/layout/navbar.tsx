@@ -63,7 +63,7 @@ export function Navbar() {
         isScrolled || location !== '/' ? "bg-white border-b border-gray-200 text-gray-700" : "bg-transparent text-white"
       }`}
     >
-      <div className="container mx-auto px-5 h-20 flex items-center justify-between">
+      <div className="container mx-auto px-6 md:px-12 lg:px-24 h-20 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-8">
           <Link href="/">

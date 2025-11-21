@@ -255,7 +255,7 @@ export default function Home() {
 
         {/* Trusted By (Optional polish) */}
         <div className="bg-gray-50 py-8 border-b border-gray-200">
-          <div className="container mx-auto px-5 flex justify-center gap-8 md:gap-16 grayscale opacity-50">
+          <div className="container mx-auto px-6 md:px-12 lg:px-24 flex justify-center gap-8 md:gap-16 grayscale opacity-50">
             {/* Placeholders for logos */}
             <span className="font-bold text-xl">Meta</span>
             <span className="font-bold text-xl">Google</span>
@@ -266,7 +266,7 @@ export default function Home() {
         </div>
 
         {/* Popular Services */}
-        <section className="py-16 container mx-auto px-5">
+        <section className="py-16 container mx-auto px-6 md:px-12 lg:px-24">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold font-heading">Popular Professional Services</h2>
             <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
@@ -282,7 +282,7 @@ export default function Home() {
         </section>
 
         {/* Background Checks */}
-        <section className="py-12 container mx-auto px-5 bg-gray-50/50">
+        <section className="py-12 container mx-auto px-6 md:px-12 lg:px-24 bg-gray-50/50">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold font-heading">Background Checks</h2>
             <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
@@ -297,7 +297,7 @@ export default function Home() {
         </section>
 
         {/* Infidelity */}
-        <section className="py-12 container mx-auto px-5">
+        <section className="py-12 container mx-auto px-6 md:px-12 lg:px-24">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold font-heading">Infidelity Investigations</h2>
             <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
@@ -312,7 +312,7 @@ export default function Home() {
         </section>
 
         {/* Surveillance */}
-        <section className="py-12 container mx-auto px-5 bg-gray-50/50">
+        <section className="py-12 container mx-auto px-6 md:px-12 lg:px-24 bg-gray-50/50">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold font-heading">Surveillance Services</h2>
             <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
@@ -327,7 +327,7 @@ export default function Home() {
         </section>
 
         {/* Asset Search */}
-        <section className="py-12 container mx-auto px-5">
+        <section className="py-12 container mx-auto px-6 md:px-12 lg:px-24">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold font-heading">Asset Search & Recovery</h2>
             <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50">
@@ -343,7 +343,7 @@ export default function Home() {
 
         {/* Value Proposition */}
         <section className="bg-green-50 py-16">
-          <div className="container mx-auto px-5 flex flex-col lg:flex-row items-stretch gap-12">
+          <div className="container mx-auto px-6 md:px-12 lg:px-24 flex flex-col lg:flex-row items-stretch gap-12">
             <div className="flex-1 space-y-6 flex flex-col justify-center">
               <h2 className="text-3xl md:text-4xl font-bold font-heading">
                 The best part? Everything.

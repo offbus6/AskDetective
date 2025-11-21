@@ -32,7 +32,7 @@ export default function FavoritesPage() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       
-      <main className="flex-1 container mx-auto px-5 py-8 mt-16">
+      <main className="flex-1 container mx-auto px-6 md:px-12 lg:px-24 py-8 mt-16">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold font-heading text-gray-900 flex items-center gap-3">
