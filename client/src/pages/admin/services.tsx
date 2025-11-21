@@ -40,25 +40,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Eye, Briefcase, Plus, Pencil, Trash2 } from "lucide-react";
-import { useServices, useDetectives, useCreateService, useUpdateService, useDeleteService } from "@/lib/hooks";
+import { useServices, useDetectives, useCreateService, useUpdateService, useDeleteService, useServiceCategories } from "@/lib/hooks";
 import { useToast } from "@/hooks/use-toast";
 import type { Service } from "@shared/schema";
 import { useState } from "react";
 
-const CATEGORIES = [
-  "Surveillance",
-  "Background Check",
-  "Missing Persons",
-  "Corporate Investigation",
-  "Forensic Analysis",
-  "Other"
-];
-
 export default function AdminServices() {
   const { data: servicesData, isLoading } = useServices(100);
   const { data: detectivesData } = useDetectives(100);
+  const { data: categoriesData } = useServiceCategories(true);
   const services = servicesData?.services || [];
   const detectives = detectivesData?.detectives || [];
+  const categories = categoriesData?.categories || [];
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
@@ -363,9 +356,9 @@ export default function AdminServices() {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat} value={cat} data-testid={`option-category-${cat}`}>
-                          {cat}
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.name} data-testid={`option-category-${cat.name}`}>
+                          {cat.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

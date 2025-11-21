@@ -4,11 +4,12 @@ import { Hero } from "@/components/home/hero";
 import { ServiceCard } from "@/components/home/service-card";
 import { ServiceCardSkeleton } from "@/components/home/service-card-skeleton";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, AlertCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowRight, AlertCircle, Layers } from "lucide-react";
 import { SEO } from "@/components/seo";
 import { Link } from "wouter";
-import { useSearchServices } from "@/lib/hooks";
-import type { Service, Detective } from "@shared/schema";
+import { useSearchServices, useServiceCategories } from "@/lib/hooks";
+import type { Service, Detective, ServiceCategory } from "@shared/schema";
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
@@ -56,24 +57,15 @@ function mapServiceToCard(service: Service & { detective: Detective; avgRating: 
 }
 
 export default function Home() {
+  const { data: categoriesData, isLoading: isLoadingCategories } = useServiceCategories(true);
+  const categories = categoriesData?.categories || [];
+
   const { data: popularServicesData, isLoading: isLoadingPopular } = useSearchServices({ 
     limit: 4, 
     sortBy: "popular" 
   });
 
-  const { data: backgroundChecksData, isLoading: isLoadingBackground } = useSearchServices({ 
-    search: "Background Checks", 
-    limit: 4 
-  });
-
-  const { data: surveillanceData, isLoading: isLoadingSurveillance } = useSearchServices({ 
-    search: "Surveillance", 
-    limit: 4 
-  });
-
   const popularServices = popularServicesData?.services.map(mapServiceToCard) || [];
-  const backgroundChecks = backgroundChecksData?.services.map(mapServiceToCard) || [];
-  const surveillanceServices = surveillanceData?.services.map(mapServiceToCard) || [];
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-gray-900">
@@ -99,14 +91,78 @@ export default function Home() {
 
         <section className="py-16 container mx-auto px-6 md:px-12 lg:px-24">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold font-heading">Popular Professional Services</h2>
+            <div>
+              <h2 className="text-3xl font-bold font-heading">Browse by Category</h2>
+              <p className="text-gray-600 mt-2">Explore professional detective services organized by specialty</p>
+            </div>
+            <Link href="/search">
+              <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50" data-testid="button-view-all-categories">
+                View All <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {isLoadingCategories ? (
+              [1, 2, 3].map((i) => (
+                <Card key={i} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 bg-green-50 rounded-lg">
+                        <Layers className="h-6 w-6 text-green-600" />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4" />
+                        <div className="h-4 bg-gray-100 rounded animate-pulse w-full" />
+                        <div className="h-4 bg-gray-100 rounded animate-pulse w-2/3" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : categories.length > 0 ? (
+              categories.map((category: ServiceCategory) => (
+                <Link key={category.id} href={`/search?q=${encodeURIComponent(category.name)}`}>
+                  <Card className="hover:shadow-lg transition-all hover:border-green-500 cursor-pointer group" data-testid={`card-category-${category.id}`}>
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors">
+                          <Layers className="h-6 w-6 text-green-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-lg text-gray-900 group-hover:text-green-700 transition-colors mb-2" data-testid={`text-category-name-${category.id}`}>
+                            {category.name}
+                          </h3>
+                          <p className="text-sm text-gray-600 line-clamp-2" data-testid={`text-category-description-${category.id}`}>
+                            {category.description || "Professional investigation services"}
+                          </p>
+                          <div className="mt-3 flex items-center text-sm text-green-600 font-medium group-hover:gap-2 transition-all">
+                            Explore <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))
+            ) : (
+              <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200" data-testid="empty-categories">
+                <AlertCircle className="h-12 w-12 text-gray-400 mb-3" />
+                <p className="text-sm">No service categories available. Admin needs to create categories first.</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="py-12 container mx-auto px-6 md:px-12 lg:px-24 bg-gray-50/50">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl font-bold font-heading">Popular Services</h2>
             <Link href="/search">
               <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50" data-testid="button-view-all-popular">
                 View All <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </div>
-          
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {isLoadingPopular ? (
               [1, 2, 3, 4].map((i) => (
@@ -120,60 +176,6 @@ export default function Home() {
               <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200" data-testid="empty-popular-services">
                 <AlertCircle className="h-12 w-12 text-gray-400 mb-3" />
                 <p className="text-sm">No popular services available at the moment.</p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="py-12 container mx-auto px-6 md:px-12 lg:px-24 bg-gray-50/50">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold font-heading">Background Checks</h2>
-            <Link href="/search?q=Background%20Checks">
-              <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50" data-testid="button-view-all-background">
-                View All <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {isLoadingBackground ? (
-              [1, 2, 3, 4].map((i) => (
-                <ServiceCardSkeleton key={i} />
-              ))
-            ) : backgroundChecks.length > 0 ? (
-              backgroundChecks.map((service) => (
-                <ServiceCard key={service.id} {...service} />
-              ))
-            ) : (
-              <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200" data-testid="empty-background-checks">
-                <AlertCircle className="h-12 w-12 text-gray-400 mb-3" />
-                <p className="text-sm">No background check services available at the moment.</p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="py-12 container mx-auto px-6 md:px-12 lg:px-24">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold font-heading">Surveillance Services</h2>
-            <Link href="/search?q=Surveillance">
-              <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50" data-testid="button-view-all-surveillance">
-                View All <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {isLoadingSurveillance ? (
-              [1, 2, 3, 4].map((i) => (
-                <ServiceCardSkeleton key={i} />
-              ))
-            ) : surveillanceServices.length > 0 ? (
-              surveillanceServices.map((service) => (
-                <ServiceCard key={service.id} {...service} />
-              ))
-            ) : (
-              <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200" data-testid="empty-surveillance-services">
-                <AlertCircle className="h-12 w-12 text-gray-400 mb-3" />
-                <p className="text-sm">No surveillance services available at the moment.</p>
               </div>
             )}
           </div>

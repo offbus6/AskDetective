@@ -319,6 +319,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         detectiveId: detective.id,
       });
 
+      // Validate that the category exists and is active
+      const categories = await storage.getAllServiceCategories(true);
+      const categoryExists = categories.some(cat => cat.name === validatedData.category);
+      if (!categoryExists) {
+        return res.status(400).json({ error: "Invalid service category. Please select a valid category from the admin-managed list." });
+      }
+
       const service = await storage.createService(validatedData);
       res.status(201).json({ service });
     } catch (error) {
@@ -348,6 +355,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate request body - only allow whitelisted fields
       const validatedData = updateServiceSchema.parse(req.body);
+
+      // Validate category if it's being updated
+      if (validatedData.category) {
+        const categories = await storage.getAllServiceCategories(true);
+        const categoryExists = categories.some(cat => cat.name === validatedData.category);
+        if (!categoryExists) {
+          return res.status(400).json({ error: "Invalid service category. Please select a valid category from the admin-managed list." });
+        }
+      }
+
       const updatedService = await storage.updateService(req.params.id, validatedData);
       res.json({ service: updatedService });
     } catch (error) {

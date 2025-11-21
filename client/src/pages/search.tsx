@@ -23,25 +23,13 @@ import { Link } from "wouter";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SEO } from "@/components/seo";
-import { useSearchServices } from "@/lib/hooks";
+import { useSearchServices, useServiceCategories } from "@/lib/hooks";
 import type { Service, Detective } from "@shared/schema";
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
 // @ts-ignore
 import femaleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_female.png";
-
-const CATEGORIES = [
-  "Surveillance", 
-  "Background Checks", 
-  "Cyber Investigation", 
-  "Legal", 
-  "Missing Persons",
-  "Infidelity",
-  "Asset Search",
-  "Forensics",
-  "Due Diligence"
-];
 
 function mapServiceToCard(service: Service & { detective: Detective; avgRating: number; reviewCount: number }) {
   const levelMap = {
@@ -94,6 +82,9 @@ export default function SearchPage() {
     limit: 50,
   });
 
+  const { data: categoriesData } = useServiceCategories(true);
+  const categories = categoriesData?.categories || [];
+
   const results = servicesData?.services.map(mapServiceToCard) || [];
 
   const FilterContent = () => (
@@ -102,11 +93,11 @@ export default function SearchPage() {
          <AccordionTrigger className="font-bold text-sm">Category</AccordionTrigger>
          <AccordionContent>
            <div className="space-y-2 pt-1">
-             {CATEGORIES.slice(0, 8).map((cat) => (
-               <div key={cat} className="flex items-center space-x-2">
-                 <Checkbox id={`cat-${cat}`} data-testid={`checkbox-category-${cat.toLowerCase().replace(/\s+/g, '-')}`} />
-                 <label htmlFor={`cat-${cat}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-600 cursor-pointer hover:text-gray-900">
-                   {cat}
+             {categories.map((cat) => (
+               <div key={cat.id} className="flex items-center space-x-2">
+                 <Checkbox id={`cat-${cat.id}`} data-testid={`checkbox-category-${cat.name.toLowerCase().replace(/\s+/g, '-')}`} />
+                 <label htmlFor={`cat-${cat.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-600 cursor-pointer hover:text-gray-900">
+                   {cat.name}
                  </label>
                </div>
              ))}
@@ -209,13 +200,13 @@ export default function SearchPage() {
           <div className="container mx-auto px-6 md:px-12 lg:px-16">
             <ScrollArea className="w-full whitespace-nowrap py-3">
               <div className="flex w-max space-x-4">
-                {CATEGORIES.map((cat) => (
+                {categories.map((cat) => (
                   <button
-                    key={cat}
+                    key={cat.id}
                     className="px-4 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors border border-gray-200"
-                    data-testid={`button-category-${cat.toLowerCase().replace(/\s+/g, '-')}`}
+                    data-testid={`button-category-${cat.name.toLowerCase().replace(/\s+/g, '-')}`}
                   >
-                    {cat}
+                    {cat.name}
                   </button>
                 ))}
               </div>
