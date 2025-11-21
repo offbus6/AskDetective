@@ -11,6 +11,7 @@ import { Upload, MapPin, Shield, Plus, Trash2, ChevronDown, ChevronUp } from "lu
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Link } from "wouter";
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
@@ -348,9 +349,11 @@ export default function DetectiveProfileEdit() {
                         />
                         {subscriptionTier === 'free' && (
                            <div className="absolute inset-0 flex items-center justify-center bg-gray-50/50 backdrop-blur-[1px] rounded-md">
-                              <span className="text-xs font-bold text-gray-500 bg-white px-2 py-1 rounded border shadow-sm">
-                                 (Upgrade package to make it visible and editable for public)
-                              </span>
+                              <Link href="/detective/subscription">
+                                <Button variant="secondary" size="sm" className="shadow-md">
+                                  Upgrade to Pro/Agency to Unlock
+                                </Button>
+                              </Link>
                            </div>
                         )}
                       </div>
@@ -369,9 +372,11 @@ export default function DetectiveProfileEdit() {
                         />
                         {subscriptionTier === 'free' && (
                            <div className="absolute inset-0 flex items-center justify-center bg-gray-50/50 backdrop-blur-[1px] rounded-md">
-                              <span className="text-xs font-bold text-gray-500 bg-white px-2 py-1 rounded border shadow-sm">
-                                 (Upgrade package to make it visible and editable for public)
-                              </span>
+                              <Link href="/detective/subscription">
+                                <Button variant="secondary" size="sm" className="shadow-md">
+                                  Upgrade to Pro/Agency to Unlock
+                                </Button>
+                              </Link>
                            </div>
                         )}
                        </div>
