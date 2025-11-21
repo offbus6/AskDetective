@@ -110,6 +110,21 @@ export default function DetectiveProfileEdit() {
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewRecognition({...newRecognition, image: reader.result as string});
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileInput = () => {
+    document.getElementById('recognition-image-upload')?.click();
+  };
+
   const removeRecognition = (id: string) => {
     setRecognitions(recognitions.filter(r => r.id !== id));
   };
@@ -652,17 +667,19 @@ export default function DetectiveProfileEdit() {
                           <div className="flex gap-3">
                              <div 
                                className="h-16 w-16 bg-white rounded-md border flex items-center justify-center flex-shrink-0 cursor-pointer hover:border-blue-400 transition-colors relative overflow-hidden"
-                               onClick={() => {
-                                 const images = [awardGold, awardSilver, awardCert];
-                                 const currentIdx = images.indexOf(newRecognition.image || awardCert);
-                                 const nextIdx = (currentIdx + 1) % images.length;
-                                 setNewRecognition({...newRecognition, image: images[nextIdx]});
-                               }}
+                               onClick={triggerFileInput}
                              >
                                <img src={newRecognition.image || awardCert} alt="Preview" className="w-full h-full object-contain p-1" />
                                <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/10 transition-colors">
-                                 <span className="text-[10px] bg-white/90 px-1 rounded shadow-sm opacity-0 hover:opacity-100">Change</span>
+                                 <span className="text-[10px] bg-white/90 px-1 rounded shadow-sm opacity-0 hover:opacity-100">Upload</span>
                                </div>
+                               <input 
+                                 type="file" 
+                                 id="recognition-image-upload" 
+                                 className="hidden" 
+                                 accept="image/*"
+                                 onChange={handleImageUpload}
+                               />
                              </div>
                              
                              <div className="flex-1 space-y-2">
