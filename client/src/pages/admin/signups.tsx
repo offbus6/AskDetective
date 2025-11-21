@@ -113,7 +113,7 @@ export default function AdminSignups() {
                   <TableRow>
                     <TableHead>Applicant</TableHead>
                     <TableHead>Business Type</TableHead>
-                    <TableHead>Experience</TableHead>
+                    <TableHead>Details</TableHead>
                     <TableHead>Applied Date</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -132,7 +132,20 @@ export default function AdminSignups() {
                       <TableCell>
                         <Badge variant="secondary" className="capitalize">{app.businessType}</Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-gray-600">{app.experience || "Not specified"}</TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        <div className="space-y-1">
+                          {app.companyName && <div className="font-medium">{app.companyName}</div>}
+                          {app.city && app.state && (
+                            <div className="text-xs text-gray-500">{app.city}, {app.state}</div>
+                          )}
+                          {app.yearsExperience && (
+                            <div className="text-xs text-gray-500">{app.yearsExperience} years exp</div>
+                          )}
+                          {app.serviceCategories && app.serviceCategories.length > 0 && (
+                            <div className="text-xs text-gray-500">{app.serviceCategories.length} categories</div>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>{format(new Date(app.createdAt), "MMM dd, yyyy")}</TableCell>
                       <TableCell>
                         <Badge 

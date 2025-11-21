@@ -73,15 +73,56 @@ export default function DetectiveSignup() {
     phone: "",
     businessType: "individual" as "individual" | "agency",
     companyName: "",
-    experience: "",
+    country: "US",
+    state: "",
+    city: "",
+    yearsExperience: "",
+    specialties: [] as string[],
     licenseNumber: "",
+    about: "",
+    serviceCategories: [] as string[],
   });
 
   const createApplication = useCreateApplication();
   const { data: categoriesData } = useServiceCategories();
   const serviceCategories = categoriesData?.categories?.filter(cat => cat.isActive) || [];
 
-  const nextStep = () => setStep(step + 1);
+  const validateStep = (currentStep: number): boolean => {
+    if (currentStep === 1) {
+      if (!formData.firstName || !formData.lastName || !formData.email) {
+        toast({
+          title: "Missing Required Fields",
+          description: "Please fill in First Name, Last Name, and Email to continue.",
+          variant: "destructive",
+        });
+        return false;
+      }
+    } else if (currentStep === 2) {
+      const missingFields = [];
+      if (formData.businessType === "agency" && !formData.companyName) missingFields.push("Company Name");
+      if (!formData.city) missingFields.push("City");
+      if (!formData.state) missingFields.push("State");
+      if (!formData.yearsExperience) missingFields.push("Years of Experience");
+      if (!formData.about) missingFields.push("About Your Services");
+      
+      if (missingFields.length > 0) {
+        toast({
+          title: "Missing Required Fields",
+          description: `Please fill in: ${missingFields.join(", ")}`,
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const nextStep = () => {
+    if (validateStep(step)) {
+      setStep(step + 1);
+    }
+  };
+  
   const prevStep = () => setStep(step - 1);
 
   const handleInputChange = (field: string, value: string) => {
@@ -90,10 +131,21 @@ export default function DetectiveSignup() {
 
   const handleSubmit = () => {
     // Validate required fields
-    if (!formData.firstName || !formData.lastName || !formData.email) {
+    const missingFields = [];
+    if (!formData.firstName) missingFields.push("First Name");
+    if (!formData.lastName) missingFields.push("Last Name");
+    if (!formData.email) missingFields.push("Email");
+    if (!formData.city) missingFields.push("City");
+    if (!formData.state) missingFields.push("State");
+    if (!formData.yearsExperience) missingFields.push("Years of Experience");
+    if (!formData.about) missingFields.push("About Your Services");
+    if (formData.serviceCategories.length === 0) missingFields.push("Service Categories");
+    if (formData.businessType === "agency" && !formData.companyName) missingFields.push("Company Name");
+
+    if (missingFields.length > 0) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
+        title: "Missing Required Information",
+        description: `Please fill in: ${missingFields.join(", ")}`,
         variant: "destructive",
       });
       return;
@@ -110,7 +162,14 @@ export default function DetectiveSignup() {
         email: formData.email,
         phone: formData.phone || undefined,
         businessType: formData.businessType,
-        experience: formData.experience || undefined,
+        companyName: formData.companyName || undefined,
+        country: formData.country || undefined,
+        state: formData.state || undefined,
+        city: formData.city || undefined,
+        yearsExperience: formData.yearsExperience || undefined,
+        specialties: formData.specialties.length > 0 ? formData.specialties : undefined,
+        serviceCategories: formData.serviceCategories.length > 0 ? formData.serviceCategories : undefined,
+        about: formData.about || undefined,
         licenseNumber: formData.licenseNumber || undefined,
       };
 
@@ -246,28 +305,94 @@ export default function DetectiveSignup() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="companyName">Business/Company Name (Optional)</Label>
-                    <Input 
-                      id="companyName" 
-                      placeholder="e.g. Holmes Investigations Ltd."
-                      value={formData.companyName}
-                      onChange={(e) => handleInputChange("companyName", e.target.value)}
-                      data-testid="input-companyName"
-                    />
-                    <p className="text-xs text-gray-500">If you're an agency, provide your business name.</p>
+                  {formData.businessType === "agency" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="companyName">Company/Agency Name *</Label>
+                      <Input 
+                        id="companyName" 
+                        placeholder="e.g. Holmes Investigations Ltd."
+                        value={formData.companyName}
+                        onChange={(e) => handleInputChange("companyName", e.target.value)}
+                        data-testid="input-companyName"
+                      />
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="country">Country *</Label>
+                      <Select 
+                        value={formData.country} 
+                        onValueChange={(value) => {
+                          handleInputChange("country", value);
+                          handleInputChange("state", ""); // Reset state when country changes
+                        }}
+                      >
+                        <SelectTrigger data-testid="select-country">
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COUNTRIES.map((country) => (
+                            <SelectItem key={country.code} value={country.code}>
+                              {country.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="state">State/Province *</Label>
+                      <Select 
+                        value={formData.state} 
+                        onValueChange={(value) => handleInputChange("state", value)}
+                      >
+                        <SelectTrigger data-testid="select-state">
+                          <SelectValue placeholder="Select state" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COUNTRIES.find(c => c.code === formData.country)?.states.map((state) => (
+                            <SelectItem key={state} value={state}>
+                              {state}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="experience">Years of Experience (Optional)</Label>
+                    <Label htmlFor="city">City *</Label>
                     <Input 
-                      id="experience" 
-                      placeholder="e.g. 5 years as licensed private investigator"
-                      value={formData.experience}
-                      onChange={(e) => handleInputChange("experience", e.target.value)}
-                      data-testid="input-experience"
+                      id="city" 
+                      placeholder="e.g. New York"
+                      value={formData.city}
+                      onChange={(e) => handleInputChange("city", e.target.value)}
+                      data-testid="input-city"
                     />
-                    <p className="text-xs text-gray-500">This helps us understand your qualifications.</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="yearsExperience">Years of Experience *</Label>
+                    <Input 
+                      id="yearsExperience" 
+                      type="number"
+                      placeholder="e.g. 5"
+                      value={formData.yearsExperience}
+                      onChange={(e) => handleInputChange("yearsExperience", e.target.value)}
+                      data-testid="input-yearsExperience"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="about">About Your Services *</Label>
+                    <Textarea 
+                      id="about" 
+                      placeholder="Tell us about your investigative services, expertise, and what makes you unique..."
+                      rows={4}
+                      value={formData.about}
+                      onChange={(e) => handleInputChange("about", e.target.value)}
+                      data-testid="input-about"
+                    />
                   </div>
                 </div>
               )}
@@ -277,9 +402,51 @@ export default function DetectiveSignup() {
                   <div className="bg-blue-50 border border-blue-200 rounded-md p-4 flex gap-3">
                     <Shield className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-blue-800">
-                      <p className="font-bold">Verification Required</p>
-                      <p>To maintain the integrity of our platform, we manually verify every detective. Your application will be pending approval until our team reviews it.</p>
+                      <p className="font-bold">Service Categories & Verification</p>
+                      <p>Select the service categories you'll offer and provide your license information.</p>
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Service Categories You'll Offer *</Label>
+                    <p className="text-xs text-gray-500 mb-3">Select at least one category that matches your expertise</p>
+                    <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto p-2 border rounded-md">
+                      {serviceCategories.map((category) => (
+                        <label 
+                          key={category.id} 
+                          className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.serviceCategories.includes(category.name)}
+                            onChange={(e) => {
+                              const newCategories = e.target.checked
+                                ? [...formData.serviceCategories, category.name]
+                                : formData.serviceCategories.filter(c => c !== category.name);
+                              setFormData(prev => ({ ...prev, serviceCategories: newCategories }));
+                            }}
+                            className="rounded border-gray-300"
+                            data-testid={`checkbox-category-${category.id}`}
+                          />
+                          <span className="text-sm">{category.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="specialties">Your Specialties (Optional)</Label>
+                    <Input 
+                      id="specialties" 
+                      placeholder="e.g. Fraud Detection, Missing Persons, Corporate Espionage (separate with commas)"
+                      value={formData.specialties.join(", ")}
+                      onChange={(e) => {
+                        const specialtiesArray = e.target.value.split(",").map(s => s.trim()).filter(Boolean);
+                        setFormData(prev => ({ ...prev, specialties: specialtiesArray }));
+                      }}
+                      data-testid="input-specialties"
+                    />
+                    <p className="text-xs text-gray-500">Highlight your areas of expertise (separate multiple with commas)</p>
                   </div>
 
                   <div className="space-y-2">
