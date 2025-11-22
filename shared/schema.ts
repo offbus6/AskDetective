@@ -309,7 +309,7 @@ export const updateServiceSchema = z.object({
   description: z.string().min(50).optional(),
   category: z.string().min(3).optional(),
   basePrice: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
-  offerPrice: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
+  offerPrice: z.string().regex(/^\d+(\.\d{1,2})?$/).nullable().optional(),
   images: z.array(z.string().url()).optional(),
   isActive: z.boolean().optional(),
 }).strict();

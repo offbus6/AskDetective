@@ -31,6 +31,7 @@ const AdminViewDetective = lazy(() => import("@/pages/admin/view-detective"));
 
 const DetectiveDashboard = lazy(() => import("@/pages/detective/dashboard"));
 const DetectiveProfileEdit = lazy(() => import("@/pages/detective/profile-edit"));
+const DetectiveServices = lazy(() => import("@/pages/detective/services"));
 const DetectiveReviews = lazy(() => import("@/pages/detective/reviews"));
 const DetectiveSubscription = lazy(() => import("@/pages/detective/subscription"));
 const DetectiveBilling = lazy(() => import("@/pages/detective/billing"));
@@ -111,6 +112,7 @@ function Router() {
           {/* Detective Routes */}
           <Route path="/detective/dashboard" component={DetectiveDashboard} />
           <Route path="/detective/profile" component={DetectiveProfileEdit} />
+          <Route path="/detective/services" component={DetectiveServices} />
           <Route path="/detective/reviews" component={DetectiveReviews} />
           <Route path="/detective/subscription" component={DetectiveSubscription} />
           <Route path="/detective/billing" component={DetectiveBilling} />

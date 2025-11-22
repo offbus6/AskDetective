@@ -7,26 +7,33 @@ FindDetectives is a comprehensive web portal connecting clients with private inv
 ## Recent Progress (November 22, 2025)
 
 **Latest Updates:**
-- ✅ **Logo Upload Feature Implemented** - Detective applications now require mandatory logo/business photo upload
-- ✅ Logo serves as display picture across entire platform for both detective and admin views
-- ✅ Support documents upload added (optional) in Step 3 of detective application form
-- ✅ Base64 file upload with client-side conversion to data URLs for simplified storage
-- ✅ Logo automatically copied to user avatar and detective profile upon approval
-- ✅ Admin view-detective page displays actual uploaded logo instead of generated avatars
-- ✅ Detective can edit their own logo through PATCH /api/detectives/:id endpoint
-- ✅ Schema validation updated to accept both base64 data URLs and HTTP URLs for logos and documents
-- ✅ Fixed detective approval flow - detectives now become ACTIVE and visible immediately after admin approval
-- ✅ Detective profiles now use actual application data (country, location, bio, phone, business name)
-- ✅ Services are automatically created for each selected category with pricing when detective is approved
-- ✅ Centralized logout function in user context - properly destroys session and redirects
-- ✅ Extracted detective application form into shared component used by both public signup and admin pages
-- ✅ Phone number fields separated into country code dropdown + number input
-- ✅ Admin detective view now displays email address from joined users table
-- ✅ Admin password reset capability - generates temporary password with copy-to-clipboard functionality
-- ✅ **Fixed detective dashboard** - Now loads detective's actual profile from database instead of showing mock data
-- ✅ Added GET /api/detectives/me endpoint for logged-in detectives to fetch their own profile
-- ✅ Created useCurrentDetective hook for real-time profile data with loading states
-- ⚠️ **SECURITY NOTE:** Password reset returns plaintext password for manual sharing - NOT production-ready, requires email delivery integration before launch
+- ✅ **Complete Detective Profile Implementation** - All fields from signup application now displayed and editable
+- ✅ Added schema fields: yearsExperience, businessWebsite, licenseNumber, businessType, businessDocuments, recognitions
+- ✅ **Plan-Based Access Control** - Free/Pro/Agency plans gate features appropriately:
+  - Free: Basic profile fields only
+  - Pro/Agency: Contact info (phone/WhatsApp), recognitions/awards section
+- ✅ **Services Management Page** - New detective dashboard section with plan limits:
+  - Free: 1 service maximum
+  - Pro: 3 services maximum
+  - Agency: Unlimited services
+- ✅ Services validation: decimal price format, offerPrice <= basePrice, plan enforcement
+- ✅ Recognitions preserved across all plan levels (prevents data loss for Free users)
+- ✅ Approval flow copies ALL application fields to detective profile
+- ✅ Logo Upload Feature Implemented - Detective applications require mandatory logo/business photo
+- ✅ Logo serves as display picture across entire platform
+- ✅ Support documents upload added (optional) in Step 3 of application form
+- ✅ Base64 file upload with client-side conversion to data URLs
+- ✅ Admin view-detective page displays actual uploaded logo
+- ✅ Detective can edit logo through PATCH /api/detectives/:id endpoint
+- ✅ Fixed detective approval flow - detectives become ACTIVE immediately
+- ✅ Services automatically created with pricing when detective approved
+- ✅ Centralized logout function in user context
+- ✅ Phone number fields separated into country code + number input
+- ✅ Admin password reset with copy-to-clipboard functionality
+- ✅ Fixed detective dashboard - loads actual profile from database
+- ✅ Added GET /api/detectives/me endpoint
+- ✅ Created useCurrentDetective hook for real-time profile data
+- ⚠️ **SECURITY NOTE:** Password reset returns plaintext password - NOT production-ready
 
 **Critical Fixes:**
 - **Form Submission Issue Resolved** - Added logo validation to final submit and increased Express payload limit to 50MB for base64 images

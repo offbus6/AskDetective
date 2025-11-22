@@ -138,14 +138,15 @@ export default function DetectiveProfileEdit() {
         businessType: formData.businessType,
       };
 
+      // ALWAYS preserve recognitions (even for Free plan)
+      // This prevents accidental data loss when Free users edit their profile
+      const validRecognitions = recognitions.filter(r => r.title && r.issuer && r.year);
+      updateData.recognitions = validRecognitions;
+
       // Only include phone/whatsapp if plan is Pro or Agency
       if (detective.subscriptionPlan === "pro" || detective.subscriptionPlan === "agency") {
         updateData.phone = formData.phone;
         updateData.whatsapp = formData.whatsapp;
-        
-        // Include recognitions for Pro/Agency only
-        const validRecognitions = recognitions.filter(r => r.title && r.issuer && r.year);
-        updateData.recognitions = validRecognitions;
       }
 
       // Include logo if changed

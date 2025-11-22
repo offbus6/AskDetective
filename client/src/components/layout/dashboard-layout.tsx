@@ -50,6 +50,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
   const detectiveLinks = [
     { href: "/detective/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/detective/profile", label: "My Profile", icon: Users },
+    { href: "/detective/services", label: "Services", icon: Layers },
     { href: "/detective/reviews", label: "Reviews", icon: Star },
     { href: "/detective/subscription", label: "Subscription", icon: CreditCard },
     { href: "/detective/billing", label: "Billing", icon: Receipt },
