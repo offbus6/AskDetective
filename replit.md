@@ -4,7 +4,21 @@
 
 FindDetectives is a comprehensive web portal connecting clients with private investigators, similar to Fiverr's marketplace model. The platform features three distinct user roles (Super Admin, Detective/Subscriber, and Customer/User) with role-specific dashboards and capabilities. The application emphasizes security, scalability, and a clean separation between design and backend logic.
 
-## Recent Progress (November 21, 2025)
+## Recent Progress (November 22, 2025)
+
+**Latest Updates:**
+- ✅ Fixed detective approval flow - detectives now become ACTIVE and visible immediately after admin approval
+- ✅ Detective profiles now use actual application data (country, location, bio, phone, business name)
+- ✅ Services are automatically created for each selected category with pricing when detective is approved
+- ✅ Centralized logout function in user context - properly destroys session and redirects
+- ✅ Extracted detective application form into shared component used by both public signup and admin pages
+- ✅ Phone number fields separated into country code dropdown + number input
+
+**Critical Fixes:**
+- Detective status now defaults to "active" instead of "pending" after approval
+- Location built from actual city/state instead of hardcoded "United States"
+- Bio uses application.about field instead of non-existent application.experience
+- Services created with category name and pricing from categoryPricing JSONB
 
 **Backend Implementation Complete:**
 - ✅ PostgreSQL database schema with 6+ core tables (users, detectives, services, service_packages, reviews, orders)
@@ -18,12 +32,6 @@ FindDetectives is a comprehensive web portal connecting clients with private inv
 - Admin: admin@finddetectives.com / password123
 - Detective: john.holmes@detective.com / password123
 - Client: client1@example.com / password123
-
-**Next Steps:**
-- Integrate frontend with backend API endpoints
-- Replace all mock data with real database queries
-- Implement authentication flow in UI
-- Add error handling and loading states
 
 ## User Preferences
 
