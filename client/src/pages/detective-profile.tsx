@@ -82,7 +82,7 @@ export default function DetectiveProfile() {
   const { service, detective, avgRating, reviewCount } = serviceData;
   const reviews = reviewsData?.reviews || [];
 
-  const isUnclaimed = !detective.isClaimed;
+  const isClaimable = detective.isClaimable && !detective.isClaimed;
   const detectiveTier = detective.subscriptionPlan;
   const detectiveName = detective.businessName || "Unknown Detective";
   
@@ -151,8 +151,8 @@ export default function DetectiveProfile() {
       <Navbar />
       
       <main className="container mx-auto px-6 md:px-12 lg:px-24 py-8 mt-20">
-        {isUnclaimed && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm" data-testid="unclaimed-banner">
+        {isClaimable && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm" data-testid="claimable-banner">
              <div className="flex items-start gap-4">
                <div className="bg-blue-100 p-2 rounded-full mt-1">
                  <AlertTriangle className="h-6 w-6 text-blue-600" />
@@ -160,11 +160,15 @@ export default function DetectiveProfile() {
                <div>
                  <h2 className="text-lg font-bold text-blue-900">Is this your business?</h2>
                  <p className="text-blue-700 max-w-xl">
-                   This profile is currently unclaimed. Claim it now to manage your details, respond to reviews, and access premium features.
+                   Claim this profile to manage your details, respond to reviews, and access premium features.
                  </p>
                </div>
              </div>
-             <Button className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap px-8 shadow-md" data-testid="button-claim-profile">
+             <Button 
+               className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap px-8 shadow-md" 
+               data-testid="button-claim-profile"
+               onClick={() => window.location.href = `/claim-profile/${detective.id}`}
+             >
                Claim This Profile
              </Button>
           </div>
@@ -211,9 +215,7 @@ export default function DetectiveProfile() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-500">
-                  {isUnclaimed ? (
-                    <span className="text-gray-400 italic" data-testid="text-unclaimed">Unclaimed Profile</span>
-                  ) : reviewCount > 0 ? (
+                  {reviewCount > 0 ? (
                     <>
                       <span className="text-yellow-500 font-bold flex items-center gap-1" data-testid="text-rating">
                         <Star className="h-4 w-4 fill-yellow-500" /> {avgRating.toFixed(1)}
