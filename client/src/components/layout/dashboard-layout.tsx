@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useUser } from "@/lib/user-context";
+import { useCurrentDetective } from "@/lib/hooks";
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
@@ -33,6 +34,8 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
   const [location] = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { logout } = useUser();
+  const { data: detectiveData } = useCurrentDetective();
+  const detective = role === "detective" ? detectiveData?.detective : null;
 
   const adminLinks = [
     { href: "/admin/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -153,16 +156,16 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
             <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
               <div className="text-right hidden md:block">
                 <div className="text-sm font-bold text-gray-900">
-                  {role === "admin" ? "Super Admin" : role === "detective" ? "James Bond" : "John Doe"}
+                  {role === "admin" ? "Super Admin" : role === "detective" ? (detective?.businessName || "Detective") : "John Doe"}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {role === "admin" ? "System Owner" : role === "detective" ? "Pro Member" : "Member"}
+                  {role === "admin" ? "System Owner" : role === "detective" ? (detective?.subscriptionPlan === "agency" ? "Agency" : detective?.subscriptionPlan === "pro" ? "Pro Member" : "Free Member") : "Member"}
                 </div>
               </div>
               <Avatar>
-                <AvatarImage src={role === "detective" ? maleAvatar : ""} />
+                <AvatarImage src={role === "detective" ? (detective?.logo || maleAvatar) : ""} />
                 <AvatarFallback>
-                  {role === "admin" ? "SA" : role === "detective" ? "JB" : "JD"}
+                  {role === "admin" ? "SA" : role === "detective" ? (detective?.businessName?.substring(0, 2).toUpperCase() || "DT") : "JD"}
                 </AvatarFallback>
               </Avatar>
             </div>
