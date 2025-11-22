@@ -864,11 +864,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reviewNotes: z.string().optional(),
       }).strict().parse(req.body);
 
+      // If approving claim, use the storage method to handle ownership transfer atomically
+      if (allowedData.status === "approved") {
+        try {
+          const result = await storage.approveProfileClaim(req.params.id, req.session.userId!);
+          
+          // Build appropriate messaging based on whether user was newly created or existing
+          let adminMessage: string;
+          if (result.wasNewUser) {
+            // New user created - needs password reset
+            adminMessage = `Claim approved. NEW USER CREATED - Admin must manually reset password for ${result.claim.claimantEmail} so they can access their detective account.`;
+            console.log(`ADMIN ACTION REQUIRED: Reset password for ${result.claim.claimantEmail}`);
+          } else {
+            // Existing user - needs to log out/in
+            adminMessage = `Claim approved. Notify ${result.claim.claimantEmail} to log out and back in to access their detective dashboard.`;
+            console.log(`ADMIN ACTION REQUIRED: Notify ${result.claim.claimantEmail} to log out and back in`);
+          }
+          
+          return res.json({ 
+            claim: result.claim,
+            message: adminMessage,
+            wasNewUser: result.wasNewUser
+          });
+        } catch (approvalError: any) {
+          console.error("Failed to approve claim:", approvalError);
+          return res.status(500).json({ 
+            error: approvalError.message || "Failed to approve claim",
+          });
+        }
+      }
+
+      // For non-approval status updates (rejected, under_review), just update the claim
       const claim = await storage.updateProfileClaim(req.params.id, {
         ...allowedData,
         reviewedBy: req.session.userId,
         reviewedAt: new Date(),
       });
+      
+      if (!claim) {
+        return res.status(404).json({ error: "Claim not found" });
+      }
+      
       res.json({ claim });
     } catch (error) {
       if (error instanceof z.ZodError) {

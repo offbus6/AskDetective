@@ -90,6 +90,7 @@ export interface IStorage {
   getAllProfileClaims(status?: string, limit?: number): Promise<ProfileClaim[]>;
   createProfileClaim(claim: InsertProfileClaim): Promise<ProfileClaim>;
   updateProfileClaim(id: string, updates: Partial<ProfileClaim>): Promise<ProfileClaim | undefined>;
+  approveProfileClaim(claimId: string, reviewedBy: string): Promise<{ claim: ProfileClaim; claimantUserId: string; wasNewUser: boolean }>;
 
   // Billing operations
   getBillingHistory(detectiveId: string, limit?: number): Promise<BillingHistory[]>;
@@ -624,6 +625,120 @@ export class DatabaseStorage implements IStorage {
       .where(eq(profileClaims.id, id))
       .returning();
     return claim;
+  }
+
+  async approveProfileClaim(claimId: string, reviewedBy: string): Promise<{ claim: ProfileClaim; claimantUserId: string; wasNewUser: boolean }> {
+    // Get the claim
+    const claim = await this.getProfileClaim(claimId);
+    if (!claim) {
+      throw new Error("Claim not found");
+    }
+
+    // Get the detective profile
+    const detective = await this.getDetective(claim.detectiveId);
+    if (!detective) {
+      throw new Error("Detective profile not found");
+    }
+
+    // Check if detective is claimable
+    if (!detective.isClaimable || detective.isClaimed) {
+      throw new Error("This profile cannot be claimed");
+    }
+
+    // Check if claimant already has a user account
+    let claimantUser = await this.getUserByEmail(claim.claimantEmail);
+    let wasNewUser = false;
+    const originalRole = claimantUser?.role;
+    
+    // If not, create a user account for the claimant
+    if (!claimantUser) {
+      // Generate a temporary password (claimant will need to reset it)
+      // TODO: Send password reset email to claimant so they can set their own password
+      const tempPassword = Math.random().toString(36).slice(-12);
+      
+      claimantUser = await this.createUser({
+        email: claim.claimantEmail,
+        name: claim.claimantName,
+        password: tempPassword,
+        role: "detective",
+      });
+
+      wasNewUser = true;
+      console.log(`Created user account for claimant: ${claim.claimantEmail}`);
+      console.log(`IMPORTANT: Claimant needs password reset email to access account`);
+    } else if (claimantUser.role !== "detective") {
+      // Update user role to detective if they're not already
+      const updatedUser = await this.updateUserRole(claimantUser.id, "detective");
+      if (updatedUser) {
+        claimantUser = updatedUser;
+      }
+      // NOTE: If claimant is currently logged in, they will need to log out and back in
+      // to see the detective dashboard. Admin should notify them.
+    }
+
+    // Execute the ownership transfer and claim approval
+    // Transfer detective ownership to claimant (bypass whitelist for claim approval)
+    const [updatedDetective] = await db.update(detectives)
+      .set({
+        userId: claimantUser.id,
+        isClaimed: true,
+        isClaimable: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(detectives.id, detective.id))
+      .returning();
+
+    if (!updatedDetective) {
+      // Rollback: Delete newly created user or revert role change
+      if (wasNewUser) {
+        await db.delete(users).where(eq(users.id, claimantUser.id));
+        console.log(`Rolled back: Deleted newly created user ${claimantUser.id}`);
+      } else if (originalRole && originalRole !== "detective") {
+        await this.updateUserRole(claimantUser.id, originalRole);
+        console.log(`Rolled back: Reverted user ${claimantUser.id} role to ${originalRole}`);
+      }
+      throw new Error("Failed to transfer detective ownership");
+    }
+
+    // Update claim status to approved
+    const updatedClaim = await this.updateProfileClaim(claimId, {
+      status: "approved",
+      reviewedBy: reviewedBy,
+      reviewedAt: new Date(),
+    });
+
+    if (!updatedClaim) {
+      // Rollback: Revert detective ownership changes AND user account changes
+      await db.update(detectives)
+        .set({
+          userId: detective.userId,
+          isClaimed: detective.isClaimed,
+          isClaimable: detective.isClaimable,
+          updatedAt: new Date(),
+        })
+        .where(eq(detectives.id, detective.id));
+      
+      if (wasNewUser) {
+        await db.delete(users).where(eq(users.id, claimantUser.id));
+        console.log(`Rolled back: Deleted newly created user ${claimantUser.id}`);
+      } else if (originalRole && originalRole !== "detective") {
+        await this.updateUserRole(claimantUser.id, originalRole);
+        console.log(`Rolled back: Reverted user ${claimantUser.id} role to ${originalRole}`);
+      }
+      
+      throw new Error("Failed to update claim status - all changes rolled back");
+    }
+
+    console.log(`Transferred detective profile ${detective.id} to claimant ${claimantUser.id}`);
+    if (!wasNewUser) {
+      console.log(`NOTE: Claimant needs to log out and back in to access detective dashboard`);
+    }
+
+    return {
+      claim: updatedClaim,
+      claimantUserId: claimantUser.id,
+      wasNewUser,
+    };
   }
 
   // Billing operations
