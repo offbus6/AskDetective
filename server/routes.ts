@@ -756,7 +756,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? `${application.phoneCountryCode}${application.phoneNumber}`
             : undefined;
 
-          // Create detective profile with actual application data
+          // Create detective profile with ALL application data
           const detective = await storage.createDetective({
             userId: user.id,
             businessName: application.companyName || application.fullName,
@@ -768,6 +768,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             country: application.country || "US",
             location: location,
             phone: phone,
+            yearsExperience: application.yearsExperience || undefined,
+            businessWebsite: application.businessWebsite || undefined,
+            licenseNumber: application.licenseNumber || undefined,
+            businessType: application.businessType || undefined,
+            businessDocuments: application.businessDocuments || undefined,
           });
 
           // Create services for each selected category with pricing
