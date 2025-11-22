@@ -60,7 +60,7 @@ export default function AdminDetectives() {
   const updateDetective = useUpdateDetective();
 
   const handleViewProfile = (detective: Detective) => {
-    setLocation(`/detective/${detective.id}`);
+    setLocation(`/admin/detective/${detective.id}/view`);
   };
 
   const handleViewSubscriptions = (detective: Detective) => {

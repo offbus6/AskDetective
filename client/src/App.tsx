@@ -27,6 +27,7 @@ const AdminSignupDetails = lazy(() => import("@/pages/admin/signup-details"));
 const AdminSubscriptions = lazy(() => import("@/pages/admin/subscriptions"));
 const AdminAddDetective = lazy(() => import("@/pages/admin/add-detective"));
 const AdminClaims = lazy(() => import("@/pages/admin/claims"));
+const AdminViewDetective = lazy(() => import("@/pages/admin/view-detective"));
 
 const DetectiveDashboard = lazy(() => import("@/pages/detective/dashboard"));
 const DetectiveProfileEdit = lazy(() => import("@/pages/detective/profile-edit"));
@@ -99,6 +100,7 @@ function Router() {
           <Route path="/admin/signups" component={AdminSignups} />
           <Route path="/admin/signups/:id" component={AdminSignupDetails} />
           <Route path="/admin/detectives/add" component={AdminAddDetective} />
+          <Route path="/admin/detective/:id/view" component={AdminViewDetective} />
           <Route path="/admin/detectives" component={AdminDetectives} />
           <Route path="/admin/claims" component={AdminClaims} />
           <Route path="/admin/services" component={AdminServices} />
