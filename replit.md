@@ -13,6 +13,9 @@ FindDetectives is a comprehensive web portal connecting clients with private inv
 - ✅ Centralized logout function in user context - properly destroys session and redirects
 - ✅ Extracted detective application form into shared component used by both public signup and admin pages
 - ✅ Phone number fields separated into country code dropdown + number input
+- ✅ Admin detective view now displays email address from joined users table
+- ✅ Admin password reset capability - generates temporary password with copy-to-clipboard functionality
+- ⚠️ **SECURITY NOTE:** Password reset returns plaintext password for manual sharing - NOT production-ready, requires email delivery integration before launch
 
 **Critical Fixes:**
 - Detective status now defaults to "active" instead of "pending" after approval
