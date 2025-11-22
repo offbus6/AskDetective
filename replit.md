@@ -7,6 +7,14 @@ FindDetectives is a comprehensive web portal connecting clients with private inv
 ## Recent Progress (November 22, 2025)
 
 **Latest Updates:**
+- ✅ **Logo Upload Feature Implemented** - Detective applications now require mandatory logo/business photo upload
+- ✅ Logo serves as display picture across entire platform for both detective and admin views
+- ✅ Support documents upload added (optional) in Step 3 of detective application form
+- ✅ Base64 file upload with client-side conversion to data URLs for simplified storage
+- ✅ Logo automatically copied to user avatar and detective profile upon approval
+- ✅ Admin view-detective page displays actual uploaded logo instead of generated avatars
+- ✅ Detective can edit their own logo through PATCH /api/detectives/:id endpoint
+- ✅ Schema validation updated to accept both base64 data URLs and HTTP URLs for logos and documents
 - ✅ Fixed detective approval flow - detectives now become ACTIVE and visible immediately after admin approval
 - ✅ Detective profiles now use actual application data (country, location, bio, phone, business name)
 - ✅ Services are automatically created for each selected category with pricing when detective is approved
