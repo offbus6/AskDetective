@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, Save, Loader2, AlertCircle, Lock } from "lucide-react";
+import { Upload, Save, Loader2, AlertCircle, Lock, Plus, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
@@ -26,6 +26,12 @@ const COUNTRIES = [
   { code: "EU", name: "European Union" },
 ];
 
+interface Recognition {
+  title: string;
+  issuer: string;
+  year: string;
+}
+
 export default function DetectiveProfileEdit() {
   const { toast } = useToast();
   const { data, isLoading, error } = useCurrentDetective();
@@ -41,8 +47,13 @@ export default function DetectiveProfileEdit() {
     whatsapp: "",
     languages: "",
     logo: "",
+    yearsExperience: "",
+    businessWebsite: "",
+    licenseNumber: "",
+    businessType: "",
   });
 
+  const [recognitions, setRecognitions] = useState<Recognition[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
 
@@ -58,8 +69,17 @@ export default function DetectiveProfileEdit() {
         whatsapp: detective.whatsapp || "",
         languages: detective.languages?.join(", ") || "English",
         logo: detective.logo || "",
+        yearsExperience: detective.yearsExperience || "",
+        businessWebsite: detective.businessWebsite || "",
+        licenseNumber: detective.licenseNumber || "",
+        businessType: detective.businessType || "",
       });
       setLogoPreview(detective.logo || "");
+      
+      // Load recognitions from JSONB field
+      if (detective.recognitions && Array.isArray(detective.recognitions)) {
+        setRecognitions(detective.recognitions as Recognition[]);
+      }
     }
   }, [detective]);
 
@@ -88,6 +108,20 @@ export default function DetectiveProfileEdit() {
     }
   };
 
+  const addRecognition = () => {
+    setRecognitions([...recognitions, { title: "", issuer: "", year: "" }]);
+  };
+
+  const removeRecognition = (index: number) => {
+    setRecognitions(recognitions.filter((_, i) => i !== index));
+  };
+
+  const updateRecognition = (index: number, field: keyof Recognition, value: string) => {
+    const updated = [...recognitions];
+    updated[index] = { ...updated[index], [field]: value };
+    setRecognitions(updated);
+  };
+
   const handleSave = async () => {
     if (!detective) return;
 
@@ -98,12 +132,20 @@ export default function DetectiveProfileEdit() {
         location: formData.location,
         country: formData.country,
         languages: formData.languages.split(",").map(l => l.trim()).filter(Boolean),
+        yearsExperience: formData.yearsExperience,
+        businessWebsite: formData.businessWebsite,
+        licenseNumber: formData.licenseNumber,
+        businessType: formData.businessType,
       };
 
       // Only include phone/whatsapp if plan is Pro or Agency
       if (detective.subscriptionPlan === "pro" || detective.subscriptionPlan === "agency") {
         updateData.phone = formData.phone;
         updateData.whatsapp = formData.whatsapp;
+        
+        // Include recognitions for Pro/Agency only
+        const validRecognitions = recognitions.filter(r => r.title && r.issuer && r.year);
+        updateData.recognitions = validRecognitions;
       }
 
       // Include logo if changed
@@ -176,7 +218,7 @@ export default function DetectiveProfileEdit() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Upgrade to Unlock More Features</AlertTitle>
             <AlertDescription>
-              Free members have limited contact visibility. Upgrade to Pro or Agency to display your phone and WhatsApp on your public profile.
+              Free members have limited contact visibility and features. Upgrade to Pro or Agency to display your phone, WhatsApp, and add recognitions to your profile.
               <Link href="/detective/subscription">
                 <Button variant="link" className="p-0 h-auto ml-2">
                   View Plans
@@ -186,9 +228,10 @@ export default function DetectiveProfileEdit() {
           </Alert>
         )}
 
+        {/* Basic Profile Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Profile Information</CardTitle>
+            <CardTitle>Basic Information</CardTitle>
             <CardDescription>
               This information will be displayed on your public detective listing
             </CardDescription>
@@ -302,18 +345,108 @@ export default function DetectiveProfileEdit() {
               />
               <p className="text-xs text-gray-500">Separate multiple languages with commas</p>
             </div>
+          </CardContent>
+        </Card>
 
+        {/* Professional Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Professional Details</CardTitle>
+            <CardDescription>
+              Information about your business and credentials
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Years of Experience */}
+            <div className="space-y-2">
+              <Label htmlFor="yearsExperience">Years of Experience</Label>
+              <Input
+                id="yearsExperience"
+                data-testid="input-yearsExperience"
+                value={formData.yearsExperience}
+                onChange={(e) => handleInputChange("yearsExperience", e.target.value)}
+                placeholder="e.g., 5"
+                type="text"
+              />
+            </div>
+
+            {/* Business Type */}
+            <div className="space-y-2">
+              <Label htmlFor="businessType">Business Type</Label>
+              <Select
+                value={formData.businessType}
+                onValueChange={(value) => handleInputChange("businessType", value)}
+              >
+                <SelectTrigger id="businessType" data-testid="select-businessType">
+                  <SelectValue placeholder="Select business type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="individual">Individual</SelectItem>
+                  <SelectItem value="agency">Agency</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* License Number */}
+            <div className="space-y-2">
+              <Label htmlFor="licenseNumber">License Number (Optional)</Label>
+              <Input
+                id="licenseNumber"
+                data-testid="input-licenseNumber"
+                value={formData.licenseNumber}
+                onChange={(e) => handleInputChange("licenseNumber", e.target.value)}
+                placeholder="Enter your PI license number"
+              />
+            </div>
+
+            {/* Business Website */}
+            <div className="space-y-2">
+              <Label htmlFor="businessWebsite">Business Website (Optional)</Label>
+              <Input
+                id="businessWebsite"
+                data-testid="input-businessWebsite"
+                value={formData.businessWebsite}
+                onChange={(e) => handleInputChange("businessWebsite", e.target.value)}
+                placeholder="https://example.com"
+                type="url"
+              />
+            </div>
+
+            {/* Business Documents - Read Only */}
+            {detective.businessDocuments && detective.businessDocuments.length > 0 && (
+              <div className="space-y-2">
+                <Label>Business Documents</Label>
+                <div className="text-sm text-gray-600">
+                  {detective.businessDocuments.length} document(s) uploaded during signup
+                </div>
+                <p className="text-xs text-gray-500">
+                  Documents are verified during application review and cannot be changed here.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Contact Information (Pro/Agency Only) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Contact Information
+              {!isPremium && (
+                <Badge variant="outline" className="text-xs">
+                  <Lock className="h-3 w-3 mr-1" />
+                  Pro/Agency Only
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              Your contact details displayed on your public profile
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
             {/* Phone (Pro/Agency Only) */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                {!isPremium && (
-                  <Badge variant="outline" className="text-xs">
-                    <Lock className="h-3 w-3 mr-1" />
-                    Pro/Agency Only
-                  </Badge>
-                )}
-              </div>
+              <Label htmlFor="phone">Phone Number</Label>
               <Input
                 id="phone"
                 data-testid="input-phone"
@@ -335,15 +468,7 @@ export default function DetectiveProfileEdit() {
 
             {/* WhatsApp (Pro/Agency Only) */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="whatsapp">WhatsApp Number</Label>
-                {!isPremium && (
-                  <Badge variant="outline" className="text-xs">
-                    <Lock className="h-3 w-3 mr-1" />
-                    Pro/Agency Only
-                  </Badge>
-                )}
-              </div>
+              <Label htmlFor="whatsapp">WhatsApp Number</Label>
               <Input
                 id="whatsapp"
                 data-testid="input-whatsapp"
@@ -362,30 +487,122 @@ export default function DetectiveProfileEdit() {
                 </p>
               )}
             </div>
-
-            {/* Save Button */}
-            <div className="flex justify-end pt-4">
-              <Button
-                onClick={handleSave}
-                disabled={updateDetective.isPending}
-                className="bg-green-600 hover:bg-green-700"
-                data-testid="button-save-profile"
-              >
-                {updateDetective.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Changes
-                  </>
-                )}
-              </Button>
-            </div>
           </CardContent>
         </Card>
+
+        {/* Recognitions & Awards (Pro/Agency Only) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Recognitions & Awards
+              {!isPremium && (
+                <Badge variant="outline" className="text-xs">
+                  <Lock className="h-3 w-3 mr-1" />
+                  Pro/Agency Only
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              Showcase your professional achievements and certifications
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {!isPremium && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Upgrade to Pro or Agency to add recognitions and awards to your profile.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {isPremium && (
+              <>
+                {recognitions.map((recognition, index) => (
+                  <div key={index} className="p-4 border rounded-lg space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label>Recognition #{index + 1}</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeRecognition(index)}
+                        data-testid={`button-remove-recognition-${index}`}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Title</Label>
+                      <Input
+                        value={recognition.title}
+                        onChange={(e) => updateRecognition(index, "title", e.target.value)}
+                        placeholder="e.g., Best Detective Award"
+                        data-testid={`input-recognition-title-${index}`}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Issuing Organization</Label>
+                        <Input
+                          value={recognition.issuer}
+                          onChange={(e) => updateRecognition(index, "issuer", e.target.value)}
+                          placeholder="e.g., National PI Association"
+                          data-testid={`input-recognition-issuer-${index}`}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Year</Label>
+                        <Input
+                          value={recognition.year}
+                          onChange={(e) => updateRecognition(index, "year", e.target.value)}
+                          placeholder="e.g., 2023"
+                          data-testid={`input-recognition-year-${index}`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addRecognition}
+                  className="w-full"
+                  data-testid="button-add-recognition"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Recognition
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Save Button */}
+        <div className="flex justify-end">
+          <Button
+            onClick={handleSave}
+            disabled={updateDetective.isPending}
+            className="bg-green-600 hover:bg-green-700"
+            data-testid="button-save-profile"
+          >
+            {updateDetective.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Save Changes
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </DashboardLayout>
   );
