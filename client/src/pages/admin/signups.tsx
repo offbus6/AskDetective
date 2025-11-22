@@ -126,7 +126,9 @@ export default function AdminSignups() {
                         <div className="flex flex-col">
                           <span className="font-bold text-gray-900" data-testid={`text-full-name-${app.id}`}>{app.fullName}</span>
                           <span className="text-xs text-gray-500">{app.email}</span>
-                          {app.phone && <span className="text-xs text-gray-400">{app.phone}</span>}
+                          {app.phoneCountryCode && app.phoneNumber && (
+                            <span className="text-xs text-gray-400">{app.phoneCountryCode} {app.phoneNumber}</span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -135,6 +137,11 @@ export default function AdminSignups() {
                       <TableCell className="text-sm text-gray-600">
                         <div className="space-y-1">
                           {app.companyName && <div className="font-medium">{app.companyName}</div>}
+                          {app.businessWebsite && (
+                            <a href={app.businessWebsite} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline block">
+                              Website →
+                            </a>
+                          )}
                           {app.city && app.state && (
                             <div className="text-xs text-gray-500">{app.city}, {app.state}</div>
                           )}
@@ -142,7 +149,14 @@ export default function AdminSignups() {
                             <div className="text-xs text-gray-500">{app.yearsExperience} years exp</div>
                           )}
                           {app.serviceCategories && app.serviceCategories.length > 0 && (
-                            <div className="text-xs text-gray-500">{app.serviceCategories.length} categories</div>
+                            <div className="text-xs text-gray-500">
+                              {app.serviceCategories.length} {app.serviceCategories.length === 1 ? 'category' : 'categories'}
+                              {app.categoryPricing && Array.isArray(app.categoryPricing) && app.categoryPricing.length > 0 && (
+                                <span className="ml-1">
+                                  ({app.categoryPricing.map((p: any) => `${p.currency} ${p.price}`).join(', ')})
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                       </TableCell>

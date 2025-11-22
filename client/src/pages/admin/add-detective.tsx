@@ -18,42 +18,56 @@ const COUNTRIES = [
     name: "United States",
     code: "US",
     currency: "$",
+    currencyCode: "USD",
+    phoneCode: "+1",
     states: ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
   },
   {
     name: "United Kingdom",
     code: "UK",
     currency: "£",
+    currencyCode: "GBP",
+    phoneCode: "+44",
     states: ["England", "Scotland", "Wales", "Northern Ireland"]
   },
   {
     name: "India",
     code: "IN",
     currency: "₹",
+    currencyCode: "INR",
+    phoneCode: "+91",
     states: ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi"]
   },
   {
     name: "Canada",
     code: "CA",
     currency: "CA$",
+    currencyCode: "CAD",
+    phoneCode: "+1",
     states: ["Alberta", "British Columbia", "Manitoba", "New Brunswick", "Newfoundland and Labrador", "Nova Scotia", "Ontario", "Prince Edward Island", "Quebec", "Saskatchewan"]
   },
   {
     name: "Australia",
     code: "AU",
     currency: "AU$",
+    currencyCode: "AUD",
+    phoneCode: "+61",
     states: ["New South Wales", "Queensland", "South Australia", "Tasmania", "Victoria", "Western Australia", "Australian Capital Territory", "Northern Territory"]
   },
   {
     name: "Germany",
     code: "DE",
     currency: "€",
+    currencyCode: "EUR",
+    phoneCode: "+49",
     states: ["Baden-Württemberg", "Bavaria", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hesse", "Lower Saxony", "Mecklenburg-Vorpommern", "North Rhine-Westphalia", "Rhineland-Palatinate", "Saarland", "Saxony", "Saxony-Anhalt", "Schleswig-Holstein", "Thuringia"]
   },
   {
     name: "France",
     code: "FR",
     currency: "€",
+    currencyCode: "EUR",
+    phoneCode: "+33",
     states: ["Île-de-France", "Auvergne-Rhône-Alpes", "Bourgogne-Franche-Comté", "Brittany", "Centre-Val de Loire", "Corsica", "Grand Est", "Hauts-de-France", "Normandy", "Nouvelle-Aquitaine", "Occitanie", "Pays de la Loire", "Provence-Alpes-Côte d'Azur"]
   },
 ];
@@ -70,18 +84,35 @@ export default function AdminAddDetective() {
   // Form State
   const [country, setCountry] = useState("US");
   const [state, setState] = useState("");
+  const [businessType, setBusinessType] = useState<"individual" | "agency">("individual");
+  const [phoneCountryCode, setPhoneCountryCode] = useState("+1");
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [categoryPricing, setCategoryPricing] = useState<Array<{category: string; price: string; currency: string}>>([]);
 
   const selectedCountryData = COUNTRIES.find(c => c.code === country) || COUNTRIES[0];
   const currencySymbol = selectedCountryData.currency;
   const availableStates = selectedCountryData.states || [];
 
-  const toggleService = (service: string) => {
-    setSelectedServices(prev => 
-      prev.includes(service) 
-        ? prev.filter(s => s !== service)
-        : [...prev, service]
-    );
+  const toggleService = (categoryName: string) => {
+    if (selectedServices.includes(categoryName)) {
+      setSelectedServices(prev => prev.filter(s => s !== categoryName));
+      setCategoryPricing(prev => prev.filter(p => p.category !== categoryName));
+    } else {
+      if (selectedServices.length >= 2) {
+        toast({
+          title: "Maximum Limit Reached",
+          description: "You can add more categories after the detective account is approved.",
+          variant: "default",
+        });
+        return;
+      }
+      setSelectedServices(prev => [...prev, categoryName]);
+      setCategoryPricing(prev => [...prev, {
+        category: categoryName,
+        price: "",
+        currency: selectedCountryData.currencyCode
+      }]);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -123,18 +154,80 @@ export default function AdminAddDetective() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" placeholder="e.g. Sherlock" />
+                  <Label htmlFor="firstName">First Name *</Label>
+                  <Input id="firstName" placeholder="e.g. Sherlock" required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" placeholder="e.g. Holmes" />
+                  <Label htmlFor="lastName">Last Name *</Label>
+                  <Input id="lastName" placeholder="e.g. Holmes" required />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input id="email" type="email" placeholder="email@agency.com" />
+                <Label htmlFor="email">Email Address *</Label>
+                <Input id="email" type="email" placeholder="email@agency.com" required />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number *</Label>
+                <div className="flex gap-2">
+                  <Select value={phoneCountryCode} onValueChange={setPhoneCountryCode}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country.code} value={country.phoneCode}>
+                          {country.phoneCode} {country.code}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input 
+                    id="phone" 
+                    type="tel" 
+                    placeholder="5551234567"
+                    className="flex-1"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="businessType">Business Type *</Label>
+                <Select value={businessType} onValueChange={(val) => setBusinessType(val as "individual" | "agency")}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="individual">Individual Detective</SelectItem>
+                    <SelectItem value="agency">Detective Agency</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {businessType === "agency" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="companyNameField">Business Name *</Label>
+                    <Input id="companyNameField" placeholder="e.g. Holmes Investigations Ltd." required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="businessWebsite">Business Website *</Label>
+                    <Input 
+                      id="businessWebsite" 
+                      type="url"
+                      placeholder="https://www.yourdetectiveagency.com"
+                      required
+                    />
+                    <p className="text-xs text-gray-500">Enter the full URL including https://</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Supporting Documents (Optional)</Label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center">
+                      <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600">Business registration, license, or other supporting documents</p>
+                      <p className="text-xs text-gray-400 mt-1">Upload feature coming soon</p>
+                    </div>
+                  </div>
+                </>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="password">Password (Temporary)</Label>
@@ -244,39 +337,55 @@ export default function AdminAddDetective() {
               </div>
 
               <div className="space-y-2">
-                <Label>Service Categories</Label>
-                <p className="text-xs text-gray-500 mb-2">Select services and set price ranges.</p>
-                <div className="grid gap-3">
-                  {serviceCategories.map((category) => (
-                    <div key={category.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border p-3 rounded-md hover:bg-gray-50 gap-3">
-                      <div className="flex items-center space-x-2 flex-1">
-                        <Checkbox 
-                          id={`service-${category.id}`}
-                          checked={selectedServices.includes(category.id)}
-                          onCheckedChange={() => toggleService(category.id)}
-                        />
-                        <label htmlFor={`service-${category.id}`} className="text-sm font-medium leading-none cursor-pointer">
-                          {category.name}
+                <Label>Service Categories (Max 2) *</Label>
+                <p className="text-xs text-gray-500 mb-2">Select up to 2 categories and set starting prices.</p>
+                <div className="space-y-3">
+                  {serviceCategories.map((category) => {
+                    const isSelected = selectedServices.includes(category.name);
+                    const pricing = categoryPricing.find(p => p.category === category.name);
+                    
+                    return (
+                      <div key={category.id} className="border rounded-md p-3">
+                        <label className="flex items-start space-x-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleService(category.name)}
+                            className="rounded border-gray-300 mt-1"
+                          />
+                          <div className="flex-1">
+                            <span className="text-sm font-medium">{category.name}</span>
+                            {isSelected && (
+                              <div className="mt-2 flex items-center gap-2">
+                                <span className="text-sm text-gray-600">Starting Price:</span>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-sm font-medium">{currencySymbol}</span>
+                                  <Input 
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="100"
+                                    value={pricing?.price || ""}
+                                    onChange={(e) => {
+                                      setCategoryPricing(prev => 
+                                        prev.map(p => 
+                                          p.category === category.name 
+                                            ? { ...p, price: e.target.value }
+                                            : p
+                                        )
+                                      );
+                                    }}
+                                    className="w-32"
+                                  />
+                                  <span className="text-xs text-gray-500">{selectedCountryData.currencyCode}</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </label>
                       </div>
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <div className="flex flex-col flex-1 sm:flex-none">
-                          <span className="text-[10px] text-gray-500">Starting</span>
-                          <div className="flex items-center">
-                            <span className="text-xs text-gray-500 mr-1">{currencySymbol}</span>
-                            <Input type="number" className="w-full sm:w-20 h-8 text-sm" placeholder="100" disabled={!selectedServices.includes(category.id)} />
-                          </div>
-                        </div>
-                        <div className="flex flex-col flex-1 sm:flex-none">
-                          <span className="text-[10px] text-gray-500">Ending (Opt)</span>
-                          <div className="flex items-center">
-                            <span className="text-xs text-gray-500 mr-1">{currencySymbol}</span>
-                            <Input type="number" className="w-full sm:w-20 h-8 text-sm" placeholder="Max" disabled={!selectedServices.includes(category.id)} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </CardContent>
