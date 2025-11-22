@@ -17,11 +17,6 @@ import { SEO } from "@/components/seo";
 import { format } from "date-fns";
 import type { Review, User } from "@shared/schema";
 
-// @ts-ignore
-import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
-// @ts-ignore
-import femaleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_female.png";
-
 export default function DetectiveProfile() {
   const [, params] = useRoute("/service/:id");
   const serviceId = params?.id;
@@ -87,13 +82,10 @@ export default function DetectiveProfile() {
   const detectiveName = detective.businessName || "Unknown Detective";
   
   const memberSince = format(new Date(detective.memberSince), "MMMM yyyy");
-  const defaultAvatar = detectiveName.toLowerCase().includes("sarah") || detectiveName.toLowerCase().includes("jane") 
-    ? femaleAvatar 
-    : maleAvatar;
-
-  const defaultImage = service.images && service.images.length > 0 
-    ? service.images[0] 
-    : "https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop";
+  
+  // Use actual detective logo and service images from database - NO MOCK DATA
+  const detectiveLogo = detective.logo;
+  const serviceImage = service.images && service.images.length > 0 ? service.images[0] : null;
 
   const handleToggleFavorite = () => {
     if (!user) {
@@ -109,8 +101,8 @@ export default function DetectiveProfile() {
       id: service.id,
       name: detectiveName,
       title: service.title,
-      image: service.images && service.images.length > 0 ? service.images[0] : "",
-      avatar: defaultAvatar,
+      image: serviceImage || "",
+      avatar: detectiveLogo || "",
       rating: avgRating,
       reviews: reviewCount,
       price: Number(service.basePrice),
@@ -124,7 +116,7 @@ export default function DetectiveProfile() {
     "@context": "https://schema.org",
     "@type": "ProfessionalService",
     "name": detectiveName,
-    "image": defaultImage,
+    "image": serviceImage || detectiveLogo || "",
     "description": service.description,
     "address": {
       "@type": "PostalAddress",
@@ -144,7 +136,7 @@ export default function DetectiveProfile() {
       <SEO 
         title={`${service.title} by ${detectiveName}`}
         description={service.description}
-        image={defaultImage}
+        image={serviceImage || detectiveLogo || ""}
         type="profile"
         schema={detectiveSchema}
       />
@@ -197,8 +189,11 @@ export default function DetectiveProfile() {
             {/* Author Meta */}
             <div className="flex items-center gap-4 mb-6">
               <Avatar className="h-12 w-12" data-testid="img-detective-avatar">
-                <AvatarImage src={defaultAvatar} />
-                <AvatarFallback>{detectiveName[0]}</AvatarFallback>
+                {detectiveLogo ? (
+                  <AvatarImage src={detectiveLogo} />
+                ) : (
+                  <AvatarFallback className="bg-gray-200 text-gray-600 text-xl">{detectiveName[0]}</AvatarFallback>
+                )}
               </Avatar>
               <div>
                 <div className="font-bold text-lg flex items-center gap-2" data-testid="text-detective-name">
@@ -269,8 +264,11 @@ export default function DetectiveProfile() {
               <h2 className="text-xl font-bold font-heading mb-6">About The Detective</h2>
               <div className="flex gap-6">
                 <Avatar className="h-24 w-24">
-                  <AvatarImage src={defaultAvatar} />
-                  <AvatarFallback>{detectiveName[0]}</AvatarFallback>
+                  {detectiveLogo ? (
+                    <AvatarImage src={detectiveLogo} />
+                  ) : (
+                    <AvatarFallback className="bg-gray-200 text-gray-600 text-3xl">{detectiveName[0]}</AvatarFallback>
+                  )}
                 </Avatar>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-4 text-sm">
