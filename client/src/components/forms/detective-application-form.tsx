@@ -84,6 +84,8 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
     firstName: "",
     lastName: "",
     email: "",
+    password: "",
+    confirmPassword: "",
     phoneCountryCode: "+1",
     phoneNumber: "",
     businessType: "individual" as "individual" | "agency",
@@ -110,6 +112,8 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
       if (!formData.firstName) missingFields.push("First Name");
       if (!formData.lastName) missingFields.push("Last Name");
       if (!formData.email) missingFields.push("Email");
+      if (!formData.password) missingFields.push("Password");
+      if (!formData.confirmPassword) missingFields.push("Confirm Password");
       if (!formData.phoneNumber) missingFields.push("Phone Number");
       if (formData.businessType === "agency") {
         if (!formData.companyName) missingFields.push("Business Name");
@@ -120,6 +124,24 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
         toast({
           title: "Missing Required Fields",
           description: `Please fill in: ${missingFields.join(", ")}`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (formData.password.length < 8) {
+        toast({
+          title: "Invalid Password",
+          description: "Password must be at least 8 characters long",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (formData.password !== formData.confirmPassword) {
+        toast({
+          title: "Passwords Don't Match",
+          description: "Please make sure both passwords match",
           variant: "destructive",
         });
         return false;
@@ -199,6 +221,7 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
       const applicationData: InsertDetectiveApplication = {
         fullName: `${formData.firstName} ${formData.lastName}`.trim(),
         email: formData.email,
+        password: formData.password,
         phoneCountryCode: formData.phoneCountryCode,
         phoneNumber: formData.phoneNumber,
         businessType: formData.businessType,
@@ -305,6 +328,29 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   data-testid="input-email"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password *</Label>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  placeholder="Create a secure password (min 8 characters)"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange("password", e.target.value)}
+                  data-testid="input-password"
+                />
+                <p className="text-xs text-gray-500">Must be at least 8 characters long</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                <Input 
+                  id="confirmPassword" 
+                  type="password" 
+                  placeholder="Re-enter your password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                  data-testid="input-confirmPassword"
                 />
               </div>
               <div className="space-y-2">

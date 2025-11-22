@@ -148,6 +148,7 @@ export const detectiveApplications = pgTable("detective_applications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   fullName: text("full_name").notNull(),
   email: text("email").notNull().unique(),
+  password: text("password").notNull(),
   phoneCountryCode: text("phone_country_code"),
   phoneNumber: text("phone_number"),
   businessType: text("business_type").notNull(),
@@ -248,6 +249,7 @@ export const insertFavoriteSchema = createInsertSchema(favorites).omit({ id: tru
 
 export const insertDetectiveApplicationSchema = createInsertSchema(detectiveApplications, {
   email: z.string().email(),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   fullName: z.string().min(2),
   businessType: z.enum(["individual", "agency"]),
   phoneCountryCode: z.string().min(1),

@@ -1,11 +1,17 @@
+import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useDetective, useServicesByDetective, useUpdateDetective } from "@/lib/hooks";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ArrowLeft, 
   Mail, 
@@ -18,7 +24,9 @@ import {
   Ban,
   CheckCircle,
   Clock,
-  Briefcase
+  Briefcase,
+  Save,
+  ShieldCheck
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -32,13 +40,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
 
 export default function ViewDetective() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const { data: detectiveData, isLoading: loadingDetective } = useDetective(id);
   const { data: servicesData, isLoading: loadingServices } = useServicesByDetective(id);
@@ -46,6 +54,29 @@ export default function ViewDetective() {
 
   const detective = detectiveData?.detective;
   const services = servicesData?.services || [];
+
+  const [editForm, setEditForm] = useState({
+    businessName: "",
+    bio: "",
+    location: "",
+    phone: "",
+    whatsapp: "",
+    languages: [] as string[],
+  });
+
+  // Initialize form when detective data loads
+  useState(() => {
+    if (detective && !isEditing) {
+      setEditForm({
+        businessName: detective.businessName || "",
+        bio: detective.bio || "",
+        location: detective.location || "",
+        phone: detective.phone || "",
+        whatsapp: detective.whatsapp || "",
+        languages: detective.languages || [],
+      });
+    }
+  });
 
   const handleBack = () => {
     setLocation("/admin/detectives");
@@ -77,6 +108,52 @@ export default function ViewDetective() {
       toast({
         title: "Error",
         description: error.message || "Failed to update detective status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!detective) return;
+
+    try {
+      await updateDetective.mutateAsync({
+        id: detective.id,
+        data: editForm,
+      });
+
+      toast({
+        title: "Profile Updated",
+        description: "Detective profile has been successfully updated.",
+      });
+
+      setIsEditing(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update detective profile",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!detective) return;
+
+    try {
+      await updateDetective.mutateAsync({
+        id: detective.id,
+        data: { status: newStatus as any },
+      });
+
+      toast({
+        title: "Status Updated",
+        description: `Detective status changed to ${newStatus}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update status",
         variant: "destructive",
       });
     }
@@ -132,38 +209,33 @@ export default function ViewDetective() {
             </Button>
             <Separator orientation="vertical" className="h-8" />
             <div>
-              <h1 className="text-2xl font-bold">Detective Profile</h1>
-              <p className="text-gray-500">Complete view of detective information</p>
+              <h1 className="text-2xl font-bold">Detective Management</h1>
+              <p className="text-gray-500">View and manage complete detective profile</p>
             </div>
           </div>
 
           <div className="flex gap-2">
-            <Button
-              variant={detective.status === "suspended" ? "default" : "destructive"}
-              onClick={handleSuspendClick}
-              data-testid="button-suspend-toggle"
-            >
-              {detective.status === "suspended" ? (
-                <>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Unsuspend Account
-                </>
-              ) : (
-                <>
-                  <Ban className="h-4 w-4 mr-2" />
-                  Suspend Account
-                </>
-              )}
-            </Button>
+            {isEditing ? (
+              <>
+                <Button variant="outline" onClick={() => setIsEditing(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveProfile} disabled={updateDetective.isPending}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {updateDetective.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </>
+            ) : (
+              <Button onClick={() => setIsEditing(true)}>
+                Edit Profile
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Profile Overview */}
-        <Card data-testid="card-profile-overview">
-          <CardHeader>
-            <CardTitle>Profile Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* Profile Header */}
+        <Card data-testid="card-profile-header">
+          <CardContent className="pt-6">
             <div className="flex items-start gap-6">
               <Avatar className="h-24 w-24 border-2 border-gray-200">
                 <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${detective.businessName}`} />
@@ -191,7 +263,8 @@ export default function ViewDetective() {
                       {detective.status}
                     </Badge>
                     {detective.isVerified && (
-                      <Badge className="bg-blue-100 text-blue-700" data-testid="badge-verified">
+                      <Badge className="bg-blue-100 text-blue-700 flex items-center gap-1" data-testid="badge-verified">
+                        <ShieldCheck className="h-3 w-3" />
                         Verified
                       </Badge>
                     )}
@@ -203,26 +276,9 @@ export default function ViewDetective() {
                       {detective.subscriptionPlan} Plan
                     </Badge>
                   </div>
-                  <p className="text-gray-600" data-testid="text-bio">
-                    {detective.bio || "No bio provided"}
-                  </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <MapPin className="h-4 w-4" />
-                    <span data-testid="text-location">{detective.location || "Not specified"}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Globe className="h-4 w-4" />
-                    <span data-testid="text-country">{detective.country}</span>
-                  </div>
-                  {detective.phone && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Phone className="h-4 w-4" />
-                      <span data-testid="text-phone">{detective.phone}</span>
-                    </div>
-                  )}
+                <div className="grid grid-cols-3 gap-4">
                   <div className="flex items-center gap-2 text-gray-600">
                     <Calendar className="h-4 w-4" />
                     <span data-testid="text-member-since">
@@ -232,7 +288,7 @@ export default function ViewDetective() {
                   <div className="flex items-center gap-2 text-gray-600">
                     <DollarSign className="h-4 w-4" />
                     <span data-testid="text-earnings">
-                      Total Earnings: ${detective.totalEarnings}
+                      Earnings: ${detective.totalEarnings}
                     </span>
                   </div>
                   {detective.lastActive && (
@@ -244,10 +300,118 @@ export default function ViewDetective() {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tabbed Content */}
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="services">Services</TabsTrigger>
+            <TabsTrigger value="subscription">Subscription</TabsTrigger>
+            <TabsTrigger value="admin">Admin Controls</TabsTrigger>
+          </TabsList>
+
+          {/* Profile Tab */}
+          <TabsContent value="profile">
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile Information</CardTitle>
+                <CardDescription>
+                  {isEditing ? "Edit detective's profile information" : "View detective's profile information"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label>Business Name</Label>
+                    {isEditing ? (
+                      <Input 
+                        value={editForm.businessName}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, businessName: e.target.value }))}
+                        data-testid="input-edit-businessName"
+                      />
+                    ) : (
+                      <p className="text-gray-900 font-medium" data-testid="text-businessName">
+                        {detective.businessName || "Not provided"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Location</Label>
+                    {isEditing ? (
+                      <Input 
+                        value={editForm.location}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
+                        data-testid="input-edit-location"
+                      />
+                    ) : (
+                      <p className="text-gray-900 font-medium" data-testid="text-location">
+                        {detective.location || "Not provided"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Country</Label>
+                    <p className="text-gray-900 font-medium" data-testid="text-country">
+                      {detective.country}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Phone</Label>
+                    {isEditing ? (
+                      <Input 
+                        value={editForm.phone}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                        data-testid="input-edit-phone"
+                      />
+                    ) : (
+                      <p className="text-gray-900 font-medium" data-testid="text-phone">
+                        {detective.phone || "Not provided"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>WhatsApp</Label>
+                    {isEditing ? (
+                      <Input 
+                        value={editForm.whatsapp}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, whatsapp: e.target.value }))}
+                        data-testid="input-edit-whatsapp"
+                      />
+                    ) : (
+                      <p className="text-gray-900 font-medium" data-testid="text-whatsapp">
+                        {detective.whatsapp || "Not provided"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Bio</Label>
+                  {isEditing ? (
+                    <Textarea 
+                      value={editForm.bio}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
+                      rows={4}
+                      data-testid="input-edit-bio"
+                    />
+                  ) : (
+                    <p className="text-gray-900" data-testid="text-bio">
+                      {detective.bio || "No bio provided"}
+                    </p>
+                  )}
+                </div>
 
                 {detective.languages && detective.languages.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-500 mb-2">Languages</p>
+                  <div className="space-y-2">
+                    <Label>Languages</Label>
                     <div className="flex flex-wrap gap-2">
                       {detective.languages.map((lang) => (
                         <Badge key={lang} variant="secondary" data-testid={`badge-language-${lang}`}>
@@ -257,129 +421,210 @@ export default function ViewDetective() {
                     </div>
                   </div>
                 )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Services & Packages */}
-        <Card data-testid="card-services">
-          <CardHeader>
-            <CardTitle>Services & Packages</CardTitle>
-            <CardDescription>
-              All services offered by this detective
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loadingServices ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-2 text-gray-600">Loading services...</p>
-              </div>
-            ) : services.length === 0 ? (
-              <div className="text-center py-8">
-                <Package className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600">No services created yet</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {services.map((service) => (
-                  <Card key={service.id} className="border-l-4 border-l-blue-500" data-testid={`service-${service.id}`}>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <CardTitle className="text-lg" data-testid={`service-title-${service.id}`}>
-                              {service.title}
-                            </CardTitle>
-                            <Badge variant="outline" data-testid={`service-category-${service.id}`}>
-                              {service.category}
-                            </Badge>
-                            {service.isActive ? (
-                              <Badge className="bg-green-100 text-green-700">Active</Badge>
-                            ) : (
-                              <Badge className="bg-gray-100 text-gray-700">Inactive</Badge>
-                            )}
+          {/* Services Tab */}
+          <TabsContent value="services">
+            <Card data-testid="card-services">
+              <CardHeader>
+                <CardTitle>Services & Pricing</CardTitle>
+                <CardDescription>
+                  All services offered by this detective
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingServices ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-gray-600">Loading services...</p>
+                  </div>
+                ) : services.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Package className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600">No services created yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {services.map((service) => (
+                      <Card key={service.id} className="border-l-4 border-l-blue-500" data-testid={`service-${service.id}`}>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <CardTitle className="text-lg" data-testid={`service-title-${service.id}`}>
+                                  {service.title}
+                                </CardTitle>
+                                <Badge variant="outline" data-testid={`service-category-${service.id}`}>
+                                  {service.category}
+                                </Badge>
+                                {service.isActive ? (
+                                  <Badge className="bg-green-100 text-green-700">Active</Badge>
+                                ) : (
+                                  <Badge className="bg-gray-100 text-gray-700">Inactive</Badge>
+                                )}
+                              </div>
+                              <CardDescription data-testid={`service-description-${service.id}`}>
+                                {service.description}
+                              </CardDescription>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm text-gray-500">Base Price</p>
+                              <p className="text-xl font-bold text-blue-600" data-testid={`service-price-${service.id}`}>
+                                ${service.basePrice}
+                              </p>
+                            </div>
                           </div>
-                          <CardDescription data-testid={`service-description-${service.id}`}>
-                            {service.description}
-                          </CardDescription>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-500">Base Price</p>
-                          <p className="text-xl font-bold text-blue-600" data-testid={`service-price-${service.id}`}>
-                            ${service.basePrice}
-                          </p>
-                          {service.offerPrice && (
-                            <p className="text-sm text-gray-500 line-through">
-                              ${service.offerPrice}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-3 gap-3 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Briefcase className="h-4 w-4" />
-                          <span>{service.orderCount} orders</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span>👁️ {service.viewCount} views</span>
-                        </div>
-                        <div className="text-gray-500">
-                          Created {format(new Date(service.createdAt), "MMM d, yyyy")}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-3 gap-3 text-sm text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <Briefcase className="h-4 w-4" />
+                              <span>{service.orderCount} orders</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span>👁️ {service.viewCount} views</span>
+                            </div>
+                            <div className="text-gray-500">
+                              Created {format(new Date(service.createdAt), "MMM d, yyyy")}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Account Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card data-testid="card-stats-services">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-500">
-                Total Services
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold" data-testid="stat-total-services">
-                {services.length}
-              </p>
-            </CardContent>
-          </Card>
+          {/* Subscription Tab */}
+          <TabsContent value="subscription">
+            <Card>
+              <CardHeader>
+                <CardTitle>Subscription Management</CardTitle>
+                <CardDescription>Manage detective's subscription and billing</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label>Current Plan</Label>
+                    <p className="text-2xl font-bold capitalize">{detective.subscriptionPlan}</p>
+                  </div>
 
-          <Card data-testid="card-stats-orders">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-500">
-                Total Orders
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold" data-testid="stat-total-orders">
-                {services.reduce((sum, s) => sum + s.orderCount, 0)}
-              </p>
-            </CardContent>
-          </Card>
+                  <div className="space-y-2">
+                    <Label>Account Status</Label>
+                    <Badge
+                      className={
+                        detective.status === "active"
+                          ? "bg-green-100 text-green-700 text-lg px-4 py-1"
+                          : "bg-red-100 text-red-700 text-lg px-4 py-1"
+                      }
+                    >
+                      {detective.status}
+                    </Badge>
+                  </div>
 
-          <Card data-testid="card-stats-views">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-500">
-                Total Views
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold" data-testid="stat-total-views">
-                {services.reduce((sum, s) => sum + s.viewCount, 0)}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+                  <div className="space-y-2">
+                    <Label>Verified Status</Label>
+                    <p className="text-gray-900 font-medium">
+                      {detective.isVerified ? "✓ Verified" : "Not Verified"}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Total Earnings</Label>
+                    <p className="text-2xl font-bold text-green-600">${detective.totalEarnings}</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Statistics</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <p className="text-sm text-gray-500">Total Services</p>
+                        <p className="text-3xl font-bold">{services.length}</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <p className="text-sm text-gray-500">Total Orders</p>
+                        <p className="text-3xl font-bold">
+                          {services.reduce((sum, s) => sum + s.orderCount, 0)}
+                        </p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <p className="text-sm text-gray-500">Total Views</p>
+                        <p className="text-3xl font-bold">
+                          {services.reduce((sum, s) => sum + s.viewCount, 0)}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Admin Controls Tab */}
+          <TabsContent value="admin">
+            <Card>
+              <CardHeader>
+                <CardTitle>Admin Controls</CardTitle>
+                <CardDescription>Administrative actions and status management</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label>Change Account Status</Label>
+                    <div className="flex gap-2 mt-2">
+                      <Select value={detective.status} onValueChange={handleStatusChange}>
+                        <SelectTrigger className="w-48" data-testid="select-admin-status">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="suspended">Suspended</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-red-600">Danger Zone</h3>
+                    <Button
+                      variant="destructive"
+                      onClick={handleSuspendClick}
+                      data-testid="button-suspend-toggle"
+                    >
+                      {detective.status === "suspended" ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Unsuspend Account
+                        </>
+                      ) : (
+                        <>
+                          <Ban className="h-4 w-4 mr-2" />
+                          Suspend Account
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Suspend Dialog */}
         <AlertDialog open={showSuspendDialog} onOpenChange={setShowSuspendDialog}>

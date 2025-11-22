@@ -596,7 +596,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/applications", async (req: Request, res: Response) => {
     try {
       const validatedData = insertDetectiveApplicationSchema.parse(req.body);
-      const application = await storage.createDetectiveApplication(validatedData);
+      
+      // Hash the password before storing - CRITICAL SECURITY
+      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+      const applicationData = {
+        ...validatedData,
+        password: hashedPassword,
+      };
+      
+      const application = await storage.createDetectiveApplication(applicationData);
       res.status(201).json({ application });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -641,14 +649,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         try {
-          // Create user account with a temporary password
-          const tempPassword = Math.random().toString(36).slice(-12);
-          const hashedPassword = await bcrypt.hash(tempPassword, 10);
-          
+          // Create user account with the password from application (already hashed)
           const user = await storage.createUser({
             email: application.email,
             name: application.fullName,
-            password: hashedPassword,
+            password: application.password,
             role: "detective",
           });
 
@@ -695,9 +700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          // TODO: Send email with temp password to detective
-          // For now, admin should manually communicate credentials
-          console.log(`Detective account created for: ${application.email} with ${application.serviceCategories?.length || 0} services`);
+          console.log(`Detective account created for: ${application.email} with ${application.serviceCategories?.length || 0} services. Detective can now login with their chosen password.`);
         } catch (createError: any) {
           console.error("Failed to create detective account:", createError);
           return res.status(500).json({ 
