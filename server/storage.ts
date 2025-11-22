@@ -31,6 +31,8 @@ export interface IStorage {
   getDetectiveByUserId(userId: string): Promise<Detective | undefined>;
   createDetective(detective: InsertDetective): Promise<Detective>;
   updateDetective(id: string, updates: Partial<Detective>): Promise<Detective | undefined>;
+  updateDetectiveAdmin(id: string, updates: Partial<Detective>): Promise<Detective | undefined>;
+  resetDetectivePassword(userId: string, newPassword: string): Promise<User | undefined>;
   getAllDetectives(limit?: number, offset?: number): Promise<Detective[]>;
   searchDetectives(filters: {
     country?: string;
@@ -158,9 +160,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Detective operations
-  async getDetective(id: string): Promise<Detective | undefined> {
-    const [detective] = await db.select().from(detectives).where(eq(detectives.id, id)).limit(1);
-    return detective;
+  async getDetective(id: string): Promise<(Detective & { email?: string }) | undefined> {
+    const [result] = await db.select({
+      detective: detectives,
+      email: users.email,
+    })
+    .from(detectives)
+    .leftJoin(users, eq(detectives.userId, users.id))
+    .where(eq(detectives.id, id))
+    .limit(1);
+    
+    if (!result) return undefined;
+    
+    return {
+      ...result.detective,
+      email: result.email || undefined,
+    };
   }
 
   async getDetectiveByUserId(userId: string): Promise<Detective | undefined> {
@@ -189,6 +204,38 @@ export class DatabaseStorage implements IStorage {
       .where(eq(detectives.id, id))
       .returning();
     return detective;
+  }
+
+  // Admin-only detective update - allows changing status, subscription plan, verification, etc.
+  async updateDetectiveAdmin(id: string, updates: Partial<Detective>): Promise<Detective | undefined> {
+    // Admin can update more fields including status, plan, verification
+    const allowedFields: (keyof Detective)[] = [
+      'businessName', 'bio', 'location', 'phone', 'whatsapp', 'languages',
+      'status', 'subscriptionPlan', 'isVerified', 'country'
+    ];
+    const safeUpdates: Partial<Detective> = {};
+    
+    for (const key of allowedFields) {
+      if (key in updates) {
+        (safeUpdates as any)[key] = updates[key];
+      }
+    }
+    
+    const [detective] = await db.update(detectives)
+      .set({ ...safeUpdates, updatedAt: new Date() })
+      .where(eq(detectives.id, id))
+      .returning();
+    return detective;
+  }
+
+  // Reset detective password (admin only)
+  async resetDetectivePassword(userId: string, newPassword: string): Promise<User | undefined> {
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    const [user] = await db.update(users)
+      .set({ password: hashedPassword, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
   }
 
   async getAllDetectives(limit: number = 50, offset: number = 0): Promise<Detective[]> {
