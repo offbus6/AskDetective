@@ -235,6 +235,7 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
     if (!formData.yearsExperience) missingFields.push("Years of Experience");
     if (!formData.about) missingFields.push("About Your Services");
     if (formData.serviceCategories.length === 0) missingFields.push("At least one Service Category");
+    if (!formData.logo) missingFields.push("Business Logo/Photo");
     if (formData.businessType === "agency") {
       if (!formData.companyName) missingFields.push("Business Name");
       if (!formData.businessWebsite) missingFields.push("Business Website");
