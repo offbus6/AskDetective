@@ -152,9 +152,9 @@ export default function AdminSignups() {
                             <div className="text-xs text-gray-500">
                               {app.serviceCategories.length} {app.serviceCategories.length === 1 ? 'category' : 'categories'}
                               {app.categoryPricing && Array.isArray(app.categoryPricing) && app.categoryPricing.length > 0 && (
-                                <span className="ml-1">
-                                  ({app.categoryPricing.map((p: any) => `${p.currency} ${p.price}`).join(', ')})
-                                </span>
+                                <>
+                                  {' '}({(app.categoryPricing as Array<{category: string; price: string; currency: string}>).map((p) => `${p.currency} ${p.price}`).join(', ')})
+                                </>
                               )}
                             </div>
                           )}
