@@ -165,6 +165,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get current logged-in detective's profile (requires detective role)
+  app.get("/api/detectives/me", requireRole("detective"), async (req: Request, res: Response) => {
+    try {
+      const detective = await storage.getDetectiveByUserId(req.session.userId!);
+      if (!detective) {
+        return res.status(404).json({ error: "Detective profile not found" });
+      }
+      res.json({ detective });
+    } catch (error) {
+      console.error("Get current detective error:", error);
+      res.status(500).json({ error: "Failed to get detective profile" });
+    }
+  });
+
   // Get detective by ID (public)
   app.get("/api/detectives/:id", async (req: Request, res: Response) => {
     try {

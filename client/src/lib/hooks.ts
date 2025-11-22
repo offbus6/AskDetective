@@ -61,6 +61,14 @@ export function useDetective(id: string | null | undefined) {
   });
 }
 
+export function useCurrentDetective() {
+  return useQuery({
+    queryKey: ["detectives", "current"],
+    queryFn: () => api.detectives.getCurrent(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useDetectivesByCountry(country: string | null | undefined) {
   return useQuery({
     queryKey: ["detectives", "country", country],

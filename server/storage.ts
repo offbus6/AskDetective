@@ -178,9 +178,22 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getDetectiveByUserId(userId: string): Promise<Detective | undefined> {
-    const [detective] = await db.select().from(detectives).where(eq(detectives.userId, userId)).limit(1);
-    return detective;
+  async getDetectiveByUserId(userId: string): Promise<(Detective & { email?: string }) | undefined> {
+    const [result] = await db.select({
+      detective: detectives,
+      email: users.email,
+    })
+    .from(detectives)
+    .leftJoin(users, eq(detectives.userId, users.id))
+    .where(eq(detectives.userId, userId))
+    .limit(1);
+    
+    if (!result) return undefined;
+    
+    return {
+      ...result.detective,
+      email: result.email || undefined,
+    };
   }
 
   async createDetective(insertDetective: InsertDetective): Promise<Detective> {

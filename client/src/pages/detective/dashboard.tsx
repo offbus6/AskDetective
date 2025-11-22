@@ -4,18 +4,52 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
-import { Star, Eye, MousePointer, MessageSquare, AlertCircle, Ban } from "lucide-react";
+import { Star, Eye, MousePointer, MessageSquare, AlertCircle, Ban, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useState } from "react";
+import { useCurrentDetective } from "@/lib/hooks";
 
 export default function DetectiveDashboard() {
-  // Mock status: 'pending' | 'approved' | 'suspended'
-  // In a real app, this would come from the backend/auth context
-  const [accountStatus] = useState<'pending' | 'approved' | 'suspended'>('pending');
+  const { data, isLoading, error } = useCurrentDetective();
+  const detective = data?.detective;
+
+  if (isLoading) {
+    return (
+      <DashboardLayout role="detective">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error || !detective) {
+    return (
+      <DashboardLayout role="detective">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error Loading Profile</AlertTitle>
+          <AlertDescription>
+            Unable to load your detective profile. Please try again later.
+          </AlertDescription>
+        </Alert>
+      </DashboardLayout>
+    );
+  }
+
+  const accountStatus = detective.status;
   
-  // Mock profile completion percentage
-  // If 100%, the completion card will be hidden
-  const [completionPercentage] = useState(75);
+  // Calculate profile completion based on filled fields
+  const totalFields = 7;
+  const filledFields = [
+    detective.businessName,
+    detective.bio,
+    detective.location,
+    detective.phone,
+    detective.whatsapp,
+    detective.languages?.length,
+    detective.country,
+  ].filter(Boolean).length;
+  const completionPercentage = Math.round((filledFields / totalFields) * 100);
 
   return (
     <DashboardLayout role="detective">
@@ -43,11 +77,13 @@ export default function DetectiveDashboard() {
 
         <div className="flex items-center justify-between">
           <div>
-             <h2 className="text-3xl font-bold font-heading text-gray-900">My Dashboard</h2>
+             <h2 className="text-3xl font-bold font-heading text-gray-900">
+               Welcome, {detective.businessName}
+             </h2>
              <p className="text-gray-500">Manage your profile, reviews, and performance.</p>
           </div>
           
-          {accountStatus === 'approved' && (
+          {accountStatus === 'active' && (
             <Badge className="bg-green-100 text-green-700 hover:bg-green-200 text-sm px-3 py-1">
               <span className="w-2 h-2 bg-green-600 rounded-full mr-2 animate-pulse"></span>
               Online Status: Active

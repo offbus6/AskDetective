@@ -54,6 +54,13 @@ export const api = {
   },
 
   detectives: {
+    getCurrent: async (): Promise<{ detective: Detective & { email?: string } }> => {
+      const response = await fetch("/api/detectives/me", {
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+
     getAll: async (limit = 50, offset = 0): Promise<{ detectives: Detective[] }> => {
       const response = await fetch(`/api/detectives?limit=${limit}&offset=${offset}`, {
         credentials: "include",
