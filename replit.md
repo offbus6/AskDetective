@@ -15,6 +15,9 @@ FindDetectives is a comprehensive web portal connecting clients with private inv
 - ✅ Phone number fields separated into country code dropdown + number input
 - ✅ Admin detective view now displays email address from joined users table
 - ✅ Admin password reset capability - generates temporary password with copy-to-clipboard functionality
+- ✅ **Fixed detective dashboard** - Now loads detective's actual profile from database instead of showing mock data
+- ✅ Added GET /api/detectives/me endpoint for logged-in detectives to fetch their own profile
+- ✅ Created useCurrentDetective hook for real-time profile data with loading states
 - ⚠️ **SECURITY NOTE:** Password reset returns plaintext password for manual sharing - NOT production-ready, requires email delivery integration before launch
 
 **Critical Fixes:**
