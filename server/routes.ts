@@ -757,6 +757,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             : undefined;
 
           // Create detective profile with ALL application data
+          // Determine if this is admin-created or self-registered
+          const isAdminCreated = application.isClaimable === true;
+          
           const detective = await storage.createDetective({
             userId: user.id,
             businessName: application.companyName || application.fullName,
@@ -765,9 +768,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             subscriptionPlan: "free",
             status: "active",
             isVerified: true,
-            isClaimed: true,
-            isClaimable: false,
-            createdBy: "self",
+            isClaimed: isAdminCreated ? false : true,
+            isClaimable: isAdminCreated ? true : false,
+            createdBy: isAdminCreated ? "admin" : "self",
             country: application.country || "US",
             location: location,
             phone: phone,
