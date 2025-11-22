@@ -26,11 +26,6 @@ import { SEO } from "@/components/seo";
 import { useSearchServices, useServiceCategories } from "@/lib/hooks";
 import type { Service, Detective } from "@shared/schema";
 
-// @ts-ignore
-import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
-// @ts-ignore
-import femaleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_female.png";
-
 function mapServiceToCard(service: Service & { detective: Detective; avgRating: number; reviewCount: number }) {
   const levelMap = {
     free: "Free Member",
@@ -43,22 +38,18 @@ function mapServiceToCard(service: Service & { detective: Detective; avgRating: 
   if (service.detective.subscriptionPlan === "agency") badges.push("recommended");
   if (service.detective.subscriptionPlan === "pro") badges.push("pro");
 
-  const avatarMap: { [key: string]: string } = {
-    "John Holmes": maleAvatar,
-    "Sarah Chen": femaleAvatar,
-    "Mike Torres": maleAvatar,
-  };
-
   const detectiveName = service.detective.businessName || "Unknown Detective";
 
+  // Use actual database images - NO MOCK DATA
   const images = service.images && service.images.length > 0 ? service.images : undefined;
-  const defaultImage = "https://images.unsplash.com/photo-1555436169-20e93ea9a7ff?q=80&w=1000&auto=format&fit=crop";
+  const serviceImage = images ? images[0] : null;
+  const detectiveLogo = service.detective.logo || null;
   
   return {
     id: service.id,
     images,
-    image: images ? images[0] : defaultImage,
-    avatar: avatarMap[detectiveName] || maleAvatar,
+    image: serviceImage,
+    avatar: detectiveLogo,
     name: detectiveName,
     level: levelMap[service.detective.subscriptionPlan] || "Free Member",
     category: service.category,
