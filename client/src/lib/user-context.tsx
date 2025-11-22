@@ -1,5 +1,7 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { useAuth } from "./hooks";
+import { api } from "./api";
+import { useQueryClient } from "@tanstack/react-query";
 import type { User } from "@shared/schema";
 
 interface FavoriteService {
@@ -21,12 +23,14 @@ interface UserContextType {
   isAuthenticated: boolean;
   isFavorite: (id: string) => boolean;
   toggleFavorite: (service: FavoriteService) => void;
+  logout: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const { data, isLoading } = useAuth();
+  const queryClient = useQueryClient();
   const [favorites, setFavorites] = useState<FavoriteService[]>([]);
   
   const user = data?.user || null;
@@ -58,8 +62,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const logout = async () => {
+    try {
+      await api.auth.logout();
+      localStorage.removeItem("favorites");
+      setFavorites([]);
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      queryClient.clear();
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Logout failed:", error);
+      localStorage.removeItem("favorites");
+      setFavorites([]);
+      queryClient.clear();
+      window.location.href = "/";
+    }
+  };
+
   return (
-    <UserContext.Provider value={{ user, isLoading, isAuthenticated, isFavorite, toggleFavorite }}>
+    <UserContext.Provider value={{ user, isLoading, isAuthenticated, isFavorite, toggleFavorite, logout }}>
       {children}
     </UserContext.Provider>
   );
