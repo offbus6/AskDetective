@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useUser } from "@/lib/user-context";
 
 // @ts-ignore
 import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
@@ -31,6 +32,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, role }: DashboardLayoutProps) {
   const [location] = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { logout } = useUser();
 
   const adminLinks = [
     { href: "/admin/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -90,12 +92,15 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
       </nav>
 
       <div className="p-4 border-t border-gray-200">
-        <Link href="/login">
-          <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50">
-            <LogOut className="h-5 w-5 mr-2" />
-            Sign Out
-          </Button>
-        </Link>
+        <Button 
+          variant="ghost" 
+          className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+          onClick={logout}
+          data-testid="button-logout"
+        >
+          <LogOut className="h-5 w-5 mr-2" />
+          Sign Out
+        </Button>
       </div>
     </div>
   );

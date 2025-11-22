@@ -16,34 +16,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { useCurrency, COUNTRIES } from "@/lib/currency-context";
 import { useUser } from "@/lib/user-context";
-import { useLogout } from "@/lib/hooks";
-import { useToast } from "@/hooks/use-toast";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [location, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const { selectedCountry, setCountry } = useCurrency();
-  const { user } = useUser();
-  const logoutMutation = useLogout();
-  const { toast } = useToast();
-  
-  const handleLogout = async () => {
-    try {
-      await logoutMutation.mutateAsync();
-      toast({
-        title: "Logged out",
-        description: "See you soon!",
-      });
-      setLocation("/");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to logout",
-        variant: "destructive",
-      });
-    }
-  };
+  const { user, logout } = useUser();
 
   const handleSearch = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
@@ -180,7 +159,7 @@ export function Navbar() {
                     <DropdownMenuItem className="cursor-pointer">Favorites</DropdownMenuItem>
                   </Link>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600" data-testid="button-logout">
+                  <DropdownMenuItem onClick={logout} className="cursor-pointer text-red-600 focus:text-red-600" data-testid="button-logout">
                     <LogOut className="mr-2 h-4 w-4" /> Log out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -327,7 +306,7 @@ export function Navbar() {
                     <Link href="/user/dashboard" className="text-lg font-medium">
                       Dashboard
                     </Link>
-                    <button onClick={handleLogout} className="text-lg font-medium text-left text-red-600" data-testid="button-logout-mobile">
+                    <button onClick={logout} className="text-lg font-medium text-left text-red-600" data-testid="button-logout-mobile">
                       Log Out
                     </button>
                   </>
