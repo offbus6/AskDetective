@@ -8,6 +8,7 @@ export const subscriptionPlanEnum = pgEnum("subscription_plan", ["free", "pro", 
 export const orderStatusEnum = pgEnum("order_status", ["pending", "in_progress", "completed", "cancelled", "refunded"]);
 export const claimStatusEnum = pgEnum("claim_status", ["pending", "under_review", "approved", "rejected"]);
 export const detectiveStatusEnum = pgEnum("detective_status", ["pending", "active", "suspended", "inactive"]);
+export const createdByEnum = pgEnum("created_by", ["admin", "self"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -45,6 +46,8 @@ export const detectives = pgTable("detectives", {
   status: detectiveStatusEnum("status").notNull().default("pending"),
   isVerified: boolean("is_verified").notNull().default(false),
   isClaimed: boolean("is_claimed").notNull().default(false),
+  isClaimable: boolean("is_claimable").notNull().default(false),
+  createdBy: createdByEnum("created_by").notNull().default("self"),
   totalEarnings: decimal("total_earnings", { precision: 10, scale: 2 }).notNull().default("0"),
   avgResponseTime: integer("avg_response_time"),
   lastActive: timestamp("last_active"),
