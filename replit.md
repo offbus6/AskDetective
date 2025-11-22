@@ -7,8 +7,17 @@ FindDetectives is a comprehensive web portal connecting clients with private inv
 ## Recent Progress (November 22, 2025)
 
 **Latest Updates:**
+- ✅ **Claimable Detective Profiles Feature** - Complete ownership transfer system:
+  - Admin can create detective profiles marked as "claimable" for business owners to claim
+  - Public profiles show "Claim This Profile" button when claimable and unclaimed
+  - Claim approval transfers ownership, creates/upgrades user accounts, sets detective role
+  - Self-registered detectives automatically owned (createdBy='self')
+  - Admin-created profiles can be marked claimable with checkbox in application form
+  - Comprehensive rollback logic for common failure scenarios
+  - ⚠️ **Requires manual admin intervention:** No automated emails - admin must manually reset passwords for new claimants
+  - ⚠️ **Session refresh required:** Existing users claiming profiles must log out/in to see detective dashboard
 - ✅ **Complete Detective Profile Implementation** - All fields from signup application now displayed and editable
-- ✅ Added schema fields: yearsExperience, businessWebsite, licenseNumber, businessType, businessDocuments, recognitions
+- ✅ Added schema fields: yearsExperience, businessWebsite, licenseNumber, businessType, businessDocuments, recognitions, createdBy, isClaimable
 - ✅ **Plan-Based Access Control** - Free/Pro/Agency plans gate features appropriately:
   - Free: Basic profile fields only
   - Pro/Agency: Contact info (phone/WhatsApp), recognitions/awards section
