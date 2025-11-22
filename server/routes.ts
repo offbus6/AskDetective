@@ -652,20 +652,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
             role: "detective",
           });
 
-          // Create detective profile
-          await storage.createDetective({
+          // Build location string from application data
+          const locationParts = [];
+          if (application.city) locationParts.push(application.city);
+          if (application.state) locationParts.push(application.state);
+          const location = locationParts.length > 0 ? locationParts.join(", ") : "Not specified";
+
+          // Build phone number
+          const phone = application.phoneCountryCode && application.phoneNumber 
+            ? `${application.phoneCountryCode}${application.phoneNumber}`
+            : undefined;
+
+          // Create detective profile with actual application data
+          const detective = await storage.createDetective({
             userId: user.id,
-            businessName: application.fullName, // Use fullName as default business name
-            bio: application.experience || "Professional detective ready to help with your case.",
+            businessName: application.companyName || application.fullName,
+            bio: application.about || "Professional detective ready to help with your case.",
             subscriptionPlan: "free",
+            status: "active",
             isVerified: true,
-            country: "US",
-            location: "United States",
+            country: application.country || "US",
+            location: location,
+            phone: phone,
           });
+
+          // Create services for each selected category with pricing
+          if (application.serviceCategories && application.categoryPricing) {
+            const pricingData = application.categoryPricing as Array<{category: string; price: string; currency: string}>;
+            
+            for (const category of application.serviceCategories) {
+              const pricing = pricingData.find(p => p.category === category);
+              if (pricing && pricing.price) {
+                await storage.createService({
+                  detectiveId: detective.id,
+                  category: category,
+                  title: `${category} Services`,
+                  description: `Professional ${category.toLowerCase()} services by ${application.fullName}. Contact for detailed consultation.`,
+                  basePrice: pricing.price,
+                  isActive: true,
+                });
+              }
+            }
+          }
 
           // TODO: Send email with temp password to detective
           // For now, admin should manually communicate credentials
-          console.log(`Detective account created for: ${application.email}`);
+          console.log(`Detective account created for: ${application.email} with ${application.serviceCategories?.length || 0} services`);
         } catch (createError: any) {
           console.error("Failed to create detective account:", createError);
           return res.status(500).json({ 
