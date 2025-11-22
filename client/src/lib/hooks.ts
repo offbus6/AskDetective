@@ -96,6 +96,7 @@ export function useUpdateDetective() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["detectives", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["detectives", "all"] });
+      queryClient.invalidateQueries({ queryKey: ["detectives", "current"] });
     },
   });
 }
