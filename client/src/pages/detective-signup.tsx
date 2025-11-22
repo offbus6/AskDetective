@@ -19,42 +19,56 @@ const COUNTRIES = [
     name: "United States",
     code: "US",
     currency: "$",
+    currencyCode: "USD",
+    phoneCode: "+1",
     states: ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
   },
   {
     name: "United Kingdom",
     code: "UK",
     currency: "£",
+    currencyCode: "GBP",
+    phoneCode: "+44",
     states: ["England", "Scotland", "Wales", "Northern Ireland"]
   },
   {
     name: "India",
     code: "IN",
     currency: "₹",
+    currencyCode: "INR",
+    phoneCode: "+91",
     states: ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi"]
   },
   {
     name: "Canada",
     code: "CA",
     currency: "CA$",
+    currencyCode: "CAD",
+    phoneCode: "+1",
     states: ["Alberta", "British Columbia", "Manitoba", "New Brunswick", "Newfoundland and Labrador", "Nova Scotia", "Ontario", "Prince Edward Island", "Quebec", "Saskatchewan"]
   },
   {
     name: "Australia",
     code: "AU",
     currency: "AU$",
+    currencyCode: "AUD",
+    phoneCode: "+61",
     states: ["New South Wales", "Queensland", "South Australia", "Tasmania", "Victoria", "Western Australia", "Australian Capital Territory", "Northern Territory"]
   },
   {
     name: "Germany",
     code: "DE",
     currency: "€",
+    currencyCode: "EUR",
+    phoneCode: "+49",
     states: ["Baden-Württemberg", "Bavaria", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hesse", "Lower Saxony", "Mecklenburg-Vorpommern", "North Rhine-Westphalia", "Rhineland-Palatinate", "Saarland", "Saxony", "Saxony-Anhalt", "Schleswig-Holstein", "Thuringia"]
   },
   {
     name: "France",
     code: "FR",
     currency: "€",
+    currencyCode: "EUR",
+    phoneCode: "+33",
     states: ["Île-de-France", "Auvergne-Rhône-Alpes", "Bourgogne-Franche-Comté", "Brittany", "Centre-Val de Loire", "Corsica", "Grand Est", "Hauts-de-France", "Normandy", "Nouvelle-Aquitaine", "Occitanie", "Pays de la Loire", "Provence-Alpes-Côte d'Azur"]
   },
 ];
@@ -70,17 +84,20 @@ export default function DetectiveSignup() {
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
+    phoneCountryCode: "+1",
+    phoneNumber: "",
     businessType: "individual" as "individual" | "agency",
     companyName: "",
+    businessWebsite: "",
+    businessDocuments: [] as string[],
     country: "US",
     state: "",
     city: "",
     yearsExperience: "",
-    specialties: [] as string[],
     licenseNumber: "",
     about: "",
     serviceCategories: [] as string[],
+    categoryPricing: [] as Array<{category: string; price: string; currency: string}>,
   });
 
   const createApplication = useCreateApplication();
@@ -89,17 +106,26 @@ export default function DetectiveSignup() {
 
   const validateStep = (currentStep: number): boolean => {
     if (currentStep === 1) {
-      if (!formData.firstName || !formData.lastName || !formData.email) {
+      const missingFields = [];
+      if (!formData.firstName) missingFields.push("First Name");
+      if (!formData.lastName) missingFields.push("Last Name");
+      if (!formData.email) missingFields.push("Email");
+      if (!formData.phoneNumber) missingFields.push("Phone Number");
+      if (formData.businessType === "agency") {
+        if (!formData.companyName) missingFields.push("Business Name");
+        if (!formData.businessWebsite) missingFields.push("Business Website");
+      }
+      
+      if (missingFields.length > 0) {
         toast({
           title: "Missing Required Fields",
-          description: "Please fill in First Name, Last Name, and Email to continue.",
+          description: `Please fill in: ${missingFields.join(", ")}`,
           variant: "destructive",
         });
         return false;
       }
     } else if (currentStep === 2) {
       const missingFields = [];
-      if (formData.businessType === "agency" && !formData.companyName) missingFields.push("Company Name");
       if (!formData.city) missingFields.push("City");
       if (!formData.state) missingFields.push("State");
       if (!formData.yearsExperience) missingFields.push("Years of Experience");
@@ -135,12 +161,27 @@ export default function DetectiveSignup() {
     if (!formData.firstName) missingFields.push("First Name");
     if (!formData.lastName) missingFields.push("Last Name");
     if (!formData.email) missingFields.push("Email");
+    if (!formData.phoneNumber) missingFields.push("Phone Number");
     if (!formData.city) missingFields.push("City");
     if (!formData.state) missingFields.push("State");
     if (!formData.yearsExperience) missingFields.push("Years of Experience");
     if (!formData.about) missingFields.push("About Your Services");
-    if (formData.serviceCategories.length === 0) missingFields.push("Service Categories");
-    if (formData.businessType === "agency" && !formData.companyName) missingFields.push("Company Name");
+    if (formData.serviceCategories.length === 0) missingFields.push("At least one Service Category");
+    if (formData.businessType === "agency") {
+      if (!formData.companyName) missingFields.push("Business Name");
+      if (!formData.businessWebsite) missingFields.push("Business Website");
+    }
+
+    // Validate that all selected categories have prices
+    const categoriesWithoutPrice = formData.categoryPricing.filter(p => !p.price || parseFloat(p.price) <= 0);
+    if (categoriesWithoutPrice.length > 0) {
+      toast({
+        title: "Missing Pricing Information",
+        description: "Please set a starting price for all selected service categories.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (missingFields.length > 0) {
       toast({
@@ -160,15 +201,18 @@ export default function DetectiveSignup() {
       const applicationData: InsertDetectiveApplication = {
         fullName: `${formData.firstName} ${formData.lastName}`.trim(),
         email: formData.email,
-        phone: formData.phone || undefined,
+        phoneCountryCode: formData.phoneCountryCode,
+        phoneNumber: formData.phoneNumber,
         businessType: formData.businessType,
         companyName: formData.companyName || undefined,
+        businessWebsite: formData.businessWebsite || undefined,
+        businessDocuments: formData.businessDocuments.length > 0 ? formData.businessDocuments : undefined,
         country: formData.country || undefined,
         state: formData.state || undefined,
         city: formData.city || undefined,
         yearsExperience: formData.yearsExperience || undefined,
-        specialties: formData.specialties.length > 0 ? formData.specialties : undefined,
         serviceCategories: formData.serviceCategories.length > 0 ? formData.serviceCategories : undefined,
+        categoryPricing: formData.categoryPricing.length > 0 ? formData.categoryPricing : undefined,
         about: formData.about || undefined,
         licenseNumber: formData.licenseNumber || undefined,
       };
@@ -267,15 +311,33 @@ export default function DetectiveSignup() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number (Optional)</Label>
-                    <Input 
-                      id="phone" 
-                      type="tel" 
-                      placeholder="+1 (555) 123-4567"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
-                      data-testid="input-phone"
-                    />
+                    <Label htmlFor="phone">Phone Number *</Label>
+                    <div className="flex gap-2">
+                      <Select 
+                        value={formData.phoneCountryCode} 
+                        onValueChange={(value) => handleInputChange("phoneCountryCode", value)}
+                      >
+                        <SelectTrigger className="w-32" data-testid="select-phoneCountryCode">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COUNTRIES.map((country) => (
+                            <SelectItem key={country.code} value={country.phoneCode}>
+                              {country.phoneCode} {country.code}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input 
+                        id="phone" 
+                        type="tel" 
+                        placeholder="5551234567"
+                        value={formData.phoneNumber}
+                        onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                        data-testid="input-phoneNumber"
+                        className="flex-1"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="businessType">Business Type *</Label>
@@ -292,6 +354,41 @@ export default function DetectiveSignup() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {formData.businessType === "agency" && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="companyName">Business Name *</Label>
+                        <Input 
+                          id="companyName" 
+                          placeholder="e.g. Holmes Investigations Ltd."
+                          value={formData.companyName}
+                          onChange={(e) => handleInputChange("companyName", e.target.value)}
+                          data-testid="input-companyName"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="businessWebsite">Business Website *</Label>
+                        <Input 
+                          id="businessWebsite" 
+                          type="url"
+                          placeholder="https://www.yourdetectiveagency.com"
+                          value={formData.businessWebsite}
+                          onChange={(e) => handleInputChange("businessWebsite", e.target.value)}
+                          data-testid="input-businessWebsite"
+                        />
+                        <p className="text-xs text-gray-500">Enter the full URL including https://</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="businessDocuments">Supporting Documents (Optional)</Label>
+                        <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center">
+                          <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-600">Business registration, license, or other supporting documents</p>
+                          <p className="text-xs text-gray-400 mt-1">Upload feature coming soon - You can provide these after approval</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -305,19 +402,7 @@ export default function DetectiveSignup() {
                     </div>
                   </div>
 
-                  {formData.businessType === "agency" && (
-                    <div className="space-y-2">
-                      <Label htmlFor="companyName">Company/Agency Name *</Label>
-                      <Input 
-                        id="companyName" 
-                        placeholder="e.g. Holmes Investigations Ltd."
-                        value={formData.companyName}
-                        onChange={(e) => handleInputChange("companyName", e.target.value)}
-                        data-testid="input-companyName"
-                      />
-                    </div>
-                  )}
-
+    
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="country">Country *</Label>
@@ -403,50 +488,91 @@ export default function DetectiveSignup() {
                     <Shield className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-blue-800">
                       <p className="font-bold">Service Categories & Verification</p>
-                      <p>Select the service categories you'll offer and provide your license information.</p>
+                      <p>Select up to 2 service categories and set your starting prices.</p>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Service Categories You'll Offer *</Label>
-                    <p className="text-xs text-gray-500 mb-3">Select at least one category that matches your expertise</p>
-                    <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto p-2 border rounded-md">
-                      {serviceCategories.map((category) => (
-                        <label 
-                          key={category.id} 
-                          className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.serviceCategories.includes(category.name)}
-                            onChange={(e) => {
-                              const newCategories = e.target.checked
-                                ? [...formData.serviceCategories, category.name]
-                                : formData.serviceCategories.filter(c => c !== category.name);
-                              setFormData(prev => ({ ...prev, serviceCategories: newCategories }));
-                            }}
-                            className="rounded border-gray-300"
-                            data-testid={`checkbox-category-${category.id}`}
-                          />
-                          <span className="text-sm">{category.name}</span>
-                        </label>
-                      ))}
+                  <div className="space-y-3">
+                    <Label>Service Categories You'll Offer (Max 2) *</Label>
+                    <p className="text-xs text-gray-500">Select up to 2 categories and set your starting price for each</p>
+                    <div className="space-y-3">
+                      {serviceCategories.map((category) => {
+                        const isSelected = formData.serviceCategories.includes(category.name);
+                        const pricing = formData.categoryPricing.find(p => p.category === category.name);
+                        const selectedCountry = COUNTRIES.find(c => c.code === formData.country);
+                        
+                        return (
+                          <div key={category.id} className="border rounded-md p-3">
+                            <label className="flex items-start space-x-3 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    if (formData.serviceCategories.length >= 2) {
+                                      toast({
+                                        title: "Maximum Limit Reached",
+                                        description: "You can add more categories after your account is approved.",
+                                        variant: "default",
+                                      });
+                                      return;
+                                    }
+                                    setFormData(prev => ({ 
+                                      ...prev, 
+                                      serviceCategories: [...prev.serviceCategories, category.name],
+                                      categoryPricing: [...prev.categoryPricing, {
+                                        category: category.name,
+                                        price: "",
+                                        currency: selectedCountry?.currencyCode || "USD"
+                                      }]
+                                    }));
+                                  } else {
+                                    setFormData(prev => ({ 
+                                      ...prev, 
+                                      serviceCategories: prev.serviceCategories.filter(c => c !== category.name),
+                                      categoryPricing: prev.categoryPricing.filter(p => p.category !== category.name)
+                                    }));
+                                  }
+                                }}
+                                className="rounded border-gray-300 mt-1"
+                                data-testid={`checkbox-category-${category.id}`}
+                              />
+                              <div className="flex-1">
+                                <span className="text-sm font-medium">{category.name}</span>
+                                {isSelected && (
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <span className="text-sm text-gray-600">Starting Price:</span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-sm font-medium">{selectedCountry?.currency || "$"}</span>
+                                      <Input 
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="100"
+                                        value={pricing?.price || ""}
+                                        onChange={(e) => {
+                                          setFormData(prev => ({
+                                            ...prev,
+                                            categoryPricing: prev.categoryPricing.map(p => 
+                                              p.category === category.name 
+                                                ? { ...p, price: e.target.value }
+                                                : p
+                                            )
+                                          }));
+                                        }}
+                                        className="w-32"
+                                        data-testid={`input-price-${category.id}`}
+                                      />
+                                      <span className="text-xs text-gray-500">{selectedCountry?.currencyCode || "USD"}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </label>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="specialties">Your Specialties (Optional)</Label>
-                    <Input 
-                      id="specialties" 
-                      placeholder="e.g. Fraud Detection, Missing Persons, Corporate Espionage (separate with commas)"
-                      value={formData.specialties.join(", ")}
-                      onChange={(e) => {
-                        const specialtiesArray = e.target.value.split(",").map(s => s.trim()).filter(Boolean);
-                        setFormData(prev => ({ ...prev, specialties: specialtiesArray }));
-                      }}
-                      data-testid="input-specialties"
-                    />
-                    <p className="text-xs text-gray-500">Highlight your areas of expertise (separate multiple with commas)</p>
                   </div>
 
                   <div className="space-y-2">
