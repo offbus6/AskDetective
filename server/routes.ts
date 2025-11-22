@@ -256,6 +256,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin-only detective update (allows changing status, plan, verification)
+  app.patch("/api/admin/detectives/:id", requireRole("admin"), async (req: Request, res: Response) => {
+    try {
+      const detective = await storage.getDetective(req.params.id);
+      if (!detective) {
+        return res.status(404).json({ error: "Detective not found" });
+      }
+
+      // Admin can update additional fields like status, subscription plan
+      const allowedData = z.object({
+        businessName: z.string().optional(),
+        bio: z.string().optional(),
+        location: z.string().optional(),
+        phone: z.string().optional(),
+        whatsapp: z.string().optional(),
+        languages: z.array(z.string()).optional(),
+        status: z.enum(["pending", "active", "suspended", "inactive"]).optional(),
+        subscriptionPlan: z.enum(["free", "pro", "agency"]).optional(),
+        isVerified: z.boolean().optional(),
+        country: z.string().optional(),
+      }).parse(req.body);
+
+      const updatedDetective = await storage.updateDetectiveAdmin(req.params.id, allowedData);
+      res.json({ detective: updatedDetective });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).message });
+      }
+      console.error("Admin update detective error:", error);
+      res.status(500).json({ error: "Failed to update detective" });
+    }
+  });
+
+  // Admin-only password reset for detectives
+  app.post("/api/admin/detectives/:id/reset-password", requireRole("admin"), async (req: Request, res: Response) => {
+    try {
+      const detective = await storage.getDetective(req.params.id);
+      if (!detective) {
+        return res.status(404).json({ error: "Detective not found" });
+      }
+
+      // Generate a random temporary password
+      const tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase();
+      
+      await storage.resetDetectivePassword(detective.userId, tempPassword);
+      
+      // Return the temporary password to the admin
+      res.json({ 
+        message: "Password reset successfully",
+        temporaryPassword: tempPassword,
+        email: detective.email
+      });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ error: "Failed to reset password" });
+    }
+  });
+
   // ============== SERVICE ROUTES ==============
 
   // Search services (public)
