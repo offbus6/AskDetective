@@ -94,6 +94,25 @@ export const api = {
       });
       return handleResponse(response);
     },
+
+    adminUpdate: async (id: string, data: Partial<Detective>): Promise<{ detective: Detective }> => {
+      const response = await fetch(`/api/admin/detectives/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+
+    resetPassword: async (id: string): Promise<{ message: string; temporaryPassword: string; email: string }> => {
+      const response = await fetch(`/api/admin/detectives/${id}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
   },
 
   services: {

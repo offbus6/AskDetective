@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { useDetective, useServicesByDetective, useUpdateDetective } from "@/lib/hooks";
+import { useDetective, useServicesByDetective } from "@/lib/hooks";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,10 +26,14 @@ import {
   Clock,
   Briefcase,
   Save,
-  ShieldCheck
+  ShieldCheck,
+  Key,
+  Copy
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -40,17 +44,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function ViewDetective() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [temporaryPassword, setTemporaryPassword] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
   const { data: detectiveData, isLoading: loadingDetective } = useDetective(id);
   const { data: servicesData, isLoading: loadingServices } = useServicesByDetective(id);
-  const updateDetective = useUpdateDetective();
+  
+  const adminUpdateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => api.detectives.adminUpdate(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["detectives", id] });
+    },
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: (id: string) => api.detectives.resetPassword(id),
+  });
 
   const detective = detectiveData?.detective;
   const services = servicesData?.services || [];
@@ -91,7 +109,7 @@ export default function ViewDetective() {
 
     try {
       const newStatus = detective.status === "suspended" ? "active" : "suspended";
-      await updateDetective.mutateAsync({
+      await adminUpdateMutation.mutateAsync({
         id: detective.id,
         data: { status: newStatus },
       });
@@ -117,7 +135,7 @@ export default function ViewDetective() {
     if (!detective) return;
 
     try {
-      await updateDetective.mutateAsync({
+      await adminUpdateMutation.mutateAsync({
         id: detective.id,
         data: editForm,
       });
@@ -141,7 +159,7 @@ export default function ViewDetective() {
     if (!detective) return;
 
     try {
-      await updateDetective.mutateAsync({
+      await adminUpdateMutation.mutateAsync({
         id: detective.id,
         data: { status: newStatus as any },
       });
@@ -157,6 +175,35 @@ export default function ViewDetective() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleResetPassword = async () => {
+    if (!detective) return;
+
+    try {
+      const result = await resetPasswordMutation.mutateAsync(detective.id);
+      setTemporaryPassword(result.temporaryPassword);
+      setShowPasswordDialog(true);
+
+      toast({
+        title: "Password Reset",
+        description: "A temporary password has been generated.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reset password",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCopyPassword = () => {
+    navigator.clipboard.writeText(temporaryPassword);
+    toast({
+      title: "Copied!",
+      description: "Temporary password copied to clipboard.",
+    });
   };
 
   if (loadingDetective) {
@@ -220,9 +267,9 @@ export default function ViewDetective() {
                 <Button variant="outline" onClick={() => setIsEditing(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleSaveProfile} disabled={updateDetective.isPending}>
+                <Button onClick={handleSaveProfile} disabled={adminUpdateMutation.isPending}>
                   <Save className="h-4 w-4 mr-2" />
-                  {updateDetective.isPending ? "Saving..." : "Save Changes"}
+                  {adminUpdateMutation.isPending ? "Saving..." : "Save Changes"}
                 </Button>
               </>
             ) : (
@@ -360,6 +407,16 @@ export default function ViewDetective() {
                     <p className="text-gray-900 font-medium" data-testid="text-country">
                       {detective.country}
                     </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Email Address (Login)</Label>
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                      <p className="text-gray-900 font-medium" data-testid="text-email">
+                        {(detective as any).email || "Not available"}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -601,6 +658,22 @@ export default function ViewDetective() {
                   <Separator />
 
                   <div className="space-y-3">
+                    <Label>Password Management</Label>
+                    <p className="text-sm text-gray-500">Reset the detective's password and generate a temporary password</p>
+                    <Button
+                      variant="outline"
+                      onClick={handleResetPassword}
+                      disabled={resetPasswordMutation.isPending}
+                      data-testid="button-reset-password"
+                    >
+                      <Key className="h-4 w-4 mr-2" />
+                      {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
+                    </Button>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
                     <h3 className="font-semibold text-red-600">Danger Zone</h3>
                     <Button
                       variant="destructive"
@@ -626,6 +699,49 @@ export default function ViewDetective() {
           </TabsContent>
         </Tabs>
 
+        {/* Password Reset Dialog */}
+        <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+          <DialogContent data-testid="dialog-password-reset">
+            <DialogHeader>
+              <DialogTitle>Password Reset Successful</DialogTitle>
+              <DialogDescription>
+                A temporary password has been generated for {(detective as any).email || "this detective"}. Share this password securely with the detective.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <Label className="text-sm text-gray-600">Temporary Password</Label>
+                <div className="flex items-center gap-2 mt-2">
+                  <code className="flex-1 text-lg font-mono bg-white px-4 py-2 rounded border border-gray-300" data-testid="text-temp-password">
+                    {temporaryPassword}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopyPassword}
+                    data-testid="button-copy-password"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-amber-600">
+                  ⚠️ <strong>Security Notice:</strong> This password will only be shown once. Share it securely with the detective via a secure channel.
+                </p>
+                <p className="text-sm text-gray-500">
+                  💡 <strong>Best Practice:</strong> Advise the detective to change this password immediately after their first login.
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowPasswordDialog(false)} data-testid="button-close-password-dialog">
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Suspend Dialog */}
         <AlertDialog open={showSuspendDialog} onOpenChange={setShowSuspendDialog}>
           <AlertDialogContent data-testid="dialog-suspend-detective">
@@ -648,10 +764,10 @@ export default function ViewDetective() {
                     ? "bg-green-600 hover:bg-green-700"
                     : "bg-red-600 hover:bg-red-700"
                 }
-                disabled={updateDetective.isPending}
+                disabled={adminUpdateMutation.isPending}
                 data-testid="button-confirm-suspend"
               >
-                {updateDetective.isPending
+                {adminUpdateMutation.isPending
                   ? "Processing..."
                   : detective.status === "suspended"
                   ? "Unsuspend"
