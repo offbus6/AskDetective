@@ -290,6 +290,12 @@ export const updateDetectiveSchema = z.object({
   phone: z.string().optional(),
   whatsapp: z.string().optional(),
   languages: z.array(z.string()).optional(),
+  logo: z.string().refine((val) => val.startsWith('data:') || val.startsWith('http'), {
+    message: "Logo must be a valid data URL or HTTP URL"
+  }).optional(),
+  businessDocuments: z.array(z.string().refine((val) => val.startsWith('data:') || val.startsWith('http'), {
+    message: "Documents must be valid data URLs or HTTP URLs"
+  })).optional(),
 }).strict();
 
 export const updateServiceSchema = z.object({
