@@ -13,6 +13,7 @@ import ScrollToTop from "@/components/scroll-to-top";
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Home = lazy(() => import("@/pages/home"));
 const DetectiveProfile = lazy(() => import("@/pages/detective-profile"));
+const ClaimProfile = lazy(() => import("@/pages/claim-profile"));
 const Login = lazy(() => import("@/pages/auth/login"));
 const DetectiveSignup = lazy(() => import("@/pages/detective-signup"));
 const ApplicationUnderReview = lazy(() => import("@/pages/application-under-review"));
@@ -80,6 +81,7 @@ function Router() {
           {/* Public Routes */}
           <Route path="/" component={Home} />
           <Route path="/service/:id" component={DetectiveProfile} />
+          <Route path="/claim-profile/:id" component={ClaimProfile} />
           <Route path="/login" component={Login} />
           <Route path="/signup" component={Login} />
           <Route path="/detective-signup" component={DetectiveSignup} />
