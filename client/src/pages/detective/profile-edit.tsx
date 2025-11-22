@@ -73,22 +73,7 @@ interface Recognition {
 export default function DetectiveProfileEdit() {
   const { toast } = useToast();
   const [validationErrors, setValidationErrors] = useState<Record<string, boolean>>({});
-  const [recognitions, setRecognitions] = useState<Recognition[]>([
-    {
-      id: '1',
-      name: "Top Investigator 2024",
-      year: "2024",
-      description: "Awarded for outstanding performance in corporate fraud investigation.",
-      image: awardGold
-    },
-    {
-      id: '2',
-      name: "Excellence in Surveillance",
-      year: "2023",
-      description: "Recognized by the National Association of Private Investigators.",
-      image: awardSilver
-    }
-  ]);
+  const [recognitions, setRecognitions] = useState<Recognition[]>([]);
 
   const [newRecognition, setNewRecognition] = useState<Partial<Recognition>>({
     name: "",

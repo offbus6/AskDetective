@@ -13,12 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const REVIEWS = [
-  { id: 1, client: "John Doe", rating: 5, comment: "Excellent work! Found exactly what I needed in record time.", date: "Aug 24, 2025", status: "Published" },
-  { id: 2, client: "Jane Smith", rating: 5, comment: "Very professional and discreet. Highly recommended.", date: "Aug 22, 2025", status: "Published" },
-  { id: 3, client: "Robert M.", rating: 4, comment: "Good results, but took a bit longer than expected.", date: "Aug 18, 2025", status: "Published" },
-  { id: 4, client: "Sarah C.", rating: 5, comment: "Incredible attention to detail. Thank you James!", date: "Aug 15, 2025", status: "Published" },
-];
+const REVIEWS: any[] = [];
 
 export default function DetectiveReviews() {
   return (
@@ -37,13 +32,13 @@ export default function DetectiveReviews() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold">4.8</span>
+                <span className="text-2xl font-bold">0.0</span>
                 <div className="flex text-yellow-500">
-                  <Star className="h-4 w-4 fill-current" />
-                  <Star className="h-4 w-4 fill-current" />
-                  <Star className="h-4 w-4 fill-current" />
-                  <Star className="h-4 w-4 fill-current" />
-                  <Star className="h-4 w-4 fill-current" />
+                  <Star className="h-4 w-4" />
+                  <Star className="h-4 w-4" />
+                  <Star className="h-4 w-4" />
+                  <Star className="h-4 w-4" />
+                  <Star className="h-4 w-4" />
                 </div>
               </div>
             </CardContent>
@@ -53,7 +48,7 @@ export default function DetectiveReviews() {
               <CardTitle className="text-sm font-medium text-gray-500">Total Reviews</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,254</div>
+              <div className="text-2xl font-bold">0</div>
             </CardContent>
           </Card>
           <Card>
@@ -61,7 +56,7 @@ export default function DetectiveReviews() {
               <CardTitle className="text-sm font-medium text-gray-500">5 Star Reviews</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">98%</div>
+              <div className="text-2xl font-bold">0%</div>
             </CardContent>
           </Card>
         </div>

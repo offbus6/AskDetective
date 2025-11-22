@@ -120,7 +120,7 @@ export default function DetectiveDashboard() {
               <Eye className="h-4 w-4 text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">2.4k</div>
+              <div className="text-2xl font-bold">0</div>
             </CardContent>
           </Card>
           <Card>
@@ -129,7 +129,7 @@ export default function DetectiveDashboard() {
               <MousePointer className="h-4 w-4 text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">843</div>
+              <div className="text-2xl font-bold">0</div>
             </CardContent>
           </Card>
           <Card>
@@ -138,7 +138,7 @@ export default function DetectiveDashboard() {
               <Star className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">5.0</div>
+              <div className="text-2xl font-bold">0.0</div>
             </CardContent>
           </Card>
         </div>
@@ -146,35 +146,8 @@ export default function DetectiveDashboard() {
         {/* Recent Reviews */}
         <h3 className="text-xl font-bold font-heading mt-8">Recent Reviews</h3>
         <Card>
-          <CardContent className="p-0">
-             <div className="grid grid-cols-4 p-4 border-b border-gray-100 bg-gray-50 font-semibold text-sm text-gray-500">
-               <div className="col-span-2">Client / Comment</div>
-               <div>Rating</div>
-               <div className="text-right">Action</div>
-             </div>
-             {[1, 2].map((i) => (
-               <div key={i} className="grid grid-cols-4 p-4 border-b border-gray-100 items-center last:border-0 hover:bg-gray-50/50 transition-colors">
-                 <div className="col-span-2 flex items-center gap-3">
-                   <div className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center text-xs font-bold">C{i}</div>
-                   <div>
-                     <div className="font-bold text-sm">Client Name {i}</div>
-                     <div className="text-xs text-gray-500 italic">"Great service, very discreet..."</div>
-                   </div>
-                 </div>
-                 <div className="flex text-yellow-500">
-                    <Star className="h-4 w-4 fill-current" />
-                    <Star className="h-4 w-4 fill-current" />
-                    <Star className="h-4 w-4 fill-current" />
-                    <Star className="h-4 w-4 fill-current" />
-                    <Star className="h-4 w-4 fill-current" />
-                 </div>
-                 <div className="text-right">
-                    <Button size="sm" variant="outline" className="text-xs">
-                      <MessageSquare className="h-3 w-3 mr-1" /> Reply
-                    </Button>
-                 </div>
-               </div>
-             ))}
+          <CardContent className="p-6 text-center text-gray-500">
+            <p>No reviews yet. Reviews will appear here once clients start submitting feedback.</p>
           </CardContent>
         </Card>
 

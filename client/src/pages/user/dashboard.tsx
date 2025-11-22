@@ -7,13 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function UserDashboard() {
-  // Mock visited profiles data
-  const visitedProfiles = [
-    { id: 1, name: "James Bond", title: "Senior Private Investigator", location: "London, UK", image: null, date: "2 hours ago" },
-    { id: 2, name: "Sherlock Holmes", title: "Consulting Detective", location: "London, UK", image: null, date: "Yesterday" },
-    { id: 3, name: "Nancy Drew", title: "Amateur Sleuth", location: "River Heights, US", image: null, date: "3 days ago" },
-  ];
-
   return (
     <DashboardLayout role="user">
       <div className="space-y-8">
@@ -29,31 +22,8 @@ export default function UserDashboard() {
           <CardHeader>
             <CardTitle>Recently Visited Profiles</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {visitedProfiles.map((profile) => (
-                <div key={profile.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12 border">
-                      <AvatarImage src={profile.image || ""} />
-                      <AvatarFallback>{profile.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h4 className="font-bold text-gray-900">{profile.name}</h4>
-                      <p className="text-sm text-gray-500">{profile.title} • {profile.location}</p>
-                      <p className="text-xs text-gray-400 mt-1">Visited {profile.date}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Link href={`/detective/${profile.id}`}>
-                      <Button variant="outline" size="sm">
-                        <ExternalLink className="h-4 w-4 mr-2" /> View Profile
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <CardContent className="p-6 text-center text-gray-500">
+            <p>No recently visited profiles. Start exploring detectives to see your history here.</p>
           </CardContent>
         </Card>
 
