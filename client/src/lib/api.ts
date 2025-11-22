@@ -15,6 +15,26 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json();
 }
 
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = 60000): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new ApiError(408, `Request timeout after ${timeout/1000} seconds. The file might be too large.`);
+    }
+    throw error;
+  }
+}
+
 export const api = {
   auth: {
     login: async (email: string, password: string): Promise<{ user: User }> => {
@@ -348,13 +368,20 @@ export const api = {
     },
 
     create: async (data: InsertDetectiveApplication): Promise<{ application: DetectiveApplication }> => {
-      const response = await fetch("/api/applications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      return handleResponse(response);
+      console.log("API: Starting fetch to /api/applications");
+      try {
+        const response = await fetchWithTimeout("/api/applications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+          credentials: "include",
+        }, 60000); // 60 second timeout for large file uploads
+        console.log("API: Fetch completed with status:", response.status);
+        return handleResponse(response);
+      } catch (error: any) {
+        console.error("API: Fetch failed:", error.message || error);
+        throw error;
+      }
     },
 
     updateStatus: async (id: string, status: "approved" | "rejected"): Promise<{ application: DetectiveApplication }> => {
