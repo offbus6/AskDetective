@@ -91,6 +91,7 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
     businessType: "individual" as "individual" | "agency",
     companyName: "",
     businessWebsite: "",
+    logo: "",
     businessDocuments: [] as string[],
     country: "US",
     state: "",
@@ -100,6 +101,7 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
     about: "",
     serviceCategories: [] as string[],
     categoryPricing: [] as Array<{category: string; price: string; currency: string}>,
+    documents: [] as string[],
   });
 
   const createApplication = useCreateApplication();
@@ -161,6 +163,15 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
         });
         return false;
       }
+    } else if (currentStep === 3) {
+      if (!formData.logo) {
+        toast({
+          title: "Logo Required",
+          description: "Please upload a business logo or photo. This will be your display picture on the platform.",
+          variant: "destructive",
+        });
+        return false;
+      }
     }
     return true;
   };
@@ -175,6 +186,42 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, field: 'logo' | 'documents' | 'businessDocuments') => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach((file) => {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: `${file.name} exceeds the 5MB limit.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        if (field === 'logo') {
+          setFormData(prev => ({ ...prev, logo: dataUrl }));
+        } else if (field === 'documents') {
+          setFormData(prev => ({ ...prev, documents: [...prev.documents, dataUrl] }));
+        } else if (field === 'businessDocuments') {
+          setFormData(prev => ({ ...prev, businessDocuments: [...prev.businessDocuments, dataUrl] }));
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeDocument = (field: 'documents' | 'businessDocuments', index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: prev[field].filter((_, i) => i !== index)
+    }));
   };
 
   const handleSubmit = () => {
@@ -227,6 +274,7 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
         businessType: formData.businessType,
         companyName: formData.companyName || undefined,
         businessWebsite: formData.businessWebsite || undefined,
+        logo: formData.logo || undefined,
         businessDocuments: formData.businessDocuments.length > 0 ? formData.businessDocuments : undefined,
         country: formData.country || undefined,
         state: formData.state || undefined,
@@ -236,6 +284,7 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
         categoryPricing: formData.categoryPricing.length > 0 ? formData.categoryPricing : undefined,
         about: formData.about || undefined,
         licenseNumber: formData.licenseNumber || undefined,
+        documents: formData.documents.length > 0 ? formData.documents : undefined,
       };
 
       await createApplication.mutateAsync(applicationData);
@@ -632,6 +681,113 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
               <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mt-4">
                 <p className="text-sm text-amber-800">
                   <strong>Note:</strong> After submitting, your application will be reviewed by our admin team. You'll be notified once approved (usually within 24-48 hours).
+                </p>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Business Logo / Photo *
+                  </Label>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Upload your business logo or a professional photo. This will be your display picture across the platform.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-500 transition-colors cursor-pointer">
+                      <input
+                        type="file"
+                        id="logo-upload"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e, 'logo')}
+                        className="hidden"
+                        data-testid="input-logo"
+                      />
+                      <label htmlFor="logo-upload" className="cursor-pointer">
+                        {formData.logo ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={formData.logo} 
+                              alt="Logo preview" 
+                              className="w-32 h-32 object-cover rounded-full mx-auto border-4 border-green-100"
+                            />
+                            <p className="text-sm font-medium text-green-700">Logo uploaded ✓</p>
+                            <p className="text-xs text-gray-500">Click to change</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <Upload className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm font-medium text-gray-700">Click to upload logo</p>
+                            <p className="text-xs text-gray-500">PNG, JPG up to 5MB</p>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Supporting Documents (Optional)
+                  </Label>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Upload any supporting documents like PI license, certifications, or business registration.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer">
+                      <input
+                        type="file"
+                        id="documents-upload"
+                        accept="image/*,.pdf"
+                        multiple
+                        onChange={(e) => handleFileUpload(e, 'documents')}
+                        className="hidden"
+                        data-testid="input-documents"
+                      />
+                      <label htmlFor="documents-upload" className="cursor-pointer">
+                        <Upload className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm font-medium text-gray-700">Click to upload documents</p>
+                        <p className="text-xs text-gray-500">PDF, PNG, JPG up to 5MB each</p>
+                      </label>
+                    </div>
+
+                    {formData.documents.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-700">
+                          Uploaded Documents ({formData.documents.length})
+                        </p>
+                        <div className="grid gap-2">
+                          {formData.documents.map((doc, index) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded">
+                              <span className="text-sm text-blue-900">Document {index + 1}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeDocument('documents', index)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                <p className="text-sm text-green-800">
+                  <strong>Almost done!</strong> Review your information and submit your application for approval.
                 </p>
               </div>
             </div>

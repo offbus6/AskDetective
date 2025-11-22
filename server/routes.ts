@@ -727,6 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: application.fullName,
             password: application.password,
             role: "detective",
+            avatar: application.logo || undefined,
           });
 
           // Build location string from application data
@@ -745,6 +746,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userId: user.id,
             businessName: application.companyName || application.fullName,
             bio: application.about || "Professional detective ready to help with your case.",
+            logo: application.logo || undefined,
             subscriptionPlan: "free",
             status: "active",
             isVerified: true,
