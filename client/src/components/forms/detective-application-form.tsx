@@ -266,6 +266,8 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
     setShowLiabilityDialog(false);
     
     try {
+      console.log("Starting application submission...");
+      
       const applicationData: InsertDetectiveApplication = {
         fullName: `${formData.firstName} ${formData.lastName}`.trim(),
         email: formData.email,
@@ -288,7 +290,16 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
         documents: formData.documents.length > 0 ? formData.documents : undefined,
       };
 
+      console.log("Application data prepared:", {
+        ...applicationData,
+        logo: applicationData.logo ? `${applicationData.logo.substring(0, 50)}... (${applicationData.logo.length} chars)` : undefined,
+        businessDocuments: applicationData.businessDocuments?.map((d: string) => `${d.substring(0, 50)}... (${d.length} chars)`),
+        documents: applicationData.documents?.map((d: string) => `${d.substring(0, 50)}... (${d.length} chars)`)
+      });
+
+      console.log("Calling mutation...");
       await createApplication.mutateAsync(applicationData);
+      console.log("Mutation successful!");
       
       toast({
         title: mode === "admin" ? "Detective Added!" : "Application Submitted!",
@@ -301,6 +312,7 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
         onSuccess(applicationData);
       }
     } catch (error: any) {
+      console.error("Submission error:", error);
       toast({
         title: "Submission Failed",
         description: error.message || "Please try again later.",
