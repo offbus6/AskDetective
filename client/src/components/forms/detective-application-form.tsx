@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Check, Upload, Shield, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useServiceCategories, useCreateApplication } from "@/lib/hooks";
 import { useToast } from "@/hooks/use-toast";
 import type { InsertDetectiveApplication } from "@shared/schema";
@@ -102,6 +103,7 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
     serviceCategories: [] as string[],
     categoryPricing: [] as Array<{category: string; price: string; currency: string}>,
     documents: [] as string[],
+    isClaimable: false,
   });
 
   const createApplication = useCreateApplication();
@@ -314,6 +316,7 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
         about: formData.about || undefined,
         licenseNumber: formData.licenseNumber || undefined,
         documents: formData.documents.length > 0 ? formData.documents : undefined,
+        isClaimable: mode === "admin" ? formData.isClaimable : false,
       };
 
       console.log("Application data prepared:", {
@@ -716,6 +719,27 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
                 />
                 <p className="text-xs text-gray-500">If you have a license, provide the number here for verification.</p>
               </div>
+
+              {mode === "admin" && (
+                <div className="space-y-2 border border-blue-200 bg-blue-50 rounded-md p-4">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox 
+                      id="isClaimable"
+                      checked={formData.isClaimable}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isClaimable: checked as boolean }))}
+                      data-testid="checkbox-isClaimable"
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="isClaimable" className="font-medium cursor-pointer">
+                        Allow this profile to be claimed
+                      </Label>
+                      <p className="text-xs text-gray-600">
+                        If enabled, the business owner can submit a claim request to take ownership of this profile.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mt-4">
                 <p className="text-sm text-amber-800">

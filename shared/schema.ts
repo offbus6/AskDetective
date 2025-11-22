@@ -175,6 +175,7 @@ export const detectiveApplications = pgTable("detective_applications", {
   about: text("about"),
   licenseNumber: text("license_number"),
   documents: text("documents").array().default(sql`ARRAY[]::text[]`),
+  isClaimable: boolean("is_claimable").default(false),
   status: claimStatusEnum("status").notNull().default("pending"),
   reviewNotes: text("review_notes"),
   reviewedBy: varchar("reviewed_by").references(() => users.id),
