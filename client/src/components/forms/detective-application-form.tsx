@@ -225,6 +225,24 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
   };
 
   const handleSubmit = () => {
+    console.log("=== FORM SUBMISSION STARTED ===");
+    console.log("Form data:", {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phoneNumber: formData.phoneNumber,
+      city: formData.city,
+      state: formData.state,
+      yearsExperience: formData.yearsExperience,
+      about: formData.about ? `${formData.about.substring(0, 50)}...` : null,
+      serviceCategories: formData.serviceCategories,
+      categoryPricing: formData.categoryPricing,
+      logo: formData.logo ? "Present" : "Missing",
+      businessType: formData.businessType,
+      companyName: formData.companyName,
+      businessWebsite: formData.businessWebsite,
+    });
+
     const missingFields = [];
     if (!formData.firstName) missingFields.push("First Name");
     if (!formData.lastName) missingFields.push("Last Name");
@@ -241,8 +259,13 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
       if (!formData.businessWebsite) missingFields.push("Business Website");
     }
 
+    console.log("Missing fields:", missingFields);
+
     const categoriesWithoutPrice = formData.categoryPricing.filter(p => !p.price || parseFloat(p.price) <= 0);
+    console.log("Categories without price:", categoriesWithoutPrice);
+    
     if (categoriesWithoutPrice.length > 0) {
+      console.log("VALIDATION FAILED: Missing pricing");
       toast({
         title: "Missing Pricing Information",
         description: "Please set a starting price for all selected service categories.",
@@ -252,6 +275,7 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
     }
 
     if (missingFields.length > 0) {
+      console.log("VALIDATION FAILED: Missing fields");
       toast({
         title: "Missing Required Information",
         description: `Please fill in: ${missingFields.join(", ")}`,
@@ -259,6 +283,8 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
       });
       return;
     }
+    
+    console.log("VALIDATION PASSED - Opening liability dialog");
     setShowLiabilityDialog(true);
   };
 
