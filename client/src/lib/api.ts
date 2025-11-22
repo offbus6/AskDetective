@@ -369,17 +369,31 @@ export const api = {
 
     create: async (data: InsertDetectiveApplication): Promise<{ application: DetectiveApplication }> => {
       console.log("API: Starting fetch to /api/applications");
+      console.log("API: Preparing request body...");
+      
+      let jsonBody: string;
       try {
+        jsonBody = JSON.stringify(data);
+        console.log("API: JSON body size:", jsonBody.length, "characters");
+      } catch (error: any) {
+        console.error("API: Failed to stringify data:", error);
+        throw new ApiError(400, "Failed to prepare request data: " + error.message);
+      }
+      
+      try {
+        console.log("API: Sending request...");
         const response = await fetchWithTimeout("/api/applications", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+          body: jsonBody,
           credentials: "include",
         }, 60000); // 60 second timeout for large file uploads
         console.log("API: Fetch completed with status:", response.status);
         return handleResponse(response);
       } catch (error: any) {
-        console.error("API: Fetch failed:", error.message || error);
+        console.error("API: Fetch failed:", error);
+        console.error("API: Error name:", error.name);
+        console.error("API: Error message:", error.message);
         throw error;
       }
     },
