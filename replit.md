@@ -29,6 +29,7 @@ FindDetectives is a comprehensive web portal connecting clients with private inv
 - ⚠️ **SECURITY NOTE:** Password reset returns plaintext password for manual sharing - NOT production-ready, requires email delivery integration before launch
 
 **Critical Fixes:**
+- **Form Submission Issue Resolved** - Added logo validation to final submit and increased Express payload limit to 50MB for base64 images
 - Detective status now defaults to "active" instead of "pending" after approval
 - Location built from actual city/state instead of hardcoded "United States"
 - Bio uses application.about field instead of non-existent application.experience
