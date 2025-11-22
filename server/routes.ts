@@ -666,20 +666,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Submit detective application (public)
   app.post("/api/applications", async (req: Request, res: Response) => {
+    console.log("=== RECEIVED POST /api/applications ===");
+    console.log("Request body size:", JSON.stringify(req.body).length);
+    console.log("Request has logo:", !!req.body.logo);
+    console.log("Request has documents:", !!req.body.documents);
+    
     try {
+      console.log("Validating request body...");
       const validatedData = insertDetectiveApplicationSchema.parse(req.body);
+      console.log("Validation passed");
       
       // Hash the password before storing - CRITICAL SECURITY
+      console.log("Hashing password...");
       const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+      console.log("Password hashed");
+      
       const applicationData = {
         ...validatedData,
         password: hashedPassword,
       };
       
+      console.log("Inserting into database...");
       const application = await storage.createDetectiveApplication(applicationData);
+      console.log("Application created with ID:", application.id);
+      
       res.status(201).json({ application });
     } catch (error) {
+      console.error("=== APPLICATION CREATION ERROR ===");
       if (error instanceof z.ZodError) {
+        console.error("Validation error:", fromZodError(error).message);
         return res.status(400).json({ error: fromZodError(error).message });
       }
       console.error("Create application error:", error);
