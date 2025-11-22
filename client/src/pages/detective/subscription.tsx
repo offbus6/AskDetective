@@ -182,7 +182,7 @@ export default function DetectiveSubscription() {
         </div>
 
         <div className="max-w-4xl mx-auto mt-16 bg-gray-900 rounded-2xl p-8 md:p-12 text-center text-white relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-full bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80')] opacity-10 bg-cover bg-center"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-600/10 to-green-600/10 opacity-50 bg-cover bg-center"></div>
           <div className="relative z-10">
             <h3 className="text-2xl md:text-3xl font-bold mb-4">Need a Custom Enterprise Solution?</h3>
             <p className="text-gray-300 max-w-2xl mx-auto mb-8">

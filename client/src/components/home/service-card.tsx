@@ -110,12 +110,21 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
                 </div>
               </div>
             )}
-            <img 
-              src={displayImages[currentImageIndex]} 
-              alt={title} 
-              loading="lazy"
-              className={`object-cover w-full h-full transition-transform duration-300 ${isUnclaimed ? 'grayscale' : ''}`}
-            />
+            {displayImages.length > 0 && displayImages[currentImageIndex] ? (
+              <img 
+                src={displayImages[currentImageIndex]} 
+                alt={title} 
+                loading="lazy"
+                className={`object-cover w-full h-full transition-transform duration-300 ${isUnclaimed ? 'grayscale' : ''}`}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                <div className="text-center text-gray-400">
+                  <Star className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm font-medium">No image available</p>
+                </div>
+              </div>
+            )}
             
             {/* Navigation Arrows - Only show on hover and if multiple images */}
             {displayImages.length > 1 && isHovered && (
@@ -150,8 +159,8 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
             {/* Author Row */}
             <div className="flex items-center gap-3 mb-3">
               <Avatar className="h-8 w-8 border border-gray-100">
-                <AvatarImage src={avatar} />
-                <AvatarFallback>{name[0]}</AvatarFallback>
+                {avatar && <AvatarImage src={avatar} />}
+                <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">{name[0]}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col overflow-hidden">
                 <div className="flex items-center gap-1 flex-wrap">

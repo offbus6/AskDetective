@@ -22,9 +22,6 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useUser } from "@/lib/user-context";
 import { useCurrentDetective } from "@/lib/hooks";
 
-// @ts-ignore
-import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
-
 interface DashboardLayoutProps {
   children: React.ReactNode;
   role: "admin" | "detective" | "user";
@@ -164,8 +161,8 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
                 </div>
               </div>
               <Avatar>
-                <AvatarImage src={role === "detective" ? (detective?.logo || maleAvatar) : ""} />
-                <AvatarFallback>
+                {role === "detective" && detective?.logo && <AvatarImage src={detective.logo} />}
+                <AvatarFallback className="bg-gray-200 text-gray-600">
                   {role === "admin" ? "SA" : role === "detective" ? (detective?.businessName?.substring(0, 2).toUpperCase() || "DT") : "JD"}
                 </AvatarFallback>
               </Avatar>

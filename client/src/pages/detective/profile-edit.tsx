@@ -14,9 +14,6 @@ import { useCurrentDetective, useUpdateDetective } from "@/lib/hooks";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
-// @ts-ignore
-import maleAvatar from "@assets/generated_images/professional_headshot_of_a_private_detective_male.png";
-
 const COUNTRIES = [
   { code: "US", name: "United States" },
   { code: "UK", name: "United Kingdom" },
@@ -243,8 +240,8 @@ export default function DetectiveProfileEdit() {
               <Label>Business Logo / Profile Picture</Label>
               <div className="flex items-center gap-6">
                 <Avatar className="h-24 w-24">
-                  <AvatarImage src={logoPreview || maleAvatar} />
-                  <AvatarFallback>
+                  {logoPreview && <AvatarImage src={logoPreview} />}
+                  <AvatarFallback className="bg-gray-200 text-gray-600 text-2xl">
                     {formData.businessName?.substring(0, 2).toUpperCase() || "DT"}
                   </AvatarFallback>
                 </Avatar>

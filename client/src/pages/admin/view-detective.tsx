@@ -285,8 +285,8 @@ export default function ViewDetective() {
           <CardContent className="pt-6">
             <div className="flex items-start gap-6">
               <Avatar className="h-24 w-24 border-2 border-gray-200">
-                <AvatarImage src={detective.logo || `https://api.dicebear.com/7.x/initials/svg?seed=${detective.businessName}`} />
-                <AvatarFallback className="text-2xl">
+                {detective.logo && <AvatarImage src={detective.logo} />}
+                <AvatarFallback className="text-2xl bg-gray-200 text-gray-600">
                   {getInitials(detective.businessName || "Detective")}
                 </AvatarFallback>
               </Avatar>
