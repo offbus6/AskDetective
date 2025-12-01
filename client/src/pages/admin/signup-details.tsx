@@ -5,10 +5,35 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Check, X, FileText, Download, Shield, User, Mail, Phone, MapPin, Calendar } from "lucide-react";
 import { Link, useRoute } from "wouter";
+import { useApplication, useUpdateApplicationNotes } from "@/lib/hooks";
+import { format } from "date-fns";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminSignupDetails() {
   const [match, params] = useRoute("/admin/signups/:id");
-  const id = params?.id || "APP-001"; // Fallback for demo
+  const id = params?.id || null;
+  const { data, isLoading } = useApplication(id);
+  const application = data?.application;
+  const updateNotes = useUpdateApplicationNotes();
+  const { toast } = useToast();
+  const [notes, setNotes] = useState("");
+  const displayDocName = (doc: string, idx: number) => {
+    if (!doc) return `Document ${idx + 1}`;
+    if (doc.startsWith("data:")) return `Document ${idx + 1}`;
+    try {
+      const u = new URL(doc);
+      const base = u.pathname.split("/").pop() || u.hostname;
+      return base.length > 30 ? base.slice(0, 30) + "…" : base;
+    } catch {
+      const base = (doc.split("/").pop() || `Document ${idx + 1}`);
+      return base.length > 30 ? base.slice(0, 30) + "…" : base;
+    }
+  };
+
+  useEffect(() => {
+    setNotes(application?.reviewNotes || "");
+  }, [application?.reviewNotes]);
 
   return (
     <DashboardLayout role="admin">
@@ -21,12 +46,14 @@ export default function AdminSignupDetails() {
                 <a className="text-sm text-gray-500 hover:text-gray-900 hover:underline">← Back to Signups</a>
               </Link>
             </div>
-            <h2 className="text-3xl font-bold font-heading text-gray-900">Application #{id}</h2>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span>Applied on Oct 24, 2025</span>
-              <span>•</span>
-              <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-none">Pending Review</Badge>
-            </div>
+            <h2 className="text-3xl font-bold font-heading text-gray-900">Application #{application?.id || id}</h2>
+            {application && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <span>Applied on {format(new Date(application.createdAt), "MMM dd, yyyy")}</span>
+                <span>•</span>
+                <Badge className={application.status === "pending" ? "bg-yellow-100 text-yellow-700" : application.status === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}>{application.status}</Badge>
+              </div>
+            )}
           </div>
           <div className="flex gap-3">
             <Button variant="destructive" className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200">
@@ -49,42 +76,73 @@ export default function AdminSignupDetails() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                {application?.logo && (
+                  <div className="space-y-2">
+                    <span className="text-sm font-medium text-gray-500">Profile Photo / Logo</span>
+                    <div className="flex items-center gap-4">
+                      <a href={application.logo} target="_blank" rel="noopener noreferrer" title="Open full size">
+                        <img src={application.logo} alt="Logo" className="w-20 h-20 rounded-full object-cover border hover:opacity-90" />
+                      </a>
+                      <Badge variant="secondary" className="capitalize">{application.businessType}</Badge>
+                      <a href={application.logo} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" size="sm">Preview</Button>
+                      </a>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-1">
                     <span className="text-sm font-medium text-gray-500">Full Name</span>
-                    <p className="font-bold text-gray-900">John Doe</p>
+                    <p className="font-bold text-gray-900">{application?.fullName || "-"}</p>
                   </div>
                   <div className="space-y-1">
                     <span className="text-sm font-medium text-gray-500">Type</span>
-                    <p className="font-bold text-gray-900">Individual Detective</p>
+                    <p className="font-bold text-gray-900 capitalize">{application?.businessType || "-"}</p>
                   </div>
                   <div className="space-y-1">
                     <span className="text-sm font-medium text-gray-500">Email Address</span>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-gray-400" />
-                      <p className="text-gray-900">john.doe@gmail.com</p>
+                      <p className="text-gray-900">{application?.email || "-"}</p>
                     </div>
                   </div>
                   <div className="space-y-1">
                     <span className="text-sm font-medium text-gray-500">Phone Number</span>
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-gray-400" />
-                      <p className="text-gray-900">+1 (555) 123-4567</p>
+                      <p className="text-gray-900">{application?.phoneCountryCode && application?.phoneNumber ? `${application.phoneCountryCode} ${application.phoneNumber}` : "-"}</p>
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-sm font-medium text-gray-500">Location</span>
+                    <span className="text-sm font-medium text-gray-500">Country</span>
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-gray-400" />
-                      <p className="text-gray-900">New York, NY</p>
+                      <p className="text-gray-900">{application?.country || "-"}</p>
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-sm font-medium text-gray-500">Date of Birth</span>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <p className="text-gray-900">May 15, 1985</p>
-                    </div>
+                    <span className="text-sm font-medium text-gray-500">State</span>
+                    <p className="text-gray-900">{application?.state || "-"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-gray-500">City</span>
+                    <p className="text-gray-900">{application?.city || "-"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-gray-500">Full Address</span>
+                    <p className="text-gray-900">{(application as any)?.fullAddress || "-"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-gray-500">Pincode</span>
+                    <p className="text-gray-900">{(application as any)?.pincode || "-"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-gray-500">Years of Experience</span>
+                    <p className="text-gray-900">{application?.yearsExperience || '-'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-gray-500">License Number</span>
+                    <p className="text-gray-900">{(application as any)?.licenseNumber || '-'}</p>
                   </div>
                 </div>
 
@@ -92,19 +150,39 @@ export default function AdminSignupDetails() {
 
                 <div className="space-y-2">
                   <span className="text-sm font-medium text-gray-500">Professional Bio</span>
-                  <p className="text-gray-700 leading-relaxed">
-                    Experienced private investigator with over 10 years in law enforcement. Specialized in corporate fraud and asset recovery. Looking to expand my client base through this platform. I have handled high-profile cases in the tri-state area and maintain excellent relationships with local authorities.
-                  </p>
+                  <p className="text-gray-700 leading-relaxed">{application?.about || "-"}</p>
                 </div>
 
                 <div className="space-y-2">
                    <span className="text-sm font-medium text-gray-500">Selected Categories</span>
                    <div className="flex flex-wrap gap-2">
-                     <Badge variant="secondary">Surveillance</Badge>
-                     <Badge variant="secondary">Background Checks</Badge>
-                     <Badge variant="secondary">Corporate Fraud</Badge>
+                     {(application?.serviceCategories || []).length > 0 ? (
+                       application!.serviceCategories!.map((cat, idx) => (
+                         <Badge key={idx} variant="secondary">{cat}</Badge>
+                       ))
+                     ) : (
+                       <span className="text-sm text-gray-400">No categories</span>
+                     )}
                    </div>
                 </div>
+
+                {/* Company Information (Agency only) */}
+                {application?.businessType === 'agency' && (
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <span className="text-sm font-medium text-gray-500">Company Name</span>
+                      <p className="font-bold text-gray-900">{application?.companyName || '-'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-sm font-medium text-gray-500">Website</span>
+                      {application?.businessWebsite ? (
+                        <a href={application.businessWebsite} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{application.businessWebsite}</a>
+                      ) : (
+                        <p className="text-gray-900">-</p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -117,49 +195,27 @@ export default function AdminSignupDetails() {
                 <CardDescription>Review the uploaded documents for authenticity.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 bg-white rounded-lg border flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-red-500" />
+                {(application?.businessType === 'agency' ? application?.businessDocuments : (application as any)?.documents) && ((application?.businessType === 'agency' ? application?.businessDocuments : (application as any)?.documents)!.length > 0) ? (
+                  ((application?.businessType === 'agency' ? application?.businessDocuments : (application as any)?.documents) as string[])!.map((doc, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 bg-white rounded-lg border flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-gray-500" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm text-gray-900 max-w-[220px] truncate">{displayDocName(doc, idx)}</p>
+                        </div>
+                      </div>
+                      <a href={doc} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" /> View</Button>
+                      </a>
                     </div>
-                    <div>
-                      <p className="font-bold text-sm text-gray-900">Private Investigator License.pdf</p>
-                      <p className="text-xs text-gray-500">2.4 MB • Uploaded Oct 24, 2025</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" /> Download
-                  </Button>
-                </div>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 bg-white rounded-lg border flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-blue-500" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-gray-900">Driver's License_Front.jpg</p>
-                      <p className="text-xs text-gray-500">1.1 MB • Uploaded Oct 24, 2025</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" /> Download
-                  </Button>
-                </div>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 bg-white rounded-lg border flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-blue-500" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-gray-900">Driver's License_Back.jpg</p>
-                      <p className="text-xs text-gray-500">1.0 MB • Uploaded Oct 24, 2025</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" /> Download
-                  </Button>
+                  ))
+                ) : (
+                  <div className="text-sm text-gray-500">No documents provided</div>
+                )}
+                <div className="text-xs text-gray-500">
+                  {application?.businessType === 'agency' ? 'Business Supporting Documents' : 'Government ID Documents'}
                 </div>
               </CardContent>
             </Card>
@@ -200,8 +256,39 @@ export default function AdminSignupDetails() {
                 <textarea 
                   className="w-full min-h-[150px] p-3 border rounded-md text-sm bg-gray-50 focus:bg-white transition-colors outline-none border-gray-200 focus:border-gray-400"
                   placeholder="Add notes about this application..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
                 ></textarea>
-                <Button size="sm" variant="outline" className="mt-2 w-full">Save Note</Button>
+                {Array.isArray((application as any)?.categoryPricing) ? (
+                  <div className="mt-4 space-y-2">
+                    <span className="text-sm font-medium text-gray-500">Category Pricing</span>
+                    <div className="space-y-1">
+                      {(((application as any).categoryPricing as Array<{category: string; price: string; currency: string}>) || []).map((p, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm">
+                          <span>{p.category}</span>
+                          <span className="font-bold">{p.currency} {p.price}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="mt-2 w-full"
+                  onClick={async () => {
+                    if (!id) return;
+                    try {
+                      await updateNotes.mutateAsync({ id, reviewNotes: notes.trim() });
+                      toast({ title: "Notes Saved", description: "Internal notes have been updated." });
+                    } catch (err: any) {
+                      toast({ title: "Error", description: err?.message || "Failed to save notes", variant: "destructive" });
+                    }
+                  }}
+                  disabled={updateNotes.isPending}
+                >
+                  Save Note
+                </Button>
               </CardContent>
             </Card>
           </div>

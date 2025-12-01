@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Power } from "lucide-react";
 import { 
   useServiceCategories, 
   useCreateServiceCategory, 
@@ -87,6 +87,23 @@ export default function AdminServiceCategories() {
   const handleOpenDeleteDialog = (categoryId: string) => {
     setDeletingCategoryId(categoryId);
     setShowDeleteDialog(true);
+  };
+
+  const handleToggleActive = (category: ServiceCategory) => {
+    updateMutation.mutate(
+      { id: category.id, data: { isActive: !category.isActive } },
+      {
+        onSuccess: () => {
+          toast({
+            title: category.isActive ? "Category Deactivated" : "Category Activated",
+            description: category.isActive ? "This category is now inactive." : "This category is now active.",
+          });
+        },
+        onError: (error: Error) => {
+          toast({ variant: "destructive", title: "Error", description: error.message });
+        },
+      }
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -235,6 +252,14 @@ export default function AdminServiceCategories() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => handleToggleActive(category)}
+                            data-testid={`button-toggle-${category.id}`}
+                          >
+                            <Power className={`h-4 w-4 ${category.isActive ? "text-yellow-600" : "text-green-600"}`} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleOpenEditDialog(category)}
                             data-testid={`button-edit-${category.id}`}
                           >
@@ -335,7 +360,7 @@ export default function AdminServiceCategories() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Service Category?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will mark the category as inactive. Detectives won't be able to select it for new services, but existing services using this category will remain unchanged.
+              This will permanently delete the category. Detectives won't be able to select it for new services.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

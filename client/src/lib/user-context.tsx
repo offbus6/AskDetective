@@ -6,6 +6,7 @@ import type { User } from "@shared/schema";
 
 interface FavoriteService {
   id: string;
+  detectiveId?: string;
   name: string;
   title: string;
   image: string;
@@ -21,6 +22,7 @@ interface UserContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  favorites: FavoriteService[];
   isFavorite: (id: string) => boolean;
   toggleFavorite: (service: FavoriteService) => void;
   logout: () => Promise<void>;
@@ -80,7 +82,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <UserContext.Provider value={{ user, isLoading, isAuthenticated, isFavorite, toggleFavorite, logout }}>
+    <UserContext.Provider value={{ user, isLoading, isAuthenticated, favorites, isFavorite, toggleFavorite, logout }}>
       {children}
     </UserContext.Provider>
   );
@@ -92,4 +94,20 @@ export function useUser() {
     throw new Error("useUser must be used within a UserProvider");
   }
   return context;
+}
+
+export function useUserSafe(): UserContextType {
+  try {
+    return useUser();
+  } catch {
+    return {
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
+      favorites: [],
+      isFavorite: () => false,
+      toggleFavorite: () => {},
+      logout: async () => {}
+    };
+  }
 }

@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Search, Menu, X, Globe, ChevronDown, Heart, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   DropdownMenu,
@@ -15,19 +15,39 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { useCurrency, COUNTRIES } from "@/lib/currency-context";
-import { useUser } from "@/lib/user-context";
+import { useUserSafe } from "@/lib/user-context";
+import { useSiteSettings, useServiceCategories } from "@/lib/hooks";
+import { getCategorySuggestions } from "@/lib/autocomplete";
 
-export function Navbar() {
+export function Navbar({ transparentOnHome = true, overlayOnHome = true }: { transparentOnHome?: boolean; overlayOnHome?: boolean }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [location, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
+  const [focused, setFocused] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(-1);
   const { selectedCountry, setCountry } = useCurrency();
-  const { user, logout } = useUser();
+  const { user, logout } = useUserSafe();
+  const { data: siteData } = useSiteSettings();
+  const { data: categoriesData } = useServiceCategories(true);
+  const site = siteData?.settings;
+  const categoryNames = useMemo(() => (categoriesData?.categories || []).map(c => c.name), [categoriesData]);
+  const suggestions = useMemo(() => getCategorySuggestions(categoryNames, searchQuery, 6), [categoryNames, searchQuery]);
 
   const handleSearch = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIdx((prev) => Math.min(prev + 1, suggestions.length - 1));
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIdx((prev) => Math.max(prev - 1, -1));
+      return;
+    }
     if (e.key === 'Enter' && searchQuery.trim()) {
+      const val = activeIdx >= 0 && suggestions[activeIdx] ? suggestions[activeIdx] : searchQuery;
       const params = new URLSearchParams();
-      params.set("q", searchQuery);
+      params.set("q", val);
       if (selectedCountry.code !== "ALL") {
         params.set("country", selectedCountry.code);
       }
@@ -51,28 +71,37 @@ export function Navbar() {
   };
 
   // Effect to handle scroll state for transparent/solid navbar
-  if (typeof window !== "undefined") {
-    window.onscroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-  }
+  useEffect(() => {
+    const handler = () => setIsScrolled(window.scrollY > 10);
+    handler();
+    window.addEventListener("scroll", handler);
+    return () => window.removeEventListener("scroll", handler);
+  }, []);
 
   return (
     <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        isScrolled || location !== '/' ? "bg-white border-b border-gray-200 text-gray-700" : "bg-transparent text-white"
+      className={`${(overlayOnHome && location === '/' ? 'fixed' : 'sticky')} top-0 w-full z-50 transition-all duration-300 ${
+        (transparentOnHome && location === '/' && !isScrolled)
+          ? "bg-transparent text-white"
+          : "bg-white border-b border-gray-200 text-gray-700"
       }`}
     >
       <div className="container mx-auto px-6 md:px-12 lg:px-24 h-20 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-8">
-          <Link href="/" className="text-2xl font-bold tracking-tight font-heading cursor-pointer flex items-center gap-1">
-              Find<span className="text-green-500">Detectives</span>
-              <span className="text-green-500 text-4xl leading-none">.</span>
+          <Link href="/" className="text-2xl font-bold tracking-tight font-heading cursor-pointer flex items-center gap-2">
+            {site?.logoUrl ? (
+              <img src={site.logoUrl} alt="Logo" className="h-8 w-auto" />
+            ) : (
+              <>
+                Find<span className="text-green-500">Detectives</span>
+                <span className="text-green-500 text-4xl leading-none">.</span>
+              </>
+            )}
           </Link>
 
           {/* Country Selector */}
-          <div className={`hidden md:hidden items-center ${isScrolled || location !== '/' ? "text-gray-700" : "text-white/90 hover:text-white"}`}>
+          <div className={`hidden md:hidden items-center ${(transparentOnHome && location === '/' && !isScrolled) ? "text-white/90 hover:text-white" : "text-gray-700"}`}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-2 px-2 hover:bg-white/10">
@@ -97,21 +126,24 @@ export function Navbar() {
           </div>
 
           {/* Desktop Search - Only show when scrolled or on non-home pages (simplified for now) */}
-          <div className={`hidden xl:flex relative w-96 transition-opacity duration-300 ${isScrolled || location !== '/' ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+          <div className={`hidden xl:flex relative w-96 transition-opacity duration-300 ${(transparentOnHome && location === '/' && !isScrolled) ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
             <Input 
               type="text" 
               placeholder={`Search in ${selectedCountry.name === 'Global' ? 'All Countries' : selectedCountry.name}...`}
               className="w-full pl-4 pr-10 h-10 bg-white border-gray-300 text-black"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setActiveIdx(-1); }}
               onKeyDown={handleSearch}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setTimeout(() => setFocused(false), 120)}
             />
             <Search 
               className="absolute right-3 top-2.5 h-5 w-5 text-gray-500 cursor-pointer" 
               onClick={() => {
                  if (searchQuery.trim()) {
+                    const val = activeIdx >= 0 && suggestions[activeIdx] ? suggestions[activeIdx] : searchQuery;
                     const params = new URLSearchParams();
-                    params.set("q", searchQuery);
+                    params.set("q", val);
                     if (selectedCountry.code !== "ALL") {
                       params.set("country", selectedCountry.code);
                     }
@@ -119,6 +151,24 @@ export function Navbar() {
                  }
               }}
             />
+            {focused && suggestions.length > 0 && (
+              <div className="absolute left-0 top-full mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-20 text-gray-800">
+                {suggestions.map((s, i) => (
+                  <button
+                    key={s}
+                    onMouseDown={() => {
+                      const params = new URLSearchParams();
+                      params.set("q", s);
+                      if (selectedCountry.code !== "ALL") params.set("country", selectedCountry.code);
+                      setLocation(`/search?${params.toString()}`);
+                    }}
+                    className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${activeIdx === i ? 'bg-gray-100' : ''} text-gray-800`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -127,7 +177,7 @@ export function Navbar() {
           {user ? (
             <>
               {/* Favorites Icon */}
-              <Link href="/user/favorites" className={`relative hover:text-green-500 transition-colors ${isScrolled || location !== '/' ? "text-gray-600" : "text-white"}`} data-testid="link-favorites">
+              <Link href="/user/favorites" className={`relative hover:text-green-500 transition-colors ${(transparentOnHome && location === '/' && !isScrolled) ? "text-white" : "text-gray-600"}`} data-testid="link-favorites">
                   <Heart className="h-6 w-6" />
               </Link>
 
@@ -188,8 +238,8 @@ export function Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
-                    variant={isScrolled || location !== '/' ? "outline" : "outline"} 
-                    className={`${isScrolled || location !== '/' ? "text-green-500 border-green-500 hover:bg-green-50" : "text-white border-white hover:bg-white hover:text-green-500"} transition-colors gap-1`}
+                    variant="outline" 
+                    className={`${(transparentOnHome && location === '/' && !isScrolled) ? "text-white border-white hover:bg-white hover:text-green-500" : "text-green-500 border-green-500 hover:bg-green-50"} transition-colors gap-1`}
                   >
                     Sign Up <ChevronDown className="h-4 w-4" />
                   </Button>
@@ -206,7 +256,7 @@ export function Navbar() {
             </>
           )}
           {/* Country Selector - Desktop */}
-          <div className={`hidden md:flex items-center ${isScrolled || location !== '/' ? "text-gray-700" : "text-white/90 hover:text-white"}`}>
+          <div className={`hidden md:flex items-center ${(transparentOnHome && location === '/' && !isScrolled) ? "text-white/90 hover:text-white" : "text-gray-700"}`}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-2 px-2 hover:bg-white/10">
@@ -265,6 +315,50 @@ export function Navbar() {
             </SheetTrigger>
             <SheetContent side="right">
               <div className="flex flex-col gap-6 mt-8">
+                <div className="flex flex-col gap-3">
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      placeholder={`Search in ${selectedCountry.name === 'Global' ? 'All Countries' : selectedCountry.name}...`}
+                      className="w-full pr-10"
+                      value={searchQuery}
+                      onChange={(e) => { setSearchQuery(e.target.value); setActiveIdx(-1); }}
+                      onKeyDown={handleSearch}
+                      onFocus={() => setFocused(true)}
+                      onBlur={() => setTimeout(() => setFocused(false), 120)}
+                    />
+                    <Search
+                      className="absolute right-2 top-2.5 h-5 w-5 text-gray-500 cursor-pointer"
+                      onClick={() => {
+                        if (searchQuery.trim()) {
+                          const val = activeIdx >= 0 && suggestions[activeIdx] ? suggestions[activeIdx] : searchQuery;
+                          const params = new URLSearchParams();
+                          params.set("q", val);
+                          if (selectedCountry.code !== "ALL") params.set("country", selectedCountry.code);
+                          setLocation(`/search?${params.toString()}`);
+                        }
+                      }}
+                    />
+                    {focused && suggestions.length > 0 && (
+                      <div className="absolute left-0 top-full mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-20 text-gray-800">
+                        {suggestions.map((s, i) => (
+                          <button
+                            key={s}
+                            onMouseDown={() => {
+                              const params = new URLSearchParams();
+                              params.set("q", s);
+                              if (selectedCountry.code !== "ALL") params.set("country", selectedCountry.code);
+                              setLocation(`/search?${params.toString()}`);
+                            }}
+                            className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${activeIdx === i ? 'bg-gray-100' : ''} text-gray-800`}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div className="flex items-center justify-between pb-4 border-b">
                   <span className="font-medium">Region</span>
                   <DropdownMenu>

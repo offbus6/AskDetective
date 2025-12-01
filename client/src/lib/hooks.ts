@@ -69,11 +69,33 @@ export function useCurrentDetective() {
   });
 }
 
+export function useSubscriptionLimits() {
+  return useQuery({
+    queryKey: ["subscription", "limits"],
+    queryFn: () => api.detectives.getSubscriptionLimits(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useDetectivesByCountry(country: string | null | undefined) {
   return useQuery({
     queryKey: ["detectives", "country", country],
     queryFn: () => api.detectives.getByCountry(country!),
     enabled: !!country,
+  });
+}
+
+export function useSearchDetectives(params?: {
+  country?: string;
+  status?: "active" | "pending" | "suspended" | "inactive";
+  plan?: "free" | "pro" | "agency";
+  search?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  return useQuery({
+    queryKey: ["detectives", "search", params],
+    queryFn: () => api.detectives.search(params),
   });
 }
 
@@ -101,6 +123,28 @@ export function useUpdateDetective() {
   });
 }
 
+export function useAdminUpdateDetective() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Detective> }) =>
+      api.detectives.adminUpdate(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["detectives", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["detectives", "all"] });
+    },
+  });
+}
+
+export function useAdminDeleteDetective() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.detectives.adminDelete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["detectives", "all"] });
+    },
+  });
+}
+
 export function useServices(limit?: number, offset?: number) {
   return useQuery({
     queryKey: ["services", "all", limit, offset],
@@ -109,12 +153,13 @@ export function useServices(limit?: number, offset?: number) {
 }
 
 export function useSearchServices(params?: {
-  categoryId?: string;
+  category?: string;
   country?: string;
   search?: string;
   minPrice?: number;
   maxPrice?: number;
   sortBy?: string;
+  minRating?: number;
   limit?: number;
   offset?: number;
 }) {
@@ -124,11 +169,19 @@ export function useSearchServices(params?: {
   });
 }
 
-export function useService(id: string | null | undefined) {
+export function useService(id: string | null | undefined, preview?: boolean) {
   return useQuery({
-    queryKey: ["services", id],
-    queryFn: () => api.services.getById(id!),
+    queryKey: ["services", id, preview ? "preview" : "public"],
+    queryFn: () => api.services.getById(id!, { preview }),
     enabled: !!id,
+  });
+}
+
+export function usePublicServiceCount(detectiveId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["detectives", detectiveId, "public-service-count"],
+    queryFn: () => api.detectives.getPublicServiceCount(detectiveId!),
+    enabled: !!detectiveId,
   });
 }
 
@@ -136,6 +189,14 @@ export function useServicesByDetective(detectiveId: string | null | undefined) {
   return useQuery({
     queryKey: ["services", "detective", detectiveId],
     queryFn: () => api.services.getByDetective(detectiveId!),
+    enabled: !!detectiveId,
+  });
+}
+
+export function useAdminServicesByDetective(detectiveId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["services", "detective", detectiveId, "admin"],
+    queryFn: () => api.services.adminGetByDetective(detectiveId!),
     enabled: !!detectiveId,
   });
 }
@@ -157,6 +218,36 @@ export function useUpdateService() {
       api.services.update(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["services", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["services", "all"] });
+    },
+  });
+}
+
+export function useAdminCreateServiceForDetective() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ detectiveId, data }: { detectiveId: string; data: Omit<InsertService, "detectiveId"> }) =>
+      api.services.adminCreateForDetective(detectiveId, data),
+    onSuccess: (result: { service: Service }, variables: { detectiveId: string; data: any }) => {
+      queryClient.invalidateQueries({ queryKey: ["services", "detective", variables.detectiveId] });
+      queryClient.invalidateQueries({ queryKey: ["services", "detective", variables.detectiveId, "admin"] });
+      queryClient.invalidateQueries({ queryKey: ["services", "all"] });
+      const key = ["services", "detective", variables.detectiveId, "admin"];
+      const existing: any = queryClient.getQueryData(key);
+      const next = Array.isArray(existing?.services) ? [result.service, ...existing.services] : [result.service];
+      queryClient.setQueryData(key, { services: next });
+    },
+  });
+}
+
+export function useAdminUpdateService() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, detectiveId, data }: { id: string; detectiveId: string; data: Partial<Service> }) =>
+      api.services.update(id, data),
+    onSuccess: (_: any, variables: { id: string; detectiveId: string; data: Partial<Service> }) => {
+      queryClient.invalidateQueries({ queryKey: ["services", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["services", "detective", variables.detectiveId, "admin"] });
       queryClient.invalidateQueries({ queryKey: ["services", "all"] });
     },
   });
@@ -184,6 +275,16 @@ export function useReviewsByService(serviceId: string | null | undefined, limit?
     queryKey: ["reviews", "service", serviceId, limit],
     queryFn: () => api.reviews.getByService(serviceId!, limit),
     enabled: !!serviceId,
+  });
+}
+
+export function useReviewsByDetective() {
+  const { data: me } = useCurrentDetective();
+  const detectiveId = me?.detective?.id;
+  return useQuery({
+    queryKey: ["reviews", "detective", detectiveId],
+    queryFn: () => api.reviews.getByDetective(),
+    enabled: !!detectiveId,
   });
 }
 
@@ -322,10 +423,18 @@ export function useUpdateUser() {
   });
 }
 
-export function useApplications() {
+export function useApplications(params?: { status?: string; search?: string; limit?: number; offset?: number }) {
   return useQuery({
-    queryKey: ["applications"],
-    queryFn: () => api.applications.getAll(),
+    queryKey: ["applications", params?.status, params?.search, params?.limit, params?.offset],
+    queryFn: () => api.applications.getAll(params),
+  });
+}
+
+export function useApplication(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ["applications", id],
+    queryFn: () => api.applications.getById(id!),
+    enabled: !!id,
   });
 }
 
@@ -343,11 +452,23 @@ export function useCreateApplication() {
 export function useUpdateApplicationStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: "approved" | "rejected" }) =>
-      api.applications.updateStatus(id, status),
+    mutationFn: ({ id, status, reviewNotes }: { id: string; status: "approved" | "rejected"; reviewNotes?: string }) =>
+      api.applications.updateStatus(id, { status, reviewNotes }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       queryClient.invalidateQueries({ queryKey: ["detectives"] });
+    },
+  });
+}
+
+export function useUpdateApplicationNotes() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reviewNotes }: { id: string; reviewNotes: string }) =>
+      api.applications.updateStatus(id, { reviewNotes }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["applications", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
     },
   });
 }
@@ -386,12 +507,42 @@ export function useServiceCategory(id: string | null | undefined) {
   });
 }
 
+export function useSiteSettings() {
+  return useQuery({
+    queryKey: ["settings", "site"],
+    queryFn: () => api.settings.getSite(),
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useUpdateSiteSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { logoUrl?: string | null; footerLinks?: Array<{ label: string; href: string }> }) => api.settings.updateSite(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings", "site"] });
+    },
+  });
+}
+
+export function usePopularCategories() {
+  return useQuery({
+    queryKey: ["categories", "popular"],
+    queryFn: () => api.catalog.getPopularCategories(),
+    staleTime: 60 * 1000,
+  });
+}
+
 export function useCreateServiceCategory() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: InsertServiceCategory) => api.serviceCategories.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["serviceCategories"] });
+      queryClient.invalidateQueries({ queryKey: ["serviceCategories", true] });
+      queryClient.invalidateQueries({ queryKey: ["serviceCategories", false] });
+      queryClient.invalidateQueries({ queryKey: ["serviceCategories", undefined] });
     },
   });
 }
@@ -404,6 +555,9 @@ export function useUpdateServiceCategory() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["serviceCategories", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["serviceCategories"] });
+      queryClient.invalidateQueries({ queryKey: ["serviceCategories", true] });
+      queryClient.invalidateQueries({ queryKey: ["serviceCategories", false] });
+      queryClient.invalidateQueries({ queryKey: ["serviceCategories", undefined] });
     },
   });
 }
@@ -412,7 +566,21 @@ export function useDeleteServiceCategory() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.serviceCategories.delete(id),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
+      const keys = [
+        ["serviceCategories"],
+        ["serviceCategories", true],
+        ["serviceCategories", false],
+        ["serviceCategories", undefined],
+      ] as const;
+      for (const key of keys) {
+        const current = queryClient.getQueryData<{ categories: ServiceCategory[] }>(key as any);
+        if (current?.categories) {
+          queryClient.setQueryData(key as any, {
+            categories: current.categories.filter((c) => c.id !== id),
+          });
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ["serviceCategories"] });
     },
   });

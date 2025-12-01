@@ -8,15 +8,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, AlertCircle, Layers } from "lucide-react";
 import { SEO } from "@/components/seo";
 import { Link } from "wouter";
-import { useSearchServices, useServiceCategories } from "@/lib/hooks";
+import { useSearchServices, useServiceCategories, useSearchDetectives } from "@/lib/hooks";
 import type { Service, Detective, ServiceCategory } from "@shared/schema";
 
 function mapServiceToCard(service: Service & { detective: Detective; avgRating: number; reviewCount: number }) {
-  const levelMap = {
-    free: "Free Member",
-    pro: "Pro Detective",
-    agency: "Agency Verified",
-  };
+  
 
   const badges: string[] = [];
   if (service.detective.isVerified) badges.push("verified");
@@ -27,16 +23,17 @@ function mapServiceToCard(service: Service & { detective: Detective; avgRating: 
 
   // Use actual database images - NO MOCK DATA
   const images = service.images && service.images.length > 0 ? service.images : undefined;
-  const serviceImage = images ? images[0] : null;
-  const detectiveLogo = service.detective.logo || null;
+  const serviceImage = images ? images[0] : undefined;
+  const detectiveLogo = service.detective.logo || undefined;
   
   return {
     id: service.id,
+    detectiveId: service.detective.id,
     images,
     image: serviceImage,
-    avatar: detectiveLogo,
+    avatar: detectiveLogo || "",
     name: detectiveName,
-    level: levelMap[service.detective.subscriptionPlan] || "Free Member",
+    level: service.detective.level ? (service.detective.level === "pro" ? "Pro Level" : (service.detective.level as string).replace("level", "Level ")) : "Level 1",
     category: service.category,
     badges,
     title: service.title,
@@ -44,6 +41,7 @@ function mapServiceToCard(service: Service & { detective: Detective; avgRating: 
     reviews: service.reviewCount,
     price: Number(service.basePrice),
     offerPrice: service.offerPrice ? Number(service.offerPrice) : null,
+    countryCode: service.detective.country,
   };
 }
 
@@ -56,7 +54,9 @@ export default function Home() {
     sortBy: "popular" 
   });
 
-  const popularServices = popularServicesData?.services.map(mapServiceToCard) || [];
+  const popularServices = popularServicesData?.services?.map(mapServiceToCard) || [];
+  const { data: featuredDetectivesData, isLoading: isLoadingDetectives } = useSearchDetectives({ status: "active", limit: 4 });
+  const featuredDetectives = featuredDetectivesData?.detectives || [];
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-gray-900">
@@ -65,7 +65,7 @@ export default function Home() {
         description="The leading marketplace for professional private investigation services. Find verified detectives for surveillance, background checks, and more."
         keywords={["private investigator", "hire detective", "surveillance", "background checks", "infidelity investigation"]}
       />
-      <Navbar />
+      <Navbar transparentOnHome={true} overlayOnHome={true} />
       
       <main className="flex-1">
         <Hero />
@@ -86,7 +86,7 @@ export default function Home() {
               <h2 className="text-3xl font-bold font-heading">Browse by Category</h2>
               <p className="text-gray-600 mt-2">Explore professional detective services organized by specialty</p>
             </div>
-            <Link href="/search">
+            <Link href="/categories">
               <Button variant="ghost" className="text-green-600 hover:text-green-700 hover:bg-green-50" data-testid="button-view-all-categories">
                 View All <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -163,10 +163,32 @@ export default function Home() {
               popularServices.map((service) => (
                 <ServiceCard key={service.id} {...service} />
               ))
+            ) : featuredDetectives.length > 0 ? (
+              featuredDetectives.map((d) => (
+                <Link key={d.id} href={`/p/${d.id}`}>
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                          {d.logo ? (
+                            <img src={d.logo} alt={d.businessName || "Detective"} className="h-12 w-12 object-cover" />
+                          ) : (
+                            <span className="font-bold text-gray-500 text-lg">{(d.businessName || "D")[0]}</span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-bold text-lg text-gray-900 hover:underline">{d.businessName || "Unknown Detective"}</div>
+                          <div className="text-sm text-gray-600">{d.location || d.country || ""}</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))
             ) : (
               <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200" data-testid="empty-popular-services">
                 <AlertCircle className="h-12 w-12 text-gray-400 mb-3" />
-                <p className="text-sm">No popular services available at the moment.</p>
+                <p className="text-sm">No popular services or detectives available yet.</p>
               </div>
             )}
           </div>

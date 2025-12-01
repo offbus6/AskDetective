@@ -36,7 +36,6 @@ async function createTestDetective() {
       whatsapp: "+13105551234",
       languages: ["English", "Spanish"],
       memberSince: new Date(),
-      totalEarnings: 0,
       lastActive: new Date(),
     }).returning();
 

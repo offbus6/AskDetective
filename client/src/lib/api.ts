@@ -8,11 +8,23 @@ class ApiError extends Error {
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
+  const ct = response.headers.get("content-type") || "";
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: response.statusText }));
-    throw new ApiError(response.status, error.error || response.statusText);
+    if (ct.includes("application/json")) {
+      const error = await response.json().catch(() => ({ error: response.statusText }));
+      throw new ApiError(response.status, (error as any).error || response.statusText);
+    }
+    const text = await response.text().catch(() => "");
+    const isHtml = text.trim().startsWith("<") || text.toLowerCase().includes("<!doctype");
+    if (isHtml) {
+      throw new ApiError(response.status, "Unexpected HTML response. Please ensure you are logged in and the API route is correct.");
+    }
+    throw new ApiError(response.status, text || response.statusText);
   }
-  return response.json();
+  if (ct.includes("application/json")) {
+    return response.json();
+  }
+  return response.text() as unknown as T;
 }
 
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = 60000): Promise<Response> {
@@ -37,14 +49,27 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout 
 
 export const api = {
   auth: {
-    login: async (email: string, password: string): Promise<{ user: User }> => {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-        credentials: "include",
-      });
-      return handleResponse(response);
+    login: async (email: string, password: string): Promise<{ user?: User; applicant?: { email: string; status: string } }> => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 12000);
+      try {
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ email, password }),
+          credentials: "include",
+          keepalive: true,
+          signal: controller.signal,
+        });
+        return handleResponse(response);
+      } catch (err: any) {
+        if (err?.name === "AbortError") {
+          throw new Error("Login timed out. Please try again.");
+        }
+        throw err;
+      } finally {
+        clearTimeout(timer);
+      }
     },
 
     logout: async (): Promise<{ message: string }> => {
@@ -55,11 +80,49 @@ export const api = {
       return handleResponse(response);
     },
 
-    me: async (): Promise<{ user: User }> => {
-      const response = await fetch("/api/auth/me", {
+    me: async (): Promise<{ user?: User | null }> => {
+      try {
+        const response = await fetch("/api/auth/me", {
+          credentials: "include",
+        });
+        if (response.status === 401 || response.status === 403) {
+          return { user: null } as any;
+        }
+        return handleResponse(response);
+      } catch (err: any) {
+        if (err?.name === "AbortError" || /network|fetch|failed|suspend/i.test(String(err?.message || ""))) {
+          return { user: null } as any;
+        }
+        throw err;
+      }
+    },
+
+    changePassword: async (currentPassword: string, newPassword: string): Promise<{ message: string }> => {
+      const response = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
         credentials: "include",
       });
       return handleResponse(response);
+    },
+
+    setPassword: async (newPassword: string): Promise<{ message: string }> => {
+      const response = await fetch("/api/auth/set-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ newPassword }),
+        credentials: "include",
+      });
+      if (!response.ok) {
+        return handleResponse(response);
+      }
+      const ct = response.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        return handleResponse(response);
+      }
+      const text = await response.text();
+      return { message: text || "Password set successfully" };
     },
 
     register: async (email: string, password: string, name: string): Promise<{ user: User }> => {
@@ -96,10 +159,37 @@ export const api = {
     },
 
     getByCountry: async (country: string): Promise<{ detectives: Detective[] }> => {
-      const response = await fetch(`/api/detectives/country/${country}`, {
+      const response = await fetch(`/api/detectives?country=${encodeURIComponent(country)}`, {
         credentials: "include",
       });
       return handleResponse(response);
+    },
+
+    search: async (params?: {
+      country?: string;
+      status?: "active" | "pending" | "suspended" | "inactive";
+      plan?: "free" | "pro" | "agency";
+      search?: string;
+      limit?: number;
+      offset?: number;
+    }): Promise<{ detectives: Detective[] }> => {
+      const queryParams = new URLSearchParams();
+      if (params?.country) queryParams.append("country", params.country);
+      if (params?.status) queryParams.append("status", params.status);
+      if (params?.plan) queryParams.append("plan", params.plan);
+      if (params?.search) queryParams.append("search", params.search);
+      if (params?.limit !== undefined) queryParams.append("limit", params.limit.toString());
+      if (params?.offset !== undefined) queryParams.append("offset", params.offset.toString());
+
+      try {
+        const response = await fetch(`/api/detectives?${queryParams.toString()}`);
+        return handleResponse(response);
+      } catch (err: any) {
+        if (err?.name === "AbortError" || /network|fetch|failed|suspend/i.test(String(err?.message || ""))) {
+          return { detectives: [] } as any;
+        }
+        throw err;
+      }
     },
 
     create: async (data: InsertDetective): Promise<{ detective: Detective }> => {
@@ -117,6 +207,15 @@ export const api = {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+    createOnboardingServices: async (id: string, services: Array<{ category: string; basePrice: string }>): Promise<{ ok: boolean }> => {
+      const response = await fetch(`/api/detectives/${id}/onboarding/services`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ services }),
         credentials: "include",
       });
       return handleResponse(response);
@@ -140,11 +239,33 @@ export const api = {
       });
       return handleResponse(response);
     },
-  },
 
+    adminDelete: async (id: string): Promise<{ message: string }> => {
+      const response = await fetch(`/api/admin/detectives/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+
+    getSubscriptionLimits: async (): Promise<{ limits: Record<string, number> }> => {
+      const response = await fetch(`/api/subscription-limits`, { credentials: "include" });
+      return handleResponse(response);
+    },
+    getPublicServiceCount: async (id: string): Promise<{ count: number }> => {
+      const response = await fetch(`/api/detectives/${id}/public-service-count`, {
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+  },
   services: {
     search: async (params?: {
-      categoryId?: string;
+
+
+
+
+      category?: string;
       country?: string;
       search?: string;
       minPrice?: number;
@@ -152,21 +273,30 @@ export const api = {
       sortBy?: string;
       limit?: number;
       offset?: number;
-    }): Promise<{ services: Array<Service & { detective: Detective; avgRating: number; reviewCount: number; categoryName?: string }> }> => {
+    }): Promise<{ services: Array<Service & { detective: Detective; avgRating: number; reviewCount: number }> }> => {
       const queryParams = new URLSearchParams();
-      if (params?.categoryId) queryParams.append("categoryId", params.categoryId);
+      if (params?.category) queryParams.append("category", params.category);
       if (params?.country) queryParams.append("country", params.country);
       if (params?.search) queryParams.append("search", params.search);
       if (params?.minPrice !== undefined) queryParams.append("minPrice", params.minPrice.toString());
       if (params?.maxPrice !== undefined) queryParams.append("maxPrice", params.maxPrice.toString());
       if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
+      if (params?.minRating !== undefined) queryParams.append("minRating", params.minRating.toString());
       if (params?.limit !== undefined) queryParams.append("limit", params.limit.toString());
+
       if (params?.offset !== undefined) queryParams.append("offset", params.offset.toString());
 
-      const response = await fetch(`/api/services?${queryParams.toString()}`, {
-        credentials: "include",
-      });
-      return handleResponse(response);
+      try {
+        const response = await fetch(`/api/services?${queryParams.toString()}`, {
+          credentials: "include",
+        });
+        return handleResponse(response);
+      } catch (err: any) {
+        if (err?.name === "AbortError" || /network|fetch|failed|suspend/i.test(String(err?.message || ""))) {
+          return { services: [] } as any;
+        }
+        throw err;
+      }
     },
 
     getAll: async (limit = 50, offset = 0): Promise<{ services: Service[] }> => {
@@ -176,8 +306,9 @@ export const api = {
       return handleResponse(response);
     },
 
-    getById: async (id: string): Promise<{ service: Service; detective: Detective; avgRating: number; reviewCount: number }> => {
-      const response = await fetch(`/api/services/${id}`, {
+    getById: async (id: string, options?: { preview?: boolean }): Promise<{ service: Service; detective: Detective; avgRating: number; reviewCount: number }> => {
+      const qs = options?.preview ? "?preview=1" : "";
+      const response = await fetch(`/api/services/${id}${qs}`, {
         credentials: "include",
       });
       return handleResponse(response);
@@ -190,8 +321,25 @@ export const api = {
       return handleResponse(response);
     },
 
+    adminGetByDetective: async (detectiveId: string): Promise<{ services: Service[] }> => {
+      const response = await fetch(`/api/admin/detectives/${detectiveId}/services`, {
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+
     create: async (data: InsertService): Promise<{ service: Service }> => {
       const response = await fetch("/api/services", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+
+    adminCreateForDetective: async (detectiveId: string, data: Omit<InsertService, "detectiveId">): Promise<{ service: Service }> => {
+      const response = await fetch(`/api/admin/detectives/${detectiveId}/services`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -228,7 +376,14 @@ export const api = {
     },
 
     getByService: async (serviceId: string, limit = 20): Promise<{ reviews: Review[] }> => {
-      const response = await fetch(`/api/reviews/service/${serviceId}?limit=${limit}`, {
+      const response = await fetch(`/api/services/${serviceId}/reviews?limit=${limit}`, {
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+
+    getByDetective: async (): Promise<{ reviews: Array<Review & { serviceTitle?: string }> }> => {
+      const response = await fetch(`/api/reviews/detective`, {
         credentials: "include",
       });
       return handleResponse(response);
@@ -278,15 +433,15 @@ export const api = {
       return handleResponse(response);
     },
 
-    getByUser: async (userId: string): Promise<{ orders: Order[] }> => {
-      const response = await fetch(`/api/orders/user/${userId}`, {
+    getByUser: async (_userId: string): Promise<{ orders: Order[] }> => {
+      const response = await fetch(`/api/orders/user`, {
         credentials: "include",
       });
       return handleResponse(response);
     },
 
-    getByDetective: async (detectiveId: string): Promise<{ orders: Order[] }> => {
-      const response = await fetch(`/api/orders/detective/${detectiveId}`, {
+    getByDetective: async (_detectiveId: string): Promise<{ orders: Order[] }> => {
+      const response = await fetch(`/api/orders/detective`, {
         credentials: "include",
       });
       return handleResponse(response);
@@ -360,8 +515,19 @@ export const api = {
   },
 
   applications: {
-    getAll: async (): Promise<{ applications: DetectiveApplication[] }> => {
-      const response = await fetch("/api/applications", {
+    getAll: async (params?: { status?: string; search?: string; limit?: number; offset?: number }): Promise<{ applications: DetectiveApplication[] }> => {
+      const qp = new URLSearchParams();
+      if (params?.status) qp.append("status", params.status);
+      if (params?.search) qp.append("search", params.search);
+      if (params?.limit !== undefined) qp.append("limit", String(params.limit));
+      if (params?.offset !== undefined) qp.append("offset", String(params.offset));
+      const response = await fetch(`/api/applications?${qp.toString()}`, {
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+    getById: async (id: string): Promise<{ application: DetectiveApplication }> => {
+      const response = await fetch(`/api/applications/${id}`, {
         credentials: "include",
       });
       return handleResponse(response);
@@ -378,7 +544,7 @@ export const api = {
       } catch (error: any) {
         console.error("API: Failed to stringify data:", error);
         throw new ApiError(400, "Failed to prepare request data: " + error.message);
-      }
+}
       
       try {
         console.log("API: Sending request...");
@@ -398,11 +564,11 @@ export const api = {
       }
     },
 
-    updateStatus: async (id: string, status: "approved" | "rejected"): Promise<{ application: DetectiveApplication }> => {
+    updateStatus: async (id: string, data: { status?: "approved" | "rejected"; reviewNotes?: string }): Promise<{ application: DetectiveApplication }> => {
       const response = await fetch(`/api/applications/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(data),
         credentials: "include",
       });
       return handleResponse(response);
@@ -431,10 +597,17 @@ export const api = {
   serviceCategories: {
     getAll: async (activeOnly?: boolean): Promise<{ categories: ServiceCategory[] }> => {
       const queryParams = activeOnly ? "?activeOnly=true" : "";
-      const response = await fetch(`/api/service-categories${queryParams}`, {
-        credentials: "include",
-      });
-      return handleResponse(response);
+      try {
+        const response = await fetch(`/api/service-categories${queryParams}`, {
+          credentials: "include",
+        });
+        return handleResponse(response);
+      } catch (err: any) {
+        if (err?.name === "AbortError" || /network|fetch|failed|suspend/i.test(String(err?.message || ""))) {
+          return { categories: [] } as any;
+        }
+        throw err;
+      }
     },
 
     getById: async (id: string): Promise<{ category: ServiceCategory }> => {
@@ -470,6 +643,41 @@ export const api = {
         credentials: "include",
       });
       return handleResponse(response);
+    },
+  },
+  settings: {
+    getSite: async (): Promise<{ settings: { logoUrl?: string | null; footerLinks?: Array<{ label: string; href: string }> } }> => {
+      try {
+        const response = await fetch(`/api/site-settings`, { credentials: "include" });
+        return handleResponse(response);
+      } catch (err: any) {
+        if (err?.name === "AbortError" || /network|fetch|failed|suspend/i.test(String(err?.message || ""))) {
+          return { settings: { logoUrl: null, footerLinks: [] } } as any;
+        }
+        throw err;
+      }
+    },
+    updateSite: async (data: { logoUrl?: string | null; footerLinks?: Array<{ label: string; href: string }> }): Promise<{ settings: any }> => {
+      const response = await fetch(`/api/admin/site-settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      return handleResponse(response);
+    },
+  },
+  catalog: {
+    getPopularCategories: async (): Promise<{ categories: Array<{ category: string; count: number }> }> => {
+      try {
+        const response = await fetch(`/api/popular-categories`, { credentials: "include" });
+        return handleResponse(response);
+      } catch (err: any) {
+        if (err?.name === "AbortError" || /abort|network.*failed/i.test(String(err?.message || ""))) {
+          return { categories: [] } as any;
+        }
+        throw err;
+      }
     },
   },
 };

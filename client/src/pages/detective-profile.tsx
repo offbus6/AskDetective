@@ -4,14 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, Mail, Phone, MessageCircle, ShieldCheck, AlertTriangle, FileText, Heart, Loader2 } from "lucide-react";
+import { Star, Mail, Phone, MessageCircle, ShieldCheck, AlertTriangle, FileText, Heart, Loader2, ChevronLeft } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrency } from "@/lib/currency-context";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/lib/user-context";
-import { useService, useReviewsByService } from "@/lib/hooks";
-import { useState } from "react";
-import { useRoute } from "wouter";
+import { useService, useReviewsByService, useServicesByDetective } from "@/lib/hooks";
+import { api } from "@/lib/api";
+import { useState, useEffect } from "react";
+import { useRoute, Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { SEO } from "@/components/seo";
 import { format } from "date-fns";
@@ -21,19 +26,73 @@ export default function DetectiveProfile() {
   const [, params] = useRoute("/service/:id");
   const serviceId = params?.id;
   
-  const { data: serviceData, isLoading: isLoadingService, error: serviceError } = useService(serviceId);
+  const searchParams = new URLSearchParams(window.location.search);
+  const previewParam = searchParams.get("preview");
+  const isPreview = previewParam === "1" || previewParam === "true";
+  const { data: serviceData, isLoading: isLoadingService, error: serviceError } = useService(serviceId, isPreview);
+  const detectiveIdForServices = serviceData?.detective?.id;
+  const { data: servicesByDetective } = useServicesByDetective(detectiveIdForServices);
   const { data: reviewsData, isLoading: isLoadingReviews } = useReviewsByService(serviceId);
   
-  const { formatPrice } = useCurrency();
+  const { selectedCountry, formatPriceFromTo } = useCurrency();
   const { user, isFavorite, toggleFavorite } = useUser();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [rating, setRating] = useState<number>(5);
+  const [comment, setComment] = useState<string>("");
+  const [reviewUsers, setReviewUsers] = useState<Record<string, { name?: string; avatar?: string }>>({});
+  const existingUserReview = (user ? (reviewsData?.reviews || []).find((r: any) => r.userId === user.id) : null) as any;
+  const hasReviewed = !!existingUserReview;
+  const submitReview = useMutation({
+    mutationFn: async () => {
+      if (existingUserReview?.id) {
+        return api.reviews.update(existingUserReview.id, { rating, comment });
+      }
+      return api.reviews.create({ serviceId: serviceId!, rating, comment });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reviews", "service", serviceId] });
+      queryClient.invalidateQueries({ queryKey: ["reviews", "detective"] });
+      setRating(5);
+      setComment("");
+      toast({ title: "Review submitted", description: "Thanks for your feedback" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to submit", description: error?.message || "Could not submit review", variant: "destructive" });
+    },
+  });
+
+  useEffect(() => {
+    if (existingUserReview) {
+      if (typeof existingUserReview.rating === 'number') setRating(existingUserReview.rating);
+      if (typeof existingUserReview.comment === 'string') setComment(existingUserReview.comment);
+    }
+  }, [existingUserReview?.id]);
+
+  // Load reviewer profiles (name & avatar) for display
+  useEffect(() => {
+    if (isLoadingReviews || !reviewsData?.reviews) return;
+    const ids = Array.from(new Set((reviewsData.reviews as any[]).map(r => r.userId).filter(Boolean)));
+    if (ids.length === 0) return;
+    Promise.all(ids.map(id => api.users.getById(id).catch(() => null))).then(results => {
+      const map: Record<string, { name?: string; avatar?: string }> = {};
+      results.forEach((res, idx) => {
+        const id = ids[idx];
+        if (res && (res as any).user) {
+          const u = (res as any).user;
+          map[id] = { name: u.name, avatar: u.avatar };
+        }
+      });
+      setReviewUsers(map);
+    });
+  }, [isLoadingReviews, reviewsData]);
 
   // Loading state
   if (isLoadingService) {
     return (
       <div className="min-h-screen bg-white font-sans text-gray-900">
         <Navbar />
-        <main className="container mx-auto px-6 md:px-12 lg:px-24 py-8 mt-20">
+        <main className="container mx-auto px-6 md:px-12 lg:px-24 py-8">
           <div className="flex flex-col lg:flex-row gap-12">
             <div className="flex-1 space-y-6">
               <Skeleton className="h-10 w-3/4" />
@@ -62,7 +121,7 @@ export default function DetectiveProfile() {
     return (
       <div className="min-h-screen bg-white font-sans text-gray-900">
         <Navbar />
-        <main className="container mx-auto px-6 md:px-12 lg:px-24 py-8 mt-20">
+        <main className="container mx-auto px-6 md:px-12 lg:px-24 py-8">
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <FileText className="h-12 w-12 text-gray-400 mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Service Not Found</h2>
@@ -142,7 +201,27 @@ export default function DetectiveProfile() {
       />
       <Navbar />
       
-      <main className="container mx-auto px-6 md:px-12 lg:px-24 py-8 mt-20">
+      <main className="container mx-auto px-6 md:px-12 lg:px-24 py-8">
+        <div className="mb-4">
+          <Button variant="ghost" size="sm" className="gap-2" onClick={() => {
+            if (window.history.length > 1) {
+              window.history.back();
+            } else {
+              const params = new URLSearchParams(window.location.search);
+              const q = params.get("q");
+              const category = params.get("category");
+              if (category) {
+                window.location.href = `/search?category=${encodeURIComponent(category)}`;
+              } else if (q) {
+                window.location.href = `/search?q=${encodeURIComponent(q)}`;
+              } else {
+                window.location.href = "/search";
+              }
+            }
+          }} data-testid="button-back">
+            <ChevronLeft className="h-4 w-4" /> Back
+          </Button>
+        </div>
         {isClaimable && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm" data-testid="claimable-banner">
              <div className="flex items-start gap-4">
@@ -156,10 +235,10 @@ export default function DetectiveProfile() {
                  </p>
                </div>
              </div>
-             <Button 
+                <Button 
                className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap px-8 shadow-md" 
                data-testid="button-claim-profile"
-               onClick={() => window.location.href = `/claim-profile/${detective.id}`}
+               onClick={() => window.location.href = `/claim-profile/${detective.id}?serviceId=${service.id}`}
              >
                Claim This Profile
              </Button>
@@ -197,28 +276,43 @@ export default function DetectiveProfile() {
               </Avatar>
               <div>
                 <div className="font-bold text-lg flex items-center gap-2" data-testid="text-detective-name">
-                  {detectiveName}
+                  <Link href={`/p/${detective.id}`}>
+                    <span className="hover:underline cursor-pointer">{detectiveName}</span>
+                  </Link>
                   {detective.isVerified && (
                      <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100 gap-1 text-xs px-2 py-0.5" data-testid="badge-verified">
                         <ShieldCheck className="h-3 w-3" /> Verified
                      </Badge>
                   )}
                   {detectiveTier === "agency" && (
-                     <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 gap-1 text-xs px-2 py-0.5" data-testid="badge-agency">
-                        Agency
+                     <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 gap-1 text-xs px-2 py-0.5" data-testid="badge-recommended">
+                        Recommended
+                     </Badge>
+                  )}
+                  {detectiveTier === "pro" && (
+                     <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 gap-1 text-xs px-2 py-0.5" data-testid="badge-pro">
+                        PRO
                      </Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  {reviewCount > 0 ? (
-                    <>
-                      <span className="text-yellow-500 font-bold flex items-center gap-1" data-testid="text-rating">
-                        <Star className="h-4 w-4 fill-yellow-500" /> {avgRating.toFixed(1)}
-                      </span>
-                      <span data-testid="text-review-count">({reviewCount} reviews)</span>
-                    </>
-                  ) : null}
+                <div className="flex items-center gap-3 text-sm font-bold text-gray-900">
+                  <span>
+                    {((detective as any).level ? (((detective as any).level === 'pro') ? 'Pro Level' : ((detective as any).level as string).replace('level', 'Level ')) : 'Level 1')}
+                  </span>
+                  {reviewCount > 0 && (
+                    <span className="flex items-center gap-1 text-yellow-500">
+                      <Star className="h-4 w-4 fill-yellow-500" />
+                      <span data-testid="text-rating-inline">{avgRating.toFixed(1)}</span>
+                      <span className="text-gray-500 font-normal ml-1" data-testid="text-review-count-inline">({reviewCount})</span>
+                    </span>
+                  )}
                 </div>
+                <div className="flex items-center gap-3 text-sm text-gray-700 mt-1">
+                  {detective.whatsapp && (
+                    <span data-testid="text-contact-whatsapp">{detective.whatsapp}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-500"></div>
               </div>
             </div>
 
@@ -251,7 +345,7 @@ export default function DetectiveProfile() {
                 <div className="mt-6 mb-6">
                   <h3 className="text-lg font-bold mb-3 text-gray-900">Service Type</h3>
                   <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1 text-sm border-green-100" data-testid="badge-category">
-                    {service.title}
+                    {service.category}
                   </Badge>
                 </div>
               </div>
@@ -271,7 +365,29 @@ export default function DetectiveProfile() {
                   )}
                 </Avatar>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-2xl font-bold font-heading text-gray-900" data-testid="text-detective-name-heading">
+                      <Link href={`/p/${detective.id}`}>
+                        <span className="hover:underline cursor-pointer">{detectiveName}</span>
+                      </Link>
+                    </h3>
+                    {detectiveTier === "agency" && (
+                      <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 gap-1 text-xs px-2 py-0.5" data-testid="badge-agency-inline">
+                        Recommended
+                      </Badge>
+                    )}
+                    {((detective as any).level === 'pro') && (
+                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 gap-1 text-xs px-2 py-0.5" data-testid="badge-pro-inline">
+                        PRO
+                      </Badge>
+                    )}
+                    {detective.isVerified && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100 gap-1 text-xs px-2 py-0.5" data-testid="badge-verified-inline">
+                        <ShieldCheck className="h-3 w-3" /> Verified
+                      </Badge>
+                    )}
+                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-4 text-sm">
                     <div>
                       <span className="text-gray-500 block">From</span>
                       <span className="font-bold" data-testid="text-location">{detective.location || detective.country}</span>
@@ -293,6 +409,26 @@ export default function DetectiveProfile() {
                     </p>
                   )}
                 </div>
+                {(detective.isVerified || detectiveTier === 'agency' || ((detective as any).level === 'pro')) && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-500">Recognitions</span>
+                    {detective.isVerified && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100 gap-1 text-xs px-2 py-0.5" data-testid="badge-recognitions-verified">
+                        <ShieldCheck className="h-3 w-3" /> Verified
+                      </Badge>
+                    )}
+                    {detectiveTier === 'agency' && (
+                      <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 gap-1 text-xs px-2 py-0.5" data-testid="badge-recognitions-recommended">
+                        Recommended
+                      </Badge>
+                    )}
+                    {((detective as any).level === 'pro') && (
+                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 gap-1 text-xs px-2 py-0.5" data-testid="badge-recognitions-pro">
+                        PRO
+                      </Badge>
+                    )}
+                  </div>
+                )}
               </div>
             </section>
             
@@ -333,11 +469,17 @@ export default function DetectiveProfile() {
                 <div className="space-y-6">
                   {reviews.map((review) => (
                      <div key={review.id} className="border-b border-gray-100 pb-6" data-testid={`review-${review.id}`}>
-                       <div className="flex items-center gap-3 mb-2">
-                         <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center font-bold text-xs">
-                           U
-                         </div>
-                         <span className="font-bold text-sm">User</span>
+                  <div className="flex items-center gap-3 mb-2">
+                        <Avatar className="h-8 w-8">
+                          {reviewUsers[review.userId]?.avatar && (
+                            <AvatarImage src={reviewUsers[review.userId]!.avatar!} />
+                          )}
+                          <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
+                            {(reviewUsers[review.userId]?.name || "U").slice(0,1)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-bold text-sm">{reviewUsers[review.userId]?.name || "Anonymous"}</span>
+                        <span className="text-xs text-gray-500 ml-2">{format(new Date((review as any).createdAt), "MMM d, yyyy")}</span>
                          <div className="flex text-yellow-500">
                            {[...Array(5)].map((_, i) => (
                              <Star 
@@ -360,6 +502,47 @@ export default function DetectiveProfile() {
                   <p className="text-gray-600">Be the first to review this service.</p>
                 </div>
               )}
+
+              <div className="mt-8">
+                {user ? (
+                  <Card className="border-gray-200">
+                    <CardContent className="p-6 space-y-4">
+                      <h3 className="text-xl font-bold font-heading">Write a Review</h3>
+                      <div className="space-y-2">
+                        <Label>Rating</Label>
+                        <div className="flex items-center gap-2">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-6 w-6 cursor-pointer ${i < rating ? 'fill-yellow-500 text-yellow-500' : 'text-gray-300'}`}
+                              onClick={() => setRating(i + 1)}
+                            />
+                          ))}
+                          <span className="text-sm text-gray-500">{rating} / 5</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="comment">Your review</Label>
+                        <Textarea id="comment" rows={4} value={comment} onChange={(e) => setComment(e.target.value)} placeholder={hasReviewed ? "Update your review (optional)" : "Share your experience (min 10 characters)"} />
+                        {!hasReviewed && <div className="text-xs text-gray-500">Minimum 10 characters</div>}
+                      </div>
+                      <div className="flex gap-3">
+                        <Button className="bg-green-600 hover:bg-green-700" onClick={() => submitReview.mutate()} disabled={submitReview.isPending || rating < 1 || rating > 5 || (!hasReviewed && comment.trim().length < 10)}>
+                          {submitReview.isPending ? 'Submitting…' : hasReviewed ? 'Update Review' : 'Submit Review'}
+                        </Button>
+                        <Button variant="outline" onClick={() => { setRating(5); setComment(''); }}>Clear</Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="border-blue-200 bg-blue-50">
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <span className="text-sm text-blue-800">Sign in to write a review</span>
+                      <Button onClick={() => { window.location.href = '/login'; }} className="bg-blue-600 hover:bg-blue-700 text-white">Sign In</Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </section>
 
           </div>
@@ -374,12 +557,15 @@ export default function DetectiveProfile() {
                     <div className="text-right">
                       {service.offerPrice ? (
                         <>
-                          <span className="text-2xl font-bold text-green-600" data-testid="text-offer-price">{formatPrice(Number(service.offerPrice))}</span>
-                          <span className="text-sm text-gray-400 line-through ml-2" data-testid="text-base-price">{formatPrice(Number(service.basePrice))}</span>
+                  <span className="text-2xl font-bold text-green-600" data-testid="text-offer-price">{formatPriceFromTo(Number(service.offerPrice), detective.country, selectedCountry.code)}</span>
+                  <span className="text-sm text-gray-400 line-through ml-2" data-testid="text-base-price">{formatPriceFromTo(Number(service.basePrice), detective.country, selectedCountry.code)}</span>
                         </>
                       ) : (
-                        <span className="text-2xl font-bold text-gray-900" data-testid="text-price">{formatPrice(Number(service.basePrice))}</span>
+                        <span className="text-2xl font-bold text-gray-900" data-testid="text-price">{formatPriceFromTo(Number(service.basePrice), detective.country, selectedCountry.code)}</span>
                       )}
+                      <div className="text-xs text-gray-500 mt-1">
+                        {(detective as any).level ? (((detective as any).level === 'pro') ? 'Pro Level' : ((detective as any).level as string).replace('level', 'Level ')) : 'Level 1'}
+                      </div>
                     </div>
                   </div>
                   <p className="text-sm text-gray-600">Professional investigation service</p>
@@ -387,23 +573,54 @@ export default function DetectiveProfile() {
                 
                 {/* Contact Methods based on Tier */}
                 <div className="p-4 bg-gray-50 border-t border-gray-200 space-y-3">
-                   <Button className="w-full flex items-center justify-center gap-2 bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 shadow-sm h-12" data-testid="button-contact-email">
+                   {/** Device detection */}
+                   {/** On mobile: trigger actions; on desktop/tablet: reveal info and allow copy */}
+                   {/** This keeps behavior intuitive across devices */}
+                   <Button className="w-full flex items-center justify-center gap-2 bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 shadow-sm h-12" data-testid="button-contact-email" onClick={() => {
+                     const to = detective.contactEmail || (detective as any).email;
+                     if (to) {
+                       window.location.href = `mailto:${to}`;
+                     }
+                   }}>
                      <Mail className="h-5 w-5" />
                      <span className="font-bold">Contact via Email</span>
                    </Button>
                    
                    {detectiveTier !== 'free' && detective.phone && (
-                     <Button className="w-full flex items-center justify-center gap-2 bg-white hover:bg-green-50 text-green-700 border border-green-200 shadow-sm h-12" data-testid="button-contact-phone">
-                       <Phone className="h-5 w-5" />
-                       <span className="font-bold">Call Now</span>
-                     </Button>
+                    <Button className="w-full flex items-center justify-center gap-2 bg-white hover:bg-green-50 text-green-700 border border-green-200 shadow-sm h-12" data-testid="button-contact-phone" onClick={() => {
+                      const raw = String(detective.phone);
+                      const num = raw.replace(/[^+\d]/g, "");
+                      const isMobile = typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                      if (isMobile) {
+                        window.location.href = `tel:${num}`;
+                      } else {
+                        const text = `Phone: ${num}`;
+                        navigator.clipboard?.writeText(num).catch(() => {});
+                        try { toast({ title: "Number Copied", description: text }); } catch {}
+                      }
+                    }}>
+                      <Phone className="h-5 w-5" />
+                      <span className="font-bold">Call Now</span>
+                    </Button>
                    )}
                    
                    {detectiveTier !== 'free' && detective.whatsapp && (
-                     <Button className="w-full flex items-center justify-center gap-2 bg-white hover:bg-green-50 text-green-700 border border-green-200 shadow-sm h-12" data-testid="button-contact-whatsapp">
-                       <MessageCircle className="h-5 w-5" />
-                       <span className="font-bold">WhatsApp</span>
-                     </Button>
+                    <Button className="w-full flex items-center justify-center gap-2 bg-white hover:bg-green-50 text-green-700 border border-green-200 shadow-sm h-12" data-testid="button-contact-whatsapp" onClick={() => {
+                      const raw = String(detective.whatsapp);
+                      const num = raw.replace(/[^+\d]/g, "");
+                      const isMobile = typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                      if (isMobile) {
+                        const url = `https://wa.me/${num.replace(/^\+/, "")}`;
+                        window.open(url, "_blank");
+                      } else {
+                        const text = `WhatsApp: ${num}`;
+                        navigator.clipboard?.writeText(num).catch(() => {});
+                        try { toast({ title: "Number Copied", description: text }); } catch {}
+                      }
+                    }}>
+                      <MessageCircle className="h-5 w-5" />
+                      <span className="font-bold">WhatsApp</span>
+                    </Button>
                    )}
                 </div>
               </Card>

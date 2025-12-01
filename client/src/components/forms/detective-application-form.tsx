@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Check, Upload, Shield, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useServiceCategories, useCreateApplication } from "@/lib/hooks";
@@ -80,6 +81,10 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
   const [step, setStep] = useState(1);
   const [showLiabilityDialog, setShowLiabilityDialog] = useState(false);
   const { toast } = useToast();
+  const [countryQuery, setCountryQuery] = useState("");
+  const [stateQuery, setStateQuery] = useState("");
+  const [countrySuggestions, setCountrySuggestions] = useState<Array<{ name: string; code: string }>>([]);
+  const [loadingCountry, setLoadingCountry] = useState(false);
   
   const [formData, setFormData] = useState({
     firstName: "",
@@ -97,6 +102,8 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
     country: "US",
     state: "",
     city: "",
+    fullAddress: "",
+    pincode: "",
     yearsExperience: "",
     licenseNumber: "",
     about: "",
@@ -122,6 +129,9 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
       if (formData.businessType === "agency") {
         if (!formData.companyName) missingFields.push("Business Name");
         if (!formData.businessWebsite) missingFields.push("Business Website");
+        if (!formData.businessDocuments || formData.businessDocuments.length === 0) missingFields.push("Business Supporting Document");
+      } else {
+        if (!formData.documents || formData.documents.length === 0) missingFields.push("Government ID");
       }
       
       if (missingFields.length > 0) {
@@ -154,6 +164,8 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
       const missingFields = [];
       if (!formData.city) missingFields.push("City");
       if (!formData.state) missingFields.push("State");
+      if (!formData.fullAddress) missingFields.push("Full Address");
+      if (!formData.pincode) missingFields.push("Pincode");
       if (!formData.yearsExperience) missingFields.push("Years of Experience");
       if (!formData.about) missingFields.push("About Your Services");
       
@@ -177,6 +189,31 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
     }
     return true;
   };
+
+  useEffect(() => {
+    const q = countryQuery.trim();
+    if (q.length < 2) {
+      setCountrySuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadingCountry(true);
+        const res = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(q)}?fields=name,cca2`);
+        if (!res.ok) throw new Error("Failed to fetch countries");
+        const data = await res.json();
+        if (cancelled) return;
+        const list = Array.isArray(data) ? data.map((c: any) => ({ name: c?.name?.common || "", code: (c?.cca2 || "").toUpperCase() })).filter((c: any) => c.name && c.code) : [];
+        setCountrySuggestions(list);
+      } catch {
+        if (!cancelled) setCountrySuggestions([]);
+      } finally {
+        if (!cancelled) setLoadingCountry(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [countryQuery]);
 
   const nextStep = () => {
     if (validateStep(step)) {
@@ -310,6 +347,8 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
         country: formData.country || undefined,
         state: formData.state || undefined,
         city: formData.city || undefined,
+        fullAddress: formData.fullAddress,
+        pincode: formData.pincode,
         yearsExperience: formData.yearsExperience || undefined,
         serviceCategories: formData.serviceCategories.length > 0 ? formData.serviceCategories : undefined,
         categoryPricing: formData.categoryPricing.length > 0 ? formData.categoryPricing : undefined,
@@ -489,7 +528,7 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
                 </Select>
               </div>
 
-              {formData.businessType === "agency" && (
+              {formData.businessType === "agency" ? (
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="companyName">Business Name *</Label>
@@ -514,14 +553,77 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
                     <p className="text-xs text-gray-500">Enter the full URL including https://</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="businessDocuments">Supporting Documents (Optional)</Label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center">
-                      <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600">Business registration, license, or other supporting documents</p>
-                      <p className="text-xs text-gray-400 mt-1">Upload feature coming soon - You can provide these after approval</p>
+                    <Label>Business Supporting Document *</Label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-md p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-600">Upload images or PDF</div>
+                        <div>
+                          <input
+                            id="businessDocuments-upload"
+                            type="file"
+                            accept="image/*,.pdf"
+                            multiple
+                            onChange={(e) => handleFileUpload(e, 'businessDocuments')}
+                            className="hidden"
+                            data-testid="input-businessDocuments"
+                          />
+                          <Button type="button" variant="outline" onClick={() => document.getElementById('businessDocuments-upload')?.click()}>Upload Files</Button>
+                        </div>
+                      </div>
+                      {formData.businessDocuments.length > 0 ? (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-xs text-green-600">{formData.businessDocuments.length} file(s) selected</p>
+                          <div className="space-y-1">
+                            {formData.businessDocuments.map((_, idx) => (
+                              <div key={idx} className="flex items-center justify-between text-xs bg-gray-50 border rounded px-2 py-1">
+                                <span>Document #{idx + 1}</span>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => removeDocument('businessDocuments', idx)}>Remove</Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-red-600 mt-2">Upload required</p>
+                      )}
                     </div>
                   </div>
                 </>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Government ID *</Label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-md p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-600">Upload image or PDF</div>
+                      <div>
+                        <input
+                          id="governmentId-upload"
+                          type="file"
+                          accept="image/*,.pdf"
+                          multiple
+                          onChange={(e) => handleFileUpload(e, 'documents')}
+                          className="hidden"
+                          data-testid="input-governmentId"
+                        />
+                        <Button type="button" variant="outline" onClick={() => document.getElementById('governmentId-upload')?.click()}>Upload Files</Button>
+                      </div>
+                    </div>
+                    {formData.documents.length > 0 ? (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs text-green-600">{formData.documents.length} file(s) selected</p>
+                        <div className="space-y-1">
+                          {formData.documents.map((_, idx) => (
+                            <div key={idx} className="flex items-center justify-between text-xs bg-gray-50 border rounded px-2 py-1">
+                              <span>ID Document #{idx + 1}</span>
+                              <Button type="button" variant="ghost" size="sm" onClick={() => removeDocument('documents', idx)}>Remove</Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-red-600 mt-2">Upload required</p>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -544,16 +646,30 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
                     onValueChange={(value) => {
                       handleInputChange("country", value);
                       handleInputChange("state", "");
+                      setCountryQuery("");
+                      setStateQuery("");
                     }}
                   >
                     <SelectTrigger data-testid="select-country">
                       <SelectValue placeholder="Select country" />
                     </SelectTrigger>
                     <SelectContent>
+                     <div className="px-2 py-2">
+                        <Input
+                          placeholder="Type to search…"
+                          value={countryQuery}
+                          onChange={(e) => setCountryQuery(e.target.value)}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          autoFocus
+                        />
+                      </div>
                       {COUNTRIES.map((country) => (
-                        <SelectItem key={country.code} value={country.code}>
-                          {country.name}
-                        </SelectItem>
+                        country.name.toLowerCase().includes(countryQuery.toLowerCase()) && (
+                          <SelectItem key={country.code} value={country.code}>
+                            {country.name}
+                          </SelectItem>
+                        )
                       ))}
                     </SelectContent>
                   </Select>
@@ -568,11 +684,23 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
                       <SelectValue placeholder="Select state" />
                     </SelectTrigger>
                     <SelectContent>
-                      {COUNTRIES.find(c => c.code === formData.country)?.states.map((state) => (
-                        <SelectItem key={state} value={state}>
-                          {state}
-                        </SelectItem>
-                      ))}
+                      <div className="px-2 py-2">
+                        <Input
+                          placeholder="Type to search…"
+                          value={stateQuery}
+                          onChange={(e) => setStateQuery(e.target.value)}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          autoFocus
+                        />
+                      </div>
+                      {COUNTRIES.find(c => c.code === formData.country)?.states
+                        .filter((s) => s.toLowerCase().includes(stateQuery.toLowerCase()))
+                        .map((state) => (
+                          <SelectItem key={state} value={state}>
+                            {state}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -586,6 +714,29 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
                   value={formData.city}
                   onChange={(e) => handleInputChange("city", e.target.value)}
                   data-testid="input-city"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fullAddress">Full Address *</Label>
+                <Textarea 
+                  id="fullAddress"
+                  placeholder="Street, Area, Landmark..."
+                  rows={3}
+                  value={formData.fullAddress}
+                  onChange={(e) => handleInputChange("fullAddress", e.target.value)}
+                  data-testid="input-fullAddress"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pincode">Pincode *</Label>
+                <Input 
+                  id="pincode"
+                  placeholder="e.g. 560001"
+                  value={formData.pincode}
+                  onChange={(e) => handleInputChange("pincode", e.target.value)}
+                  data-testid="input-pincode"
                 />
               </div>
 
@@ -794,58 +945,7 @@ export function DetectiveApplicationForm({ mode, onSuccess }: DetectiveApplicati
                   </div>
                 </div>
 
-                <div>
-                  <Label className="text-base font-semibold flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Supporting Documents (Optional)
-                  </Label>
-                  <p className="text-sm text-gray-500 mb-3">
-                    Upload any supporting documents like PI license, certifications, or business registration.
-                  </p>
-                  
-                  <div className="space-y-3">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer">
-                      <input
-                        type="file"
-                        id="documents-upload"
-                        accept="image/*,.pdf"
-                        multiple
-                        onChange={(e) => handleFileUpload(e, 'documents')}
-                        className="hidden"
-                        data-testid="input-documents"
-                      />
-                      <label htmlFor="documents-upload" className="cursor-pointer">
-                        <Upload className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm font-medium text-gray-700">Click to upload documents</p>
-                        <p className="text-xs text-gray-500">PDF, PNG, JPG up to 5MB each</p>
-                      </label>
-                    </div>
-
-                    {formData.documents.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-700">
-                          Uploaded Documents ({formData.documents.length})
-                        </p>
-                        <div className="grid gap-2">
-                          {formData.documents.map((doc, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded">
-                              <span className="text-sm text-blue-900">Document {index + 1}</span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeDocument('documents', index)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                Remove
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                
               </div>
 
               <div className="bg-green-50 border border-green-200 rounded-md p-4">

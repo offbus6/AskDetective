@@ -27,6 +27,10 @@ interface CurrencyContextType {
   selectedCountry: Country;
   setCountry: (country: Country) => void;
   formatPrice: (priceInUSD: number) => string;
+  formatPriceForCountry: (priceInUSD: number, countryCode?: string) => string;
+  formatPriceExactForCountry: (amount: number, countryCode?: string) => string;
+  formatPriceFromTo: (amount: number, fromCountryCode?: string, toCountryCode?: string) => string;
+  convertPriceFromTo: (amount: number, fromCountryCode?: string, toCountryCode?: string) => number;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -52,14 +56,6 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
   const formatPrice = (priceInUSD: number) => {
     const convertedPrice = priceInUSD * selectedCountry.exchangeRate;
-    
-    // For large numbers (like INR), we typically don't show decimals
-    // For strong currencies (like GBP, EUR, USD), we might show decimals if needed, 
-    // but for this design, whole numbers look cleaner.
-    
-    // Special case for INR to format with commas properly if needed, 
-    // but standard toLocaleString handles it well.
-    
     return new Intl.NumberFormat(selectedCountry.code === 'IN' ? 'en-IN' : 'en-US', {
       style: 'currency',
       currency: selectedCountry.currency,
@@ -68,8 +64,61 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     }).format(convertedPrice);
   };
 
+  const formatPriceForCountry = (priceInUSD: number, countryCode?: string) => {
+    const key = (countryCode || selectedCountry.code) || '';
+    const byCode = COUNTRIES.find(c => c.code === key);
+    const byName = COUNTRIES.find(c => c.name.toLowerCase() === key.toLowerCase());
+    const country = byCode || byName || selectedCountry;
+    const convertedPrice = priceInUSD * country.exchangeRate;
+    return new Intl.NumberFormat(country.code === 'IN' ? 'en-IN' : 'en-US', {
+      style: 'currency',
+      currency: country.currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(convertedPrice);
+  };
+
+  const formatPriceExactForCountry = (amount: number, countryCode?: string) => {
+    const key = (countryCode || selectedCountry.code) || '';
+    const byCode = COUNTRIES.find(c => c.code === key);
+    const byName = COUNTRIES.find(c => c.name.toLowerCase() === key.toLowerCase());
+    const country = byCode || byName || selectedCountry;
+    return new Intl.NumberFormat(country.code === 'IN' ? 'en-IN' : 'en-US', {
+      style: 'currency',
+      currency: country.currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatPriceFromTo = (amount: number, fromCountryCode?: string, toCountryCode?: string) => {
+    const fromKey = (fromCountryCode || selectedCountry.code) || '';
+    const toKey = (toCountryCode || selectedCountry.code) || '';
+    const find = (k: string) => COUNTRIES.find(c => c.code === k) || COUNTRIES.find(c => c.name.toLowerCase() === k.toLowerCase()) || selectedCountry;
+    const from = find(fromKey);
+    const to = find(toKey);
+    const factor = to.exchangeRate / from.exchangeRate;
+    const converted = amount * factor;
+    return new Intl.NumberFormat(to.code === 'IN' ? 'en-IN' : 'en-US', {
+      style: 'currency',
+      currency: to.currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(converted);
+  };
+
+  const convertPriceFromTo = (amount: number, fromCountryCode?: string, toCountryCode?: string) => {
+    const fromKey = (fromCountryCode || selectedCountry.code) || '';
+    const toKey = (toCountryCode || selectedCountry.code) || '';
+    const find = (k: string) => COUNTRIES.find(c => c.code === k) || COUNTRIES.find(c => c.name.toLowerCase() === k.toLowerCase()) || selectedCountry;
+    const from = find(fromKey);
+    const to = find(toKey);
+    const factor = to.exchangeRate / from.exchangeRate;
+    return amount * factor;
+  };
+
   return (
-    <CurrencyContext.Provider value={{ selectedCountry, setCountry, formatPrice }}>
+    <CurrencyContext.Provider value={{ selectedCountry, setCountry, formatPrice, formatPriceForCountry, formatPriceExactForCountry, formatPriceFromTo, convertPriceFromTo }}>
       {children}
     </CurrencyContext.Provider>
   );

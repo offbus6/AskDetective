@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useCurrentDetective, useUpdateDetective } from "@/lib/hooks";
 
 const PLANS = [
   {
@@ -60,13 +62,31 @@ const PLANS = [
 ];
 
 export default function DetectiveSubscription() {
+  const { toast } = useToast();
+  const { data: currentData } = useCurrentDetective();
+  const detective = currentData?.detective;
+  const updateDetective = useUpdateDetective();
   const [isAnnual, setIsAnnual] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
-  const handleSelectPlan = (planId: string) => {
-    setSelectedPlan(planId);
-    // In a real app, this would redirect to checkout
-    alert(`You selected the ${planId.toUpperCase()} plan! Redirecting to payment...`);
+  const currentPlan = detective?.subscriptionPlan || "free";
+
+  const handleSelectPlan = async (planId: string) => {
+    if (!detective) return;
+    if (planId === currentPlan) {
+      toast({ title: "Already on this plan", description: `You are already using the ${planId} plan.` });
+      return;
+    }
+
+    try {
+      setIsUpdating(planId);
+      await updateDetective.mutateAsync({ id: detective.id, data: { subscriptionPlan: planId as any } });
+      toast({ title: "Plan updated", description: `Your subscription has been changed to ${planId}.` });
+    } catch (error: any) {
+      toast({ title: "Update failed", description: error.message || "Unable to change plan", variant: "destructive" });
+    } finally {
+      setIsUpdating(null);
+    }
   };
 
   return (
@@ -76,6 +96,12 @@ export default function DetectiveSubscription() {
           <Badge variant="outline" className="border-green-600 text-green-700 bg-green-50">Pricing Plans</Badge>
           <h2 className="text-4xl font-bold font-heading text-gray-900">Upgrade Your Investigation Career</h2>
           <p className="text-xl text-gray-500">Unlock more clients, lower fees, and premium tools with our subscription plans.</p>
+          {detective && (
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-sm text-gray-600">Current Plan:</span>
+              <Badge className="capitalize bg-gray-100 text-gray-700">{currentPlan}</Badge>
+            </div>
+          )}
           
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-4 pt-4">
@@ -91,6 +117,8 @@ export default function DetectiveSubscription() {
           {PLANS.map((plan) => {
             const price = isAnnual ? plan.yearlyPrice : plan.monthlyPrice;
             const period = isAnnual ? "/year" : "/month";
+            const isCurrent = plan.id === currentPlan;
+            const isLoading = isUpdating === plan.id || updateDetective.isPending;
             
             return (
               <Card 
@@ -105,6 +133,9 @@ export default function DetectiveSubscription() {
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-600 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1 shadow-sm">
                     <Crown className="h-3 w-3" /> Most Popular
                   </div>
+                )}
+                {isCurrent && (
+                  <div className="absolute -top-4 right-4 bg-gray-900 text-white px-3 py-1 rounded-full text-xs font-semibold">Current</div>
                 )}
                 
                 <CardHeader>
@@ -144,8 +175,9 @@ export default function DetectiveSubscription() {
                         : 'bg-gray-900 hover:bg-gray-800 text-white'
                     }`}
                     variant="default"
-                  >
-                    {plan.buttonText}
+                    disabled={isCurrent || isLoading}
+                    >
+                    {isCurrent ? "Current Plan" : (isLoading ? "Updating..." : plan.buttonText)}
                   </Button>
                 </CardFooter>
               </Card>

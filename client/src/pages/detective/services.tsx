@@ -8,11 +8,14 @@ import { Loader2, AlertCircle, Lock, Plus, Edit, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { Link } from "wouter";
+import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentDetective } from "@/lib/hooks";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServiceCategories } from "@/lib/hooks";
+import { COUNTRIES, useCurrency } from "@/lib/currency-context";
 import {
   Dialog,
   DialogContent,
@@ -47,16 +50,10 @@ interface Service {
   basePrice: string;
   offerPrice: string | null;
   isActive: boolean;
+  images: string[] | null;
 }
 
-const SERVICE_CATEGORIES = [
-  "Surveillance",
-  "Background Checks",
-  "Missing Persons",
-  "Infidelity Investigations",
-  "Corporate Fraud",
-  "Cyber Investigation",
-];
+const SERVICE_CATEGORIES: string[] = [];
 
 const PLAN_LIMITS = {
   free: { max: 1, label: "Free Plan - 1 Service" },
@@ -66,9 +63,18 @@ const PLAN_LIMITS = {
 
 export default function DetectiveServices() {
   const { toast } = useToast();
+  const { formatPriceExactForCountry } = useCurrency();
   const { data, isLoading: detectiveLoading, error: detectiveError } = useCurrentDetective();
   const detective = data?.detective;
   const queryClient = useQueryClient();
+  const { data: categoriesData } = useServiceCategories(true);
+  const categories = categoriesData?.categories || [];
+  const currencySymbol = (() => {
+    const key = detective?.country || "";
+    const byCode = COUNTRIES.find(c => c.code === key);
+    const byName = COUNTRIES.find(c => c.name.toLowerCase() === key.toLowerCase());
+    return (byCode || byName)?.currencySymbol || "$";
+  })();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
@@ -79,30 +85,34 @@ export default function DetectiveServices() {
     basePrice: "",
     offerPrice: "",
   });
+  const [bannerImage, setBannerImage] = useState<string>("");
+  const [imageError, setImageError] = useState<string>("");
 
   // Fetch services for current detective
   const { data: servicesData, isLoading: servicesLoading } = useQuery({
-    queryKey: ["/api/services", detective?.id],
+    queryKey: ["services", "detective", detective?.id],
     queryFn: async () => {
-      if (!detective?.id) return [];
-      const response = await apiRequest(`/api/detectives/${detective.id}/services`);
-      return response as Service[];
+      if (!detective?.id) return { services: [] as Service[] };
+      const res = await api.services.getByDetective(detective.id);
+      return res;
     },
     enabled: !!detective?.id,
   });
 
-  const services = servicesData || [];
+  const services = servicesData?.services || [];
 
   // Create service mutation
   const createService = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("/api/services", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      const res = await api.services.create(data);
+      return res;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/services", detective?.id] });
+    onSuccess: (result: any) => {
+      queryClient.invalidateQueries({ queryKey: ["services", "detective", detective?.id] });
+      queryClient.invalidateQueries({ queryKey: ["services", "all"] });
+      if (result?.service?.id) {
+        queryClient.invalidateQueries({ queryKey: ["services", result.service.id] });
+      }
       toast({ title: "Service Created", description: "Your service has been added successfully." });
       setIsDialogOpen(false);
       resetForm();
@@ -115,13 +125,13 @@ export default function DetectiveServices() {
   // Update service mutation
   const updateService = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      return await apiRequest(`/api/services/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      });
+      const res = await api.services.update(id, data);
+      return res;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/services", detective?.id] });
+    onSuccess: (_result: any, variables: { id: string; data: any }) => {
+      queryClient.invalidateQueries({ queryKey: ["services", "detective", detective?.id] });
+      queryClient.invalidateQueries({ queryKey: ["services", "all"] });
+      queryClient.invalidateQueries({ queryKey: ["services", variables.id] });
       toast({ title: "Service Updated", description: "Your changes have been saved." });
       setIsDialogOpen(false);
       resetForm();
@@ -134,10 +144,12 @@ export default function DetectiveServices() {
   // Delete service mutation
   const deleteService = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/services/${id}`, { method: "DELETE" });
+      const res = await api.services.delete(id);
+      return res;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/services", detective?.id] });
+      queryClient.invalidateQueries({ queryKey: ["services", "detective", detective?.id] });
+      queryClient.invalidateQueries({ queryKey: ["services", "all"] });
       toast({ title: "Service Deleted", description: "Service has been removed." });
     },
     onError: (error: any) => {
@@ -154,6 +166,8 @@ export default function DetectiveServices() {
       offerPrice: "",
     });
     setEditingService(null);
+    setBannerImage("");
+    setImageError("");
   };
 
   const handleOpenDialog = (service?: Service) => {
@@ -166,10 +180,30 @@ export default function DetectiveServices() {
         basePrice: service.basePrice,
         offerPrice: service.offerPrice || "",
       });
+      setBannerImage(service.images && service.images.length > 0 ? service.images[0] : "");
     } else {
       resetForm();
     }
     setIsDialogOpen(true);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setImageError("Please select a valid image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError("Image must be under 5MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setBannerImage(reader.result as string);
+      setImageError("");
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = () => {
@@ -208,11 +242,11 @@ export default function DetectiveServices() {
         return;
       }
       
-      // Validate offerPrice <= basePrice
-      if (offerPriceNum > basePriceNum) {
+      // Validate offerPrice strictly less than basePrice
+      if (offerPriceNum >= basePriceNum) {
         toast({
           title: "Invalid Offer Price",
-          description: "Offer price cannot be higher than base price",
+          description: "Offer price must be strictly lower than base price",
           variant: "destructive",
         });
         return;
@@ -231,13 +265,17 @@ export default function DetectiveServices() {
         });
         return;
       }
+      if (!bannerImage) {
+        setImageError("Please upload a banner image for the service");
+        toast({ title: "Image Required", description: "Upload a banner image to proceed", variant: "destructive" });
+        return;
+      }
     }
 
     // Format prices as decimal strings with up to 2 decimal places (matches backend schema regex)
     const basePriceStr = basePriceNum.toFixed(2);
 
     const serviceData: any = {
-      detectiveId: detective.id,
       category: formData.category,
       title: formData.title,
       description: formData.description,
@@ -249,14 +287,18 @@ export default function DetectiveServices() {
     // For creates, include only if provided
     if (editingService) {
       serviceData.offerPrice = offerPriceNum !== null ? offerPriceNum.toFixed(2) : null;
+      if (bannerImage) serviceData.images = [bannerImage];
     } else if (offerPriceNum !== null) {
       serviceData.offerPrice = offerPriceNum.toFixed(2);
+    }
+    if (!editingService && bannerImage) {
+      serviceData.images = [bannerImage];
     }
 
     if (editingService) {
       updateService.mutate({ id: editingService.id, data: serviceData });
     } else {
-      createService.mutate(serviceData);
+      createService.mutate({ ...serviceData, detectiveId: detective.id });
     }
   };
 
@@ -300,6 +342,15 @@ export default function DetectiveServices() {
             {planLimit.label}
           </Badge>
         </div>
+
+        {/* Public visibility notice */}
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Public Visibility Rules</AlertTitle>
+          <AlertDescription>
+            A service is visible on the public platform only when Banner Image, Category, Title, Description and Base Price are all filled. Incomplete services remain hidden.
+          </AlertDescription>
+        </Alert>
 
         {/* Plan Limit Warning */}
         {!canAddMore && subscriptionPlan !== "agency" && (
@@ -353,6 +404,20 @@ export default function DetectiveServices() {
 
               <div className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="banner">Banner Image</Label>
+                  <div className="flex items-center gap-4">
+                    <input type="file" id="banner" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                    <Button variant="outline" onClick={() => document.getElementById("banner")?.click()} data-testid="button-upload-banner">
+                      Upload Image
+                    </Button>
+                    {bannerImage && (
+                      <img src={bannerImage} alt="Banner Preview" className="h-16 w-28 object-cover rounded border" />
+                    )}
+                  </div>
+                  {imageError && <p className="text-red-600 text-xs">{imageError}</p>}
+                  <p className="text-xs text-gray-500">PNG or JPG under 5MB. Appears on the service page.</p>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
                   <Select
                     value={formData.category}
@@ -362,9 +427,9 @@ export default function DetectiveServices() {
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {SERVICE_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.name}>
+                          {cat.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -396,7 +461,7 @@ export default function DetectiveServices() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="basePrice">Base Price ($)</Label>
+                    <Label htmlFor="basePrice">Base Price ({currencySymbol})</Label>
                     <Input
                       id="basePrice"
                       data-testid="input-service-basePrice"
@@ -404,12 +469,12 @@ export default function DetectiveServices() {
                       step="0.01"
                       value={formData.basePrice}
                       onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
-                      placeholder="0.00"
+                      placeholder={currencySymbol + " 0.00"}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="offerPrice">Offer Price ($) - Optional</Label>
+                    <Label htmlFor="offerPrice">Offer Price ({currencySymbol}) - Optional</Label>
                     <Input
                       id="offerPrice"
                       data-testid="input-service-offerPrice"
@@ -417,7 +482,7 @@ export default function DetectiveServices() {
                       step="0.01"
                       value={formData.offerPrice}
                       onChange={(e) => setFormData({ ...formData, offerPrice: e.target.value })}
-                      placeholder="0.00"
+                      placeholder={currencySymbol + " 0.00"}
                     />
                   </div>
                 </div>
@@ -459,12 +524,12 @@ export default function DetectiveServices() {
         ) : services.length === 0 ? (
           <Card>
             <CardContent className="py-16 text-center">
-              <p className="text-gray-500">No services yet. Add your first service to get started!</p>
+              <p className="text-gray-500">No live services yet. Complete the service form (Banner Image, Category, Title, Description and Base Price) to make it visible to the public.</p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-6">
-            {services.map((service) => (
+            {services.map((service: Service) => (
               <Card key={service.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -503,19 +568,28 @@ export default function DetectiveServices() {
                   <div className="flex items-center gap-4">
                     <div>
                       <span className="text-sm text-gray-500">Base Price:</span>
-                      <span className="ml-2 text-lg font-semibold">${service.basePrice}</span>
+                      <span className="ml-2 text-lg font-semibold">{formatPriceExactForCountry(parseFloat(service.basePrice), detective.country)}</span>
                     </div>
                     {service.offerPrice && (
                       <div>
                         <span className="text-sm text-gray-500">Offer Price:</span>
                         <span className="ml-2 text-lg font-semibold text-green-600">
-                          ${service.offerPrice}
+                          {formatPriceExactForCountry(parseFloat(service.offerPrice), detective.country)}
                         </span>
                       </div>
                     )}
                     <Badge className={service.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}>
                       {service.isActive ? "Active" : "Inactive"}
                     </Badge>
+                    {Array.isArray(service.images) && service.images.length > 0 && service.title && service.description && service.category && service.basePrice && service.isActive ? (
+                      <Link href={`/service/${service.id}`}>
+                        <Button variant="outline" size="sm">View Public Page</Button>
+                      </Link>
+                    ) : (
+                      <Link href={`/service/${service.id}?preview=1`}>
+                        <Button variant="outline" size="sm">Preview (Private)</Button>
+                      </Link>
+                    )}
                   </div>
                 </CardContent>
               </Card>

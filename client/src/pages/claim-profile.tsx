@@ -307,7 +307,11 @@ export default function ClaimProfile() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setLocation(`/service/${detectiveId}`)}
+                      onClick={() => {
+                        const params = new URLSearchParams(window.location.search);
+                        const serviceId = params.get("serviceId");
+                        setLocation(serviceId ? `/service/${serviceId}` : "/");
+                      }}
                       data-testid="button-cancel-claim"
                       className="flex-1"
                     >

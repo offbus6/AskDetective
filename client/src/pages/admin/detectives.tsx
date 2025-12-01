@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, MoreHorizontal, Shield, Star, Ban, Plus } from "lucide-react";
+import { Search, MoreHorizontal, Shield, Star, Ban, Plus, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { Link, useLocation } from "wouter";
-import { useDetectives, useUpdateDetective } from "@/lib/hooks";
+import { useSearchDetectives, useAdminUpdateDetective, useAdminDeleteDetective, useServicesByDetective } from "@/lib/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import type { Detective } from "@shared/schema";
@@ -48,7 +48,15 @@ import { useState } from "react";
 import { format } from "date-fns";
 
 export default function AdminDetectives() {
-  const { data: detectivesData, isLoading } = useDetectives(100);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [planFilter, setPlanFilter] = useState<string>("all");
+  const { data: detectivesData, isLoading } = useSearchDetectives({
+    search: searchTerm || undefined,
+    status: statusFilter !== "all" ? (statusFilter as any) : undefined,
+    plan: planFilter !== "all" ? (planFilter as any) : undefined,
+    limit: 200,
+  });
   const detectives = detectivesData?.detectives || [];
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -57,7 +65,10 @@ export default function AdminDetectives() {
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);
   const [suspendingDetective, setSuspendingDetective] = useState<Detective | null>(null);
 
-  const updateDetective = useUpdateDetective();
+  const updateDetective = useAdminUpdateDetective();
+  const deleteDetective = useAdminDeleteDetective();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingDetective, setDeletingDetective] = useState<Detective | null>(null);
 
   const handleViewProfile = (detective: Detective) => {
     setLocation(`/admin/detective/${detective.id}/view`);
@@ -71,6 +82,11 @@ export default function AdminDetectives() {
   const handleSuspendClick = (detective: Detective) => {
     setSuspendingDetective(detective);
     setShowSuspendDialog(true);
+  };
+
+  const handleDeleteClick = (detective: Detective) => {
+    setDeletingDetective(detective);
+    setShowDeleteDialog(true);
   };
 
   const handleConfirmSuspend = async () => {
@@ -119,19 +135,34 @@ export default function AdminDetectives() {
         <div className="flex items-center gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input placeholder="Search by name, email, or ID..." className="pl-9" />
+            <Input 
+              placeholder="Search by name, email, or ID..." 
+              className="pl-9"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
           <div className="flex gap-2">
-             <select className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-               <option>All Statuses</option>
-               <option>Active</option>
-               <option>Suspended</option>
+             <select 
+               className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+               value={statusFilter}
+               onChange={(e) => setStatusFilter(e.target.value)}
+             >
+               <option value="all">All Statuses</option>
+               <option value="active">Active</option>
+               <option value="suspended">Suspended</option>
+               <option value="inactive">Inactive</option>
+               <option value="pending">Pending</option>
              </select>
-             <select className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-               <option>All Levels</option>
-               <option>Top Rated</option>
-               <option>Level 2</option>
-               <option>Level 1</option>
+             <select 
+               className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+               value={planFilter}
+               onChange={(e) => setPlanFilter(e.target.value)}
+             >
+               <option value="all">All Plans</option>
+               <option value="free">Free</option>
+               <option value="pro">Pro</option>
+               <option value="agency">Agency</option>
              </select>
           </div>
         </div>
@@ -144,7 +175,6 @@ export default function AdminDetectives() {
                   <TableHead>Detective</TableHead>
                   <TableHead>Level</TableHead>
                   <TableHead>Plan</TableHead>
-                  <TableHead>Earnings</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -156,7 +186,7 @@ export default function AdminDetectives() {
                       <TableCell><Skeleton className="h-12 w-full" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                      
                       <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                     </TableRow>
@@ -183,15 +213,16 @@ export default function AdminDetectives() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50">
-                          {detective.subscriptionPlan}
+                          {((detective as any).level || "level1").replace("level", "Level ") === "pro" ? "Pro Level" : ((detective as any).level || "level1").replace("level", "Level ")}
                         </Badge>
                       </TableCell>
                       <TableCell className="capitalize">{detective.subscriptionPlan}</TableCell>
-                      <TableCell className="font-mono">${detective.totalEarnings}</TableCell>
+
                       <TableCell>
                         <Badge className={detective.status === "active" ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-red-100 text-red-700 hover:bg-red-200"} data-testid={`badge-status-${detective.id}`}>
                           {detective.status}
                         </Badge>
+                        <ServiceStatusBadge detectiveId={detective.id} />
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -214,25 +245,32 @@ export default function AdminDetectives() {
                             >
                               View Subscriptions
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              className="text-red-600"
-                              onClick={() => handleSuspendClick(detective)}
-                              data-testid={`menuitem-suspend-account-${detective.id}`}
-                            >
-                              <Ban className="mr-2 h-4 w-4" /> 
-                              {detective.status === "suspended" ? "Unsuspend Account" : "Suspend Account"}
-                            </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            onClick={() => handleSuspendClick(detective)}
+                            data-testid={`menuitem-suspend-account-${detective.id}`}
+                          >
+                            <Ban className="mr-2 h-4 w-4" /> 
+                            {detective.status === "suspended" ? "Unsuspend Account" : "Suspend Account"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            onClick={() => handleDeleteClick(detective)}
+                            data-testid={`menuitem-delete-account-${detective.id}`}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Account
+                          </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
         <Dialog open={showSubscriptionDialog} onOpenChange={setShowSubscriptionDialog}>
           <DialogContent data-testid="dialog-subscription-details">
@@ -301,7 +339,49 @@ export default function AdminDetectives() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent data-testid="dialog-delete-detective">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Detective Account</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action permanently deletes the detective, their services, and related data. Orders and profile claims will be removed. This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  if (!deletingDetective) return;
+                  try {
+                    await deleteDetective.mutateAsync(deletingDetective.id);
+                    toast({ title: "Account Deleted", description: "Detective account removed successfully" });
+                    setShowDeleteDialog(false);
+                    setDeletingDetective(null);
+                  } catch (error: any) {
+                    toast({ title: "Error", description: error?.message || "Failed to delete detective", variant: "destructive" });
+                  }
+                }}
+                className="bg-red-600 hover:bg-red-700"
+                disabled={deleteDetective.isPending}
+                data-testid="button-confirm-delete"
+              >
+                {deleteDetective.isPending ? "Deleting..." : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
+  );
+}
+
+function ServiceStatusBadge({ detectiveId }: { detectiveId: string }) {
+  const { data, isLoading } = useServicesByDetective(detectiveId);
+  const count = data?.services?.length ?? 0;
+  return (
+    <Badge variant="outline" className="ml-2 bg-gray-50 text-gray-700" data-testid={`badge-service-status-${detectiveId}`}>
+      Service status: {isLoading ? "…" : `${count} active`}
+    </Badge>
   );
 }

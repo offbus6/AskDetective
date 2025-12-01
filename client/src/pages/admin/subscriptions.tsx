@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Check, X, Shield, Crown, Star } from "lucide-react";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface SubscriptionPlan {
   id: string;
@@ -96,6 +98,7 @@ export default function AdminSubscriptions() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
+  const { toast } = useToast();
   
   // Form State
   const [formData, setFormData] = useState<Partial<SubscriptionPlan>>({
@@ -185,6 +188,25 @@ export default function AdminSubscriptions() {
         [badge]: !prev.badges![badge]
       }
     }));
+  };
+
+  const applyServiceLimits = async () => {
+    const free = Number(plans.find(p => p.id === "free")?.serviceLimit || 2);
+    const pro = Number(plans.find(p => p.id === "pro")?.serviceLimit || 4);
+    const agencyPlan = plans.find(p => p.id === "agency")?.serviceLimit || "1000";
+    const agency = agencyPlan === "unlimited" ? 1000 : Number(agencyPlan);
+    try {
+      const response = await fetch("/api/admin/subscription-limits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ free, pro, agency })
+      });
+      if (!response.ok) throw new Error("Failed to update limits");
+      toast({ title: "Updated", description: "Service limits applied" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to update service limits", variant: "destructive" });
+    }
   };
 
   return (
@@ -298,6 +320,9 @@ export default function AdminSubscriptions() {
                 ))}
               </TableBody>
             </Table>
+            <div className="flex justify-end mt-4">
+              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={applyServiceLimits}>Apply Service Limits</Button>
+            </div>
           </CardContent>
         </Card>
 

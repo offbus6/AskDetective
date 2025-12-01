@@ -73,6 +73,7 @@ export default function FavoritesPage() {
               <ServiceCard
                 key={detective.id}
                 id={detective.id}
+                detectiveId={detective.detectiveId}
                 images={detective.image ? [detective.image] : []}
                 avatar={detective.avatar}
                 name={detective.name}

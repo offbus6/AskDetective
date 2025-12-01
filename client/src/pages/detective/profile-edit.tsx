@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, Save, Loader2, AlertCircle, Lock, Plus, Trash2 } from "lucide-react";
+import { Upload, Save, Loader2, AlertCircle, Lock, Plus, Trash2, Mail } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCurrentDetective, useUpdateDetective } from "@/lib/hooks";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 const COUNTRIES = [
   { code: "US", name: "United States" },
@@ -23,10 +24,22 @@ const COUNTRIES = [
   { code: "EU", name: "European Union" },
 ];
 
+const COUNTRY_STATES: Record<string, string[]> = {
+  US: [
+    "Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"
+  ],
+  UK: ["England","Scotland","Wales","Northern Ireland"],
+  IN: ["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Delhi"],
+  CA: ["Alberta","British Columbia","Manitoba","New Brunswick","Newfoundland and Labrador","Nova Scotia","Ontario","Prince Edward Island","Quebec","Saskatchewan"],
+  AU: ["New South Wales","Queensland","South Australia","Tasmania","Victoria","Western Australia","Australian Capital Territory","Northern Territory"],
+  EU: ["Select Region"],
+};
+
 interface Recognition {
   title: string;
   issuer: string;
   year: string;
+  image?: string;
 }
 
 export default function DetectiveProfileEdit() {
@@ -39,7 +52,12 @@ export default function DetectiveProfileEdit() {
     businessName: "",
     bio: "",
     location: "",
+    city: "",
+    state: "",
     country: "US",
+    address: "",
+    pincode: "",
+    contactEmail: "",
     phone: "",
     whatsapp: "",
     languages: "",
@@ -53,15 +71,25 @@ export default function DetectiveProfileEdit() {
   const [recognitions, setRecognitions] = useState<Recognition[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Load detective data into form when it's available
   useEffect(() => {
     if (detective) {
+      const loc = detective.location || "";
+      const parts = loc.split(",").map((s) => s.trim());
+      const city = parts[0] || "";
+      const state = parts.slice(1).join(", ") || "";
       setFormData({
         businessName: detective.businessName || "",
         bio: detective.bio || "",
         location: detective.location || "",
+        city,
+        state,
         country: detective.country || "US",
+        address: (detective as any).address || "",
+        pincode: (detective as any).pincode || "",
+        contactEmail: ((detective as any).contactEmail as string) || ((detective as any).email as string) || "",
         phone: detective.phone || "",
         whatsapp: detective.whatsapp || "",
         languages: detective.languages?.join(", ") || "English",
@@ -81,6 +109,11 @@ export default function DetectiveProfileEdit() {
   }, [detective]);
 
   const handleInputChange = (field: string, value: string) => {
+    if (field === "state") {
+      const newLocation = `${formData.city}${value ? ", " + value : ""}`.trim();
+      setFormData({ ...formData, state: value, location: newLocation });
+      return;
+    }
     setFormData({ ...formData, [field]: value });
   };
 
@@ -106,7 +139,7 @@ export default function DetectiveProfileEdit() {
   };
 
   const addRecognition = () => {
-    setRecognitions([...recognitions, { title: "", issuer: "", year: "" }]);
+    setRecognitions([...recognitions, { title: "", issuer: "", year: "", image: "" }]);
   };
 
   const removeRecognition = (index: number) => {
@@ -119,25 +152,72 @@ export default function DetectiveProfileEdit() {
     setRecognitions(updated);
   };
 
+  const handleRecognitionImageUpload = async (index: number, file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please select an image", variant: "destructive" });
+      return;
+    }
+    if (file.size > 500 * 1024) {
+      toast({ title: "Image too large", description: "Max 500KB", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 400;
+        let { width, height } = img;
+        const scale = Math.min(1, maxDim / Math.max(width, height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          updateRecognition(index, "image", dataUrl);
+        } else {
+          updateRecognition(index, "image", reader.result as string);
+        }
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = async () => {
     if (!detective) return;
 
     try {
+      const requiredFields: string[] = ["contactEmail"];
+      const isPremiumPlan = detective.subscriptionPlan === "pro" || detective.subscriptionPlan === "agency";
+      if (isPremiumPlan) requiredFields.push("phone");
+      const newErrors: Record<string, string> = {};
+      requiredFields.forEach((f) => {
+        const v = (formData as any)[f];
+        if (!v || String(v).trim().length === 0) newErrors[f] = "Required";
+      });
+      if (formData.businessWebsite && !/^https?:\/\//i.test(formData.businessWebsite)) {
+        newErrors.businessWebsite = "Invalid URL";
+      }
+      setErrors(newErrors);
+      if (Object.keys(newErrors).length > 0) {
+        toast({ title: "Missing required fields", description: "Please fill all highlighted fields.", variant: "destructive" });
+        const firstKey = Object.keys(newErrors)[0];
+        const el = document.querySelector(`[data-field="${firstKey}"]`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
       const updateData: any = {
-        businessName: formData.businessName,
         bio: formData.bio,
-        location: formData.location,
-        country: formData.country,
+        contactEmail: formData.contactEmail || undefined,
         languages: formData.languages.split(",").map(l => l.trim()).filter(Boolean),
-        yearsExperience: formData.yearsExperience,
-        businessWebsite: formData.businessWebsite,
-        licenseNumber: formData.licenseNumber,
-        businessType: formData.businessType,
       };
 
       // ALWAYS preserve recognitions (even for Free plan)
       // This prevents accidental data loss when Free users edit their profile
-      const validRecognitions = recognitions.filter(r => r.title && r.issuer && r.year);
+      const validRecognitions = recognitions.filter(r => r.title && r.issuer && r.year && r.image);
       updateData.recognitions = validRecognitions;
 
       // Only include phone/whatsapp if plan is Pro or Agency
@@ -182,13 +262,23 @@ export default function DetectiveProfileEdit() {
   if (error || !detective) {
     return (
       <DashboardLayout role="detective">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error Loading Profile</AlertTitle>
-          <AlertDescription>
-            Unable to load your detective profile. Please try again later.
-          </AlertDescription>
-        </Alert>
+        <div className="space-y-4">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error Loading Profile</AlertTitle>
+            <AlertDescription>
+              Unable to load your detective profile. Please sign in to continue.
+            </AlertDescription>
+          </Alert>
+          <div className="flex gap-2">
+            <Button asChild className="bg-green-600 hover:bg-green-700">
+              <a href="/login">Sign In</a>
+            </Button>
+            <Button asChild variant="outline">
+              <a href="/detective-signup">Apply as Detective</a>
+            </Button>
+          </div>
+        </div>
       </DashboardLayout>
     );
   }
@@ -272,14 +362,18 @@ export default function DetectiveProfileEdit() {
 
             {/* Business Name */}
             <div className="space-y-2">
-              <Label htmlFor="businessName">Business Name / Full Name</Label>
+              <Label htmlFor="businessName">Business Name / Full Name <span className="text-red-600">*</span></Label>
               <Input
                 id="businessName"
                 data-testid="input-businessName"
                 value={formData.businessName}
                 onChange={(e) => handleInputChange("businessName", e.target.value)}
                 placeholder="Enter your business or full name"
+                data-field="businessName"
+                className={cn("bg-gray-100", errors.businessName ? "border-red-500" : "")}
+                disabled
               />
+              {errors.businessName && <p className="text-red-600 text-xs">This field is required</p>}
             </div>
 
             {/* Bio */}
@@ -299,25 +393,45 @@ export default function DetectiveProfileEdit() {
             </div>
 
             {/* Location & Country */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="location">Location (City, State)</Label>
+                <Label htmlFor="city">City <span className="text-red-600">*</span></Label>
                 <Input
-                  id="location"
-                  data-testid="input-location"
-                  value={formData.location}
-                  onChange={(e) => handleInputChange("location", e.target.value)}
-                  placeholder="e.g., New York, NY"
+                  id="city"
+                  data-testid="input-city"
+                  value={formData.city}
+                  onChange={(e) => handleInputChange("city", e.target.value)}
+                  placeholder="e.g., New York"
+                  data-field="city"
+                  disabled
+                  className={cn("bg-gray-100", errors.location ? "border-red-500" : "")}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
+                <Label htmlFor="state">State / Province</Label>
+                <Select value={formData.state}>
+                  <SelectTrigger id="state" data-testid="select-state" disabled className="bg-gray-100">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(COUNTRY_STATES[formData.country] || ["Select Region"]).map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="country">Country <span className="text-red-600">*</span></Label>
                 <Select
                   value={formData.country}
                   onValueChange={(value) => handleInputChange("country", value)}
+                  disabled
                 >
-                  <SelectTrigger id="country" data-testid="select-country">
+                  <SelectTrigger id="country" data-testid="select-country" className="bg-gray-100">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -328,6 +442,36 @@ export default function DetectiveProfileEdit() {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.country && <p className="text-red-600 text-xs">This field is required</p>}
+              </div>
+            </div>
+
+            {/* Address & Pincode */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="address">Full Address</Label>
+                <Textarea
+                  id="address"
+                  data-testid="input-address"
+                  value={formData.address}
+                  onChange={(e) => handleInputChange("address", e.target.value)}
+                  placeholder="Street, Area, Landmark..."
+                  rows={3}
+                  className="bg-gray-100"
+                  disabled
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pincode">Pincode</Label>
+                <Input
+                  id="pincode"
+                  data-testid="input-pincode"
+                  value={formData.pincode}
+                  onChange={(e) => handleInputChange("pincode", e.target.value)}
+                  placeholder="e.g., 560001"
+                  className="bg-gray-100"
+                  disabled
+                />
               </div>
             </div>
 
@@ -365,6 +509,8 @@ export default function DetectiveProfileEdit() {
                 onChange={(e) => handleInputChange("yearsExperience", e.target.value)}
                 placeholder="e.g., 5"
                 type="text"
+                className="bg-gray-100"
+                disabled
               />
             </div>
 
@@ -375,7 +521,7 @@ export default function DetectiveProfileEdit() {
                 value={formData.businessType}
                 onValueChange={(value) => handleInputChange("businessType", value)}
               >
-                <SelectTrigger id="businessType" data-testid="select-businessType">
+                <SelectTrigger id="businessType" data-testid="select-businessType" disabled className="bg-gray-100">
                   <SelectValue placeholder="Select business type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -394,28 +540,49 @@ export default function DetectiveProfileEdit() {
                 value={formData.licenseNumber}
                 onChange={(e) => handleInputChange("licenseNumber", e.target.value)}
                 placeholder="Enter your PI license number"
+                className="bg-gray-100"
+                disabled
               />
             </div>
 
-            {/* Business Website */}
-            <div className="space-y-2">
-              <Label htmlFor="businessWebsite">Business Website (Optional)</Label>
-              <Input
-                id="businessWebsite"
-                data-testid="input-businessWebsite"
-                value={formData.businessWebsite}
-                onChange={(e) => handleInputChange("businessWebsite", e.target.value)}
-                placeholder="https://example.com"
-                type="url"
-              />
-            </div>
+            {/* Business Website (Agency only) */}
+            {formData.businessType === 'agency' && (
+              <div className="space-y-2">
+                <Label htmlFor="businessWebsite">Business Website</Label>
+                <Input
+                  id="businessWebsite"
+                  data-testid="input-businessWebsite"
+                  value={formData.businessWebsite}
+                  onChange={(e) => handleInputChange("businessWebsite", e.target.value)}
+                  placeholder="https://example.com"
+                  type="url"
+                  data-field="businessWebsite"
+                  className={cn("bg-gray-100", errors.businessWebsite ? "border-red-500" : "")}
+                  disabled
+                />
+                {errors.businessWebsite && <p className="text-red-600 text-xs">Enter a valid URL</p>}
+              </div>
+            )}
 
-            {/* Business Documents - Read Only */}
-            {detective.businessDocuments && detective.businessDocuments.length > 0 && (
+            {/* Agency: Business Documents - Read Only */}
+            {formData.businessType === 'agency' && detective.businessDocuments && detective.businessDocuments.length > 0 && (
               <div className="space-y-2">
                 <Label>Business Documents</Label>
                 <div className="text-sm text-gray-600">
                   {detective.businessDocuments.length} document(s) uploaded during signup
+                </div>
+                <p className="text-xs text-gray-500">
+                  Documents are verified during application review and cannot be changed here.
+                </p>
+              </div>
+            )}
+
+            {/* Individual: Government ID - Read Only */}
+            {formData.businessType === 'individual' && (detective as any).identityDocuments && ((detective as any).identityDocuments.length > 0) && (
+              <div className="space-y-2">
+                <Label>Government ID</Label>
+                <div className="text-sm text-gray-600">
+                  {(detective as any).identityDocuments.length} document(s) uploaded during signup
                 </div>
                 <p className="text-xs text-gray-500">
                   Documents are verified during application review and cannot be changed here.
@@ -442,9 +609,26 @@ export default function DetectiveProfileEdit() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Public Email (Always editable, mandatory) */}
+            <div className="space-y-2">
+              <Label htmlFor="contactEmail">Public Email Address <span className="text-red-600">*</span></Label>
+              <Input
+                id="contactEmail"
+                data-testid="input-contact-email"
+                value={formData.contactEmail}
+                onChange={(e) => handleInputChange("contactEmail", e.target.value)}
+                placeholder="your@email.com"
+                type="email"
+                data-field="contactEmail"
+                className={cn(errors.contactEmail ? "border-red-500" : "")}
+              />
+              {errors.contactEmail && <p className="text-red-600 text-xs">This field is required</p>}
+              <p className="text-xs text-gray-500">Shown on your public profile. Defaults to your signup email.</p>
+            </div>
+
             {/* Phone (Pro/Agency Only) */}
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="phone">Phone Number {isPremium ? <span className="text-red-600">*</span> : null}</Label>
               <Input
                 id="phone"
                 data-testid="input-phone"
@@ -452,8 +636,10 @@ export default function DetectiveProfileEdit() {
                 onChange={(e) => handleInputChange("phone", e.target.value)}
                 placeholder="+1 (555) 000-0000"
                 disabled={!isPremium}
-                className={!isPremium ? "bg-gray-100" : ""}
+                className={cn(!isPremium ? "bg-gray-100" : "", errors.phone ? "border-red-500" : "")}
+                data-field="phone"
               />
+              {isPremium && errors.phone && <p className="text-red-600 text-xs">This field is required for your plan</p>}
               {isPremium && (
                 <p className="text-xs text-green-600">✓ Visible on your public profile</p>
               )}
@@ -551,7 +737,7 @@ export default function DetectiveProfileEdit() {
                           data-testid={`input-recognition-issuer-${index}`}
                         />
                       </div>
-                      
+                       
                       <div className="space-y-2">
                         <Label>Year</Label>
                         <Input
@@ -561,6 +747,34 @@ export default function DetectiveProfileEdit() {
                           data-testid={`input-recognition-year-${index}`}
                         />
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Recognition Image <span className="text-red-600">*</span></Label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          id={`recog-image-${index}`}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleRecognitionImageUpload(index, e.target.files?.[0] || null)}
+                          className="hidden"
+                          data-testid={`input-recognition-image-${index}`}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById(`recog-image-${index}`)?.click()}
+                          data-testid={`button-upload-recognition-image-${index}`}
+                        >
+                          Upload Image
+                        </Button>
+                        {recognition.image && (
+                          <img src={recognition.image} alt="Recognition" className="h-16 w-16 object-cover rounded border" />
+                        )}
+                      </div>
+                      {!recognition.image && (
+                        <p className="text-xs text-red-600">Upload required (max 400x400, 500KB)</p>
+                      )}
                     </div>
                   </div>
                 ))}

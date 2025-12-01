@@ -2,12 +2,13 @@ import { Star, Heart, ChevronLeft, ChevronRight, ShieldCheck, Award, BadgeCheck 
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ServiceCardProps {
   id: string;
+  detectiveId?: string;
   images?: string[];
   image?: string; // Backward compatibility
   avatar: string;
@@ -21,21 +22,23 @@ interface ServiceCardProps {
   price: number;
   offerPrice?: number | null;
   isUnclaimed?: boolean;
+  countryCode?: string;
 }
 
 import { useCurrency } from "@/lib/currency-context";
-import { useUser } from "@/lib/user-context";
+import { useUserSafe } from "@/lib/user-context";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { useToast } from "@/hooks/use-toast";
 
-export function ServiceCard({ id, images, image, avatar, name, level, category, badges = [], title, rating, reviews, price, offerPrice, isUnclaimed }: ServiceCardProps) {
+export function ServiceCard({ id, detectiveId, images, image, avatar, name, level, category, badges = [], title, rating, reviews, price, offerPrice, isUnclaimed, countryCode }: ServiceCardProps) {
+  const [, setLocation] = useLocation();
   const displayImages = images || (image ? [image] : []);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const { formatPrice } = useCurrency();
-  const { user, isFavorite, toggleFavorite } = useUser();
+  const { selectedCountry, formatPriceFromTo } = useCurrency();
+  const { user, isFavorite, toggleFavorite } = useUserSafe();
   const { toast } = useToast();
 
   // Always route to the public service profile page
@@ -69,6 +72,7 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
     
     toggleFavorite({
       id,
+      detectiveId,
       name,
       title,
       image: displayImages[0],
@@ -157,7 +161,23 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
           
           <CardContent className="p-4 flex-1">
             {/* Author Row */}
-            <div className="flex items-center gap-3 mb-3">
+            <div
+              className="flex items-center gap-3 mb-3"
+              role="link"
+              tabIndex={0}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (detectiveId) setLocation(`/p/${detectiveId}`);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (detectiveId) setLocation(`/p/${detectiveId}`);
+                }
+              }}
+            >
               <Avatar className="h-8 w-8 border border-gray-100">
                 {avatar && <AvatarImage src={avatar} />}
                 <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">{name[0]}</AvatarFallback>
@@ -201,13 +221,12 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
                     )}
                   </div>
                 </div>
-                {/* Service Category under name */}
-                <span className="text-xs text-gray-500 truncate">{category || level}</span>
+                <span className="text-xs font-bold text-gray-900 truncate">{level || "Level 1"}</span>
               </div>
             </div>
 
             {/* Title */}
-            <h3 className="text-gray-700 hover:text-green-600 line-clamp-2 text-base mb-2 group-hover/card:underline decoration-green-600">
+            <h3 className="text-gray-700 hover:text-green-600 text-base mb-2 group-hover/card:underline decoration-green-600 break-words" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
               {title}
             </h3>
 
@@ -218,8 +237,8 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
               ) : (
                 <>
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-bold text-gray-900">{rating}</span>
-                  <span className="text-gray-400">({reviews})</span>
+                  <span className="font-bold text-gray-900">{typeof rating === 'number' && !isNaN(rating) ? rating : 0}</span>
+                  <span className="text-gray-400">({typeof reviews === 'number' && !isNaN(reviews) ? reviews : 0})</span>
                 </>
               )}
             </div>
@@ -238,11 +257,11 @@ export function ServiceCard({ id, images, image, avatar, name, level, category, 
               </span>
               {offerPrice ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-400 line-through font-medium">{formatPrice(price)}</span>
-                  <span className="text-lg font-bold text-green-600">{formatPrice(offerPrice)}</span>
+                  <span className="text-sm text-gray-400 line-through font-medium">{formatPriceFromTo(price, countryCode, selectedCountry.code)}</span>
+                  <span className="text-lg font-bold text-green-600">{formatPriceFromTo(offerPrice!, countryCode, selectedCountry.code)}</span>
                 </div>
               ) : (
-                <span className="text-lg font-bold text-gray-900">{formatPrice(price)}</span>
+                <span className="text-lg font-bold text-gray-900">{formatPriceFromTo(price, countryCode, selectedCountry.code)}</span>
               )}
             </div>
           </CardFooter>

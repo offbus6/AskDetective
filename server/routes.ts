@@ -1,6 +1,8 @@
 import type { Express, Request, Response, NextFunction } from "express";
+import { createHash } from "node:crypto";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { sendClaimApprovedEmail } from "./email";
 import bcrypt from "bcrypt";
 import { 
   insertUserSchema, 
@@ -53,6 +55,7 @@ const requireRole = (...roles: string[]) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  const SUBSCRIPTION_LIMITS: Record<string, number> = { free: 2, pro: 4, agency: 1000 };
   
   // ============== AUTHENTICATION ROUTES ==============
   
@@ -88,19 +91,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Login
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
-      const { email, password } = req.body;
+      let { email, password } = req.body as { email: string; password: string };
+      email = (email || "").toLowerCase().trim();
 
       if (!email || !password) {
         return res.status(400).json({ error: "Email and password are required" });
       }
 
+      if (!process.env.DATABASE_URL) {
+        const devEmail = (process.env.DEV_ADMIN_EMAIL || "admin@finddetectives.com").toLowerCase();
+        const devPass = process.env.DEV_ADMIN_PASSWORD || "admin123";
+        if (email === devEmail && password === devPass) {
+          req.session.userId = "dev-admin";
+          req.session.userRole = "admin";
+          return res.json({ user: { id: "dev-admin", email: devEmail, name: "Super Admin", role: "admin" } });
+        }
+      }
+
       const user = await storage.getUserByEmail(email);
       if (!user) {
+        // Check pending detective application
+        const application = await storage.getDetectiveApplicationByEmail(email);
+        if (application) {
+          const match = await bcrypt.compare(password, application.password);
+          if (match) {
+            return res.json({ applicant: { email: application.email, status: application.status } });
+          }
+        }
+        console.warn(`[auth] Login failed: user not found for email=${email}`);
         return res.status(401).json({ error: "Invalid email or password" });
       }
 
-      const validPassword = await bcrypt.compare(password, user.password);
+      let validPassword = false;
+      try {
+        validPassword = await bcrypt.compare(password, user.password);
+      } catch (e) {
+        console.error("Password compare error:", e);
+        return res.status(400).json({ error: "Invalid email or password" });
+      }
       if (!validPassword) {
+        console.warn(`[auth] Login failed: password mismatch for userId=${user.id}, email=${email}`);
         return res.status(401).json({ error: "Invalid email or password" });
       }
 
@@ -114,6 +144,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ error: "Failed to log in" });
+    }
+  });
+
+  // Change password (authenticated users)
+  app.post("/api/auth/change-password", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { currentPassword, newPassword } = req.body as { currentPassword: string; newPassword: string };
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Current and new password are required" });
+      }
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: "New password must be at least 8 characters" });
+      }
+
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const validPassword = await bcrypt.compare(currentPassword, user.password);
+      if (!validPassword) {
+        return res.status(400).json({ error: "Current password is incorrect" });
+      }
+
+      await storage.setUserPassword(user.id, newPassword, false);
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      console.error("Change password error:", error);
+      res.status(500).json({ error: "Failed to change password" });
+    }
+  });
+
+  // Admin: verify a user's password
+  app.post("/api/admin/users/check-password", requireRole("admin"), async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body as { email?: string; password?: string };
+      if (!email || !password) return res.status(400).json({ error: "Email and password required" });
+      const user = await storage.getUserByEmail(email.toLowerCase().trim());
+      if (!user) return res.status(404).json({ error: "User not found" });
+      const match = await bcrypt.compare(password, user.password);
+      res.json({ match, userId: user.id, role: user.role, mustChangePassword: (user as any).mustChangePassword === true });
+    } catch (error) {
+      console.error("Admin check password error:", error);
+      res.status(500).json({ error: "Failed to check password" });
+    }
+  });
+
+  // Set password without current (requires mustChangePassword flag)
+  app.post("/api/auth/set-password", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { newPassword } = req.body as { newPassword: string };
+      if (!newPassword) {
+        return res.status(400).json({ error: "New password is required" });
+      }
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: "New password must be at least 8 characters" });
+      }
+
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      if (!user.mustChangePassword) {
+        return res.status(400).json({ error: "Password change not required" });
+      }
+
+      await storage.setUserPassword(user.id, newPassword, false);
+      res.json({ message: "Password set successfully" });
+    } catch (error) {
+      console.error("Set password error:", error);
+      res.status(500).json({ error: "Failed to set password" });
     }
   });
 
@@ -131,6 +233,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user
   app.get("/api/auth/me", requireAuth, async (req: Request, res: Response) => {
     try {
+      if (!process.env.DATABASE_URL) {
+        return res.json({ user: { id: req.session.userId!, email: process.env.DEV_ADMIN_EMAIL || "admin@finddetectives.com", name: "Super Admin", role: req.session.userRole } });
+      }
       const user = await storage.getUser(req.session.userId!);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
@@ -144,12 +249,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: lookup user by email
+  app.get("/api/admin/users", requireRole("admin"), async (req: Request, res: Response) => {
+    try {
+      const { email } = req.query as { email?: string };
+      if (!email) return res.status(400).json({ error: "Email is required" });
+      const user = await storage.getUserByEmail((email || "").toLowerCase().trim());
+      if (!user) return res.status(404).json({ error: "User not found" });
+      const { password, ...userWithoutPassword } = user;
+      res.json({ user: userWithoutPassword });
+    } catch (error) {
+      console.error("Admin user lookup error:", error);
+      res.status(500).json({ error: "Failed to lookup user" });
+    }
+  });
+
   // ============== DETECTIVE ROUTES ==============
 
   // Get all detectives (public)
   app.get("/api/detectives", async (req: Request, res: Response) => {
     try {
-      const { country, status, plan, search, limit = "50", offset = "0" } = req.query;
+      const { country, status, plan, search, limit = "20", offset = "0" } = req.query;
+      if (typeof search === 'string' && search.trim()) {
+        await storage.recordSearch(search as string);
+      }
 
       const detectives = await storage.searchDetectives({
         country: country as string,
@@ -158,15 +281,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchQuery: search as string,
       }, parseInt(limit as string), parseInt(offset as string));
 
-      res.json({ detectives });
+      res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+      sendCachedJson(req, res, { detectives });
     } catch (error) {
       console.error("Get detectives error:", error);
       res.status(500).json({ error: "Failed to get detectives" });
     }
   });
 
+  app.get("/api/subscription-limits", async (_req: Request, res: Response) => {
+    res.json({ limits: SUBSCRIPTION_LIMITS });
+  });
+
+  app.post("/api/admin/subscription-limits", requireRole("admin"), async (req: Request, res: Response) => {
+    try {
+      const body = req.body as { free?: number; pro?: number; agency?: number };
+      if (body.free !== undefined) SUBSCRIPTION_LIMITS.free = Math.max(0, Number(body.free));
+      if (body.pro !== undefined) SUBSCRIPTION_LIMITS.pro = Math.max(0, Number(body.pro));
+      if (body.agency !== undefined) SUBSCRIPTION_LIMITS.agency = Math.max(0, Number(body.agency));
+      res.json({ limits: SUBSCRIPTION_LIMITS });
+    } catch (error) {
+      res.status(400).json({ error: "Invalid limits" });
+    }
+  });
+
   // Get current logged-in detective's profile (requires detective role)
-  app.get("/api/detectives/me", requireRole("detective"), async (req: Request, res: Response) => {
+  app.get("/api/detectives/me", requireAuth, async (req: Request, res: Response) => {
     try {
       const detective = await storage.getDetectiveByUserId(req.session.userId!);
       if (!detective) {
@@ -175,7 +315,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ detective });
     } catch (error) {
       console.error("Get current detective error:", error);
-      res.status(500).json({ error: "Failed to get detective profile" });
+      res.status(500).json({ error: "Failed to get current detective" });
+    }
+  });
+
+  app.get("/api/detectives/:id/public-service-count", async (req: Request, res: Response) => {
+    try {
+      const count = await storage.getPublicServiceCountByDetective(req.params.id);
+      res.json({ count });
+    } catch (error) {
+      console.error("Get public service count error:", error);
+      res.status(500).json({ error: "Failed to get service count" });
     }
   });
 
@@ -186,10 +336,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!detective) {
         return res.status(404).json({ error: "Detective not found" });
       }
-      res.json({ detective });
+      res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+      sendCachedJson(req, res, { detective });
     } catch (error) {
       console.error("Get detective error:", error);
       res.status(500).json({ error: "Failed to get detective" });
+    }
+  });
+
+  // Public: get user profile by id (limited fields)
+  app.get("/api/users/:id", async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      const { password, ...userWithoutPassword } = user as any;
+      res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+      sendCachedJson(req, res, { user: userWithoutPassword });
+    } catch (error) {
+      console.error("Get user error:", error);
+      res.status(500).json({ error: "Failed to get user" });
     }
   });
 
@@ -290,6 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionPlan: z.enum(["free", "pro", "agency"]).optional(),
         isVerified: z.boolean().optional(),
         country: z.string().optional(),
+        level: z.enum(["level1", "level2", "level3", "pro"]).optional(),
       }).parse(req.body);
 
       const updatedDetective = await storage.updateDetectiveAdmin(req.params.id, allowedData);
@@ -328,12 +496,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin-only permanent delete of detective account
+  app.delete("/api/admin/detectives/:id", requireRole("admin"), async (req: Request, res: Response) => {
+    try {
+      const detective = await storage.getDetective(req.params.id);
+      if (!detective) {
+        return res.status(404).json({ error: "Detective not found" });
+      }
+
+      const ok = await storage.deleteDetectiveAccount(req.params.id);
+      if (!ok) {
+        return res.status(500).json({ error: "Failed to delete detective" });
+      }
+      res.json({ message: "Detective account deleted" });
+    } catch (error) {
+      console.error("Delete detective error:", error);
+      res.status(500).json({ error: "Failed to delete detective" });
+    }
+  });
+
   // ============== SERVICE ROUTES ==============
 
   // Search services (public)
   app.get("/api/services", async (req: Request, res: Response) => {
     try {
-      const { category, country, search, minPrice, maxPrice, sortBy, limit = "50", offset = "0" } = req.query;
+      const { category, country, search, minPrice, maxPrice, minRating, limit = "20", offset = "0", sortBy = "popular" } = req.query;
+      if (typeof search === 'string' && search.trim()) {
+        await storage.recordSearch(search as string);
+      }
 
       const services = await storage.searchServices({
         category: category as string,
@@ -341,9 +531,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchQuery: search as string,
         minPrice: minPrice ? parseFloat(minPrice as string) : undefined,
         maxPrice: maxPrice ? parseFloat(maxPrice as string) : undefined,
+        ratingMin: minRating ? parseFloat(minRating as string) : undefined,
       }, parseInt(limit as string), parseInt(offset as string), sortBy as string);
 
-      res.json({ services });
+      res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+      sendCachedJson(req, res, { services });
     } catch (error) {
       console.error("Search services error:", error);
       res.status(500).json({ error: "Failed to search services" });
@@ -356,6 +548,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const service = await storage.getService(req.params.id);
       if (!service) {
         return res.status(404).json({ error: "Service not found" });
+      }
+
+      const preview = (req.query.preview === '1' || req.query.preview === 'true');
+      if (preview) {
+        const detective = await storage.getDetective(service.detectiveId);
+        if (!detective) {
+          return res.status(404).json({ error: "Detective not found" });
+        }
+        const isOwner = req.session.userId && detective.userId === req.session.userId;
+        const isAdmin = req.session.userRole === 'admin';
+        if (!isOwner && !isAdmin) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+      } else {
+        // Only allow public access if service is complete and active
+        const isComplete = service.isActive === true && Array.isArray(service.images) && service.images.length > 0 && !!service.title && !!service.description && !!service.category && !!service.basePrice;
+        if (!isComplete) {
+          return res.status(404).json({ error: "Service not available" });
+        }
       }
 
       // Increment view count
@@ -392,6 +603,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         detectiveId: detective.id,
       });
 
+      const base = parseFloat(validatedData.basePrice as any);
+      if (!(base > 0)) {
+        return res.status(400).json({ error: "Base price must be a positive number" });
+      }
+      if ((validatedData as any).offerPrice !== undefined && (validatedData as any).offerPrice !== null) {
+        const offer = parseFloat((validatedData as any).offerPrice as any);
+        if (!(offer > 0) || !(offer < base)) {
+          return res.status(400).json({ error: "Offer price must be positive and strictly lower than base price" });
+        }
+      }
+
       // Validate that the category exists and is active
       const categories = await storage.getAllServiceCategories(true);
       const categoryExists = categories.some(cat => cat.name === validatedData.category);
@@ -407,6 +629,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Create service error:", error);
       res.status(500).json({ error: "Failed to create service" });
+    }
+  });
+
+  // Get services by detective (public)
+  app.get("/api/services/detective/:id", async (req: Request, res: Response) => {
+    try {
+      const services = await storage.getServicesByDetective(req.params.id);
+      res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+      sendCachedJson(req, res, { services });
+    } catch (error) {
+      console.error("Get services by detective error:", error);
+      res.status(500).json({ error: "Failed to get services" });
     }
   });
 
@@ -428,6 +662,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate request body - only allow whitelisted fields
       const validatedData = updateServiceSchema.parse(req.body);
+
+      const currentBase = validatedData.basePrice !== undefined ? parseFloat(validatedData.basePrice as any) : parseFloat((service as any).basePrice as any);
+      if (!(currentBase > 0)) {
+        return res.status(400).json({ error: "Base price must be a positive number" });
+      }
+      if (validatedData.offerPrice !== undefined && validatedData.offerPrice !== null) {
+        const offer = parseFloat(validatedData.offerPrice as any);
+        if (!(offer > 0) || !(offer < currentBase)) {
+          return res.status(400).json({ error: "Offer price must be positive and strictly lower than base price" });
+        }
+      }
 
       // Validate category if it's being updated
       if (validatedData.category) {
@@ -473,6 +718,153 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: reassign a service to a detective
+  app.post("/api/admin/services/:id/reassign", requireRole("admin"), async (req: Request, res: Response) => {
+    try {
+      const { detectiveId } = req.body as { detectiveId?: string };
+      if (!detectiveId) return res.status(400).json({ error: "detectiveId is required" });
+      const detective = await storage.getDetective(detectiveId);
+      if (!detective) return res.status(404).json({ error: "Detective not found" });
+      const service = await storage.getService(req.params.id);
+      if (!service) return res.status(404).json({ error: "Service not found" });
+      const updated = await storage.reassignService(service.id, detective.id);
+      res.json({ service: updated });
+    } catch (error) {
+      console.error("Admin reassign service error:", error);
+      res.status(500).json({ error: "Failed to reassign service" });
+    }
+  });
+
+  // Admin: list all services for a detective (includes inactive or missing images)
+  app.get("/api/admin/detectives/:id/services", requireRole("admin"), async (req: Request, res: Response) => {
+    try {
+      const detective = await storage.getDetective(req.params.id);
+      if (!detective) {
+        return res.status(404).json({ error: "Detective not found" });
+      }
+      const services = await storage.getAllServicesByDetective(detective.id);
+      res.json({ services });
+    } catch (error) {
+      console.error("Admin get services by detective error:", error);
+      res.status(500).json({ error: "Failed to get services" });
+    }
+  });
+
+  app.post("/api/admin/detectives/:id/services", requireRole("admin"), async (req: Request, res: Response) => {
+    try {
+      const detective = await storage.getDetective(req.params.id);
+      if (!detective) {
+        return res.status(404).json({ error: "Detective not found" });
+      }
+
+      const currentServices = await storage.getServicesByDetective(detective.id);
+      const maxAllowed = SUBSCRIPTION_LIMITS[detective.subscriptionPlan] ?? SUBSCRIPTION_LIMITS.free;
+      if (currentServices.length >= maxAllowed) {
+        return res.status(400).json({ error: `Plan limit reached. Max ${maxAllowed} services allowed for ${detective.subscriptionPlan}.` });
+      }
+
+      const validatedData = insertServiceSchema.parse({
+        ...req.body,
+        detectiveId: detective.id,
+      });
+
+      const base = parseFloat(validatedData.basePrice as any);
+      if (!(base > 0)) {
+        return res.status(400).json({ error: "Base price must be a positive number" });
+      }
+      if ((validatedData as any).offerPrice !== undefined && (validatedData as any).offerPrice !== null) {
+        const offer = parseFloat((validatedData as any).offerPrice as any);
+        if (!(offer > 0) || !(offer < base)) {
+          return res.status(400).json({ error: "Offer price must be positive and strictly lower than base price" });
+        }
+      }
+
+      const categories = await storage.getAllServiceCategories(true);
+      const categoryExists = categories.some(cat => cat.name === validatedData.category);
+      if (!categoryExists) {
+        return res.status(400).json({ error: "Invalid service category" });
+      }
+
+      const service = await storage.createService(validatedData);
+      res.status(201).json({ service });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).message });
+      }
+      console.error("Admin create service error:", error);
+      res.status(500).json({ error: "Failed to create service" });
+    }
+  });
+
+  // Onboarding: bulk create services for detective (first login)
+  app.post("/api/detectives/:id/onboarding/services", requireRole("detective"), async (req: Request, res: Response) => {
+    try {
+      const detective = await storage.getDetective(req.params.id);
+      if (!detective) return res.status(404).json({ error: "Detective not found" });
+      if (detective.userId !== req.session.userId) return res.status(403).json({ error: "Unauthorized" });
+
+      const body = req.body as { services: Array<{ category: string; title: string; description: string; basePrice: string; offerPrice?: string | null; images?: string[] }> };
+      const drafts = Array.isArray(body.services) ? body.services : [];
+      if (drafts.length === 0) return res.status(400).json({ error: "No services provided" });
+
+      const maxAllowed = SUBSCRIPTION_LIMITS[detective.subscriptionPlan] ?? SUBSCRIPTION_LIMITS.free;
+      const limits = { min: 1, max: maxAllowed };
+      if (drafts.length < limits.min) {
+        return res.status(400).json({ error: `Must submit at least ${limits.min} services for ${detective.subscriptionPlan} plan` });
+      }
+      if (drafts.length > limits.max) {
+        return res.status(400).json({ error: `You can submit up to ${limits.max} services for ${detective.subscriptionPlan} plan` });
+      }
+
+      // Validate categories against active list
+      const activeCategories = await storage.getAllServiceCategories(true);
+      const activeNames = new Set(activeCategories.map(c => c.name));
+
+      for (const d of drafts) {
+        if (!d.category || !activeNames.has(d.category)) {
+          return res.status(400).json({ error: `Invalid category: ${d.category}` });
+        }
+        if (!d.title || !d.description || !d.basePrice) {
+          return res.status(400).json({ error: "Title, description and base price are required" });
+        }
+        if (!Array.isArray(d.images) || d.images.length === 0) {
+          return res.status(400).json({ error: "Banner image is required" });
+        }
+        // Parse with insert schema
+        const validated = insertServiceSchema.parse({
+          detectiveId: detective.id,
+          category: d.category,
+          title: d.title,
+          description: d.description,
+          basePrice: d.basePrice,
+          offerPrice: d.offerPrice ?? null,
+          images: d.images,
+          isActive: true,
+        });
+        const base = parseFloat(validated.basePrice as any);
+        if (!(base > 0)) {
+          return res.status(400).json({ error: "Base price must be a positive number" });
+        }
+        if ((validated as any).offerPrice !== undefined && (validated as any).offerPrice !== null) {
+          const offer = parseFloat((validated as any).offerPrice as any);
+          if (!(offer > 0) || !(offer < base)) {
+            return res.status(400).json({ error: "Offer price must be positive and strictly lower than base price" });
+          }
+        }
+        await storage.createService(validated);
+      }
+
+      await storage.updateDetective(detective.id, { mustCompleteOnboarding: false });
+      res.json({ ok: true });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).message });
+      }
+      console.error("Onboarding services error:", error);
+      res.status(500).json({ error: "Failed to create onboarding services" });
+    }
+  });
+
   // ============== REVIEW ROUTES ==============
 
   // Get reviews for a service (public)
@@ -487,6 +879,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Detective: get all reviews for my services
+  app.get("/api/reviews/detective", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const detective = await storage.getDetectiveByUserId(req.session.userId!);
+      if (!detective) return res.status(404).json({ error: "Detective profile not found" });
+      const list = await storage.getReviewsByDetective(detective.id);
+      res.json({ reviews: list });
+    } catch (error) {
+      console.error("Get detective reviews error:", error);
+      res.status(500).json({ error: "Failed to get reviews" });
+    }
+  });
+
   // Create review (requires authentication)
   app.post("/api/reviews", requireAuth, async (req: Request, res: Response) => {
     try {
@@ -495,7 +900,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.session.userId,
       });
 
-      const review = await storage.createReview(validatedData);
+      const existing = await storage.getReviewsByService(validatedData.serviceId, 1000);
+      const own = existing.find(r => (r as any).userId === req.session.userId);
+      if (own) {
+        const updated = await storage.updateReview(own.id, validatedData);
+        return res.json({ review: updated });
+      }
+
+      const review = await storage.createReview({ ...validatedData, isPublished: true } as any);
       res.status(201).json({ review });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -529,6 +941,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Update review error:", error);
       res.status(500).json({ error: "Failed to update review" });
+    }
+  });
+
+  // Delete review (requires user ownership or admin)
+  app.delete("/api/reviews/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const review = await storage.getReview(req.params.id);
+      if (!review) {
+        return res.status(404).json({ error: "Review not found" });
+      }
+
+      if (req.session.userRole !== "admin" && review.userId !== req.session.userId) {
+        return res.status(403).json({ error: "Cannot delete another user's review" });
+      }
+
+      await storage.deleteReview(req.params.id);
+      res.json({ message: "Review deleted successfully" });
+    } catch (error) {
+      console.error("Delete review error:", error);
+      res.status(500).json({ error: "Failed to delete review" });
     }
   });
 
@@ -681,6 +1113,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hashedPassword = await bcrypt.hash(validatedData.password, 10);
       console.log("Password hashed");
       
+      // Duplicate checks for email/phone
+      const existingByEmail = await storage.getDetectiveApplicationByEmail(validatedData.email);
+      const hasPhone = !!validatedData.phoneCountryCode && !!validatedData.phoneNumber;
+      const existingByPhone = hasPhone
+        ? await storage.getDetectiveApplicationByPhone(validatedData.phoneCountryCode!, validatedData.phoneNumber!)
+        : undefined;
+
+      const isAdmin = (req.session?.userRole === "admin");
+      if (existingByEmail || existingByPhone) {
+        if (!isAdmin) {
+          const conflictField = existingByEmail ? "email" : "phone";
+          return res.status(409).json({ error: `An application with this ${conflictField} already exists` });
+        }
+        const existing = existingByEmail || existingByPhone!;
+        console.log("Duplicate found. Admin updating existing application:", existing.id);
+        const updated = await storage.updateDetectiveApplication(existing.id, {
+          ...validatedData,
+          password: hashedPassword,
+          isClaimable: validatedData.isClaimable ?? true,
+          status: "pending",
+          reviewNotes: null as any,
+          reviewedBy: null as any,
+          reviewedAt: null as any,
+        } as any);
+        return res.status(200).json({ application: updated });
+      }
+
       const applicationData = {
         ...validatedData,
         password: hashedPassword,
@@ -698,15 +1157,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: fromZodError(error).message });
       }
       console.error("Create application error:", error);
-      res.status(500).json({ error: "Failed to create application" });
+      const msg = (typeof (error as any)?.message === "string" && (error as any).message.includes("duplicate key"))
+        ? "An application with this email/phone already exists"
+        : "Failed to create application";
+      res.status(500).json({ error: msg });
     }
   });
 
   // Get all applications (admin only)
   app.get("/api/applications", requireRole("admin"), async (req: Request, res: Response) => {
     try {
-      const { status, limit = "50" } = req.query;
-      const applications = await storage.getAllDetectiveApplications(status as string, parseInt(limit as string));
+      const { status, limit = "50", offset = "0", search } = req.query;
+      const applications = await storage.getAllDetectiveApplications(
+        status as string,
+        parseInt(limit as string),
+        parseInt(offset as string),
+        (search as string) || undefined
+      );
       res.json({ applications });
     } catch (error) {
       console.error("Get applications error:", error);
@@ -736,14 +1203,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         try {
-          // Create user account with the password from application (already hashed)
-          const user = await storage.createUser({
-            email: application.email,
-            name: application.fullName,
-            password: application.password,
-            role: "detective",
-            avatar: application.logo || undefined,
-          });
+          const normalizedEmail = (application.email || "").toLowerCase().trim();
+          let user = await storage.getUserByEmail(normalizedEmail);
+          if (!user) {
+            try {
+              user = await storage.createUserFromHashed({
+                email: normalizedEmail,
+                name: application.fullName,
+                password: application.password,
+                role: "detective",
+                avatar: application.logo || undefined,
+              });
+            } catch (e: any) {
+              if ((e?.message || "").includes("users_email_unique")) {
+                user = await storage.getUserByEmail(normalizedEmail);
+              } else {
+                throw e;
+              }
+            }
+          }
 
           // Build location string from application data
           const locationParts = [];
@@ -761,7 +1239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const isAdminCreated = application.isClaimable === true;
           
           const detective = await storage.createDetective({
-            userId: user.id,
+            userId: user!.id,
             businessName: application.companyName || application.fullName,
             bio: application.about || "Professional detective ready to help with your case.",
             logo: application.logo || undefined,
@@ -773,12 +1251,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             createdBy: isAdminCreated ? "admin" : "self",
             country: application.country || "US",
             location: location,
+            address: (application as any).fullAddress || undefined,
+            pincode: (application as any).pincode || undefined,
             phone: phone,
             yearsExperience: application.yearsExperience || undefined,
             businessWebsite: application.businessWebsite || undefined,
             licenseNumber: application.licenseNumber || undefined,
             businessType: application.businessType || undefined,
-            businessDocuments: application.businessDocuments || undefined,
+            businessDocuments: application.businessType === 'agency' ? application.businessDocuments || undefined : undefined,
+            identityDocuments: application.businessType === 'individual' ? (application as any).documents || undefined : undefined,
+            mustCompleteOnboarding: !(application.serviceCategories && application.categoryPricing && application.serviceCategories.length > 0),
+            onboardingPlanSelected: false,
           });
 
           // Create services for each selected category with pricing
@@ -800,7 +1283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          console.log(`Detective account created for: ${application.email} with ${application.serviceCategories?.length || 0} services. Detective can now login with their chosen password.`);
+          console.log(`Detective account ${user ? "linked/created" : "unknown"} for: ${normalizedEmail} with ${application.serviceCategories?.length || 0} services.`);
         } catch (createError: any) {
           console.error("Failed to create detective account:", createError);
           return res.status(500).json({ 
@@ -823,6 +1306,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Update application error:", error);
       res.status(500).json({ error: "Failed to update application" });
+    }
+  });
+
+  app.get("/api/applications/:id", requireRole("admin"), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params as { id: string };
+      const application = await storage.getDetectiveApplication(id);
+      if (!application) {
+        return res.status(404).json({ error: "Application not found" });
+      }
+      res.json({ application });
+    } catch (error) {
+      console.error("Get application by id error:", error);
+      res.status(500).json({ error: "Failed to get application" });
     }
   });
 
@@ -872,19 +1369,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Build appropriate messaging based on whether user was newly created or existing
           let adminMessage: string;
           if (result.wasNewUser) {
-            // New user created - needs password reset
-            adminMessage = `Claim approved. NEW USER CREATED - Admin must manually reset password for ${result.claim.claimantEmail} so they can access their detective account.`;
-            console.log(`ADMIN ACTION REQUIRED: Reset password for ${result.claim.claimantEmail}`);
+            adminMessage = `Claim approved. A new detective user was created for ${result.email}. Share the temporary password securely and ask them to reset after first login.`;
           } else {
-            // Existing user - needs to log out/in
-            adminMessage = `Claim approved. Notify ${result.claim.claimantEmail} to log out and back in to access their detective dashboard.`;
-            console.log(`ADMIN ACTION REQUIRED: Notify ${result.claim.claimantEmail} to log out and back in`);
+            adminMessage = `Claim approved. ${result.email} now owns the detective profile. Ask them to log out and back in to access the detective dashboard.`;
           }
-          
+
+          const claimedDetective = await storage.getDetective(result.claim.detectiveId);
+          await sendClaimApprovedEmail({
+            to: result.email,
+            detectiveName: claimedDetective?.businessName || "Detective",
+            wasNewUser: result.wasNewUser,
+            temporaryPassword: result.temporaryPassword,
+          });
+
           return res.json({ 
             claim: result.claim,
             message: adminMessage,
-            wasNewUser: result.wasNewUser
+            wasNewUser: result.wasNewUser,
+            email: result.email,
+            temporaryPassword: result.temporaryPassword,
           });
         } catch (approvalError: any) {
           console.error("Failed to approve claim:", approvalError);
@@ -941,10 +1444,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { activeOnly } = req.query;
       const categories = await storage.getAllServiceCategories(activeOnly === "true");
-      res.json({ categories });
+      res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+      sendCachedJson(req, res, { categories });
     } catch (error) {
       console.error("Get service categories error:", error);
       res.status(500).json({ error: "Failed to get service categories" });
+    }
+  });
+
+  app.get("/api/popular-categories", async (_req: Request, res: Response) => {
+    try {
+      const popular = await storage.getPopularSearches(6);
+      res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+      sendCachedJson(_req, res, { categories: popular.map(p => ({ category: p.query, count: p.count })) });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get popular categories" });
     }
   });
 
@@ -963,7 +1477,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create service category (admin only)
-  app.post("/api/service-categories", requireRole("admin"), async (req: Request, res: Response) => {
+  app.get("/api/service-categories", requireRole("admin"), async (req: Request, res: Response) => {
     try {
       const validatedData = insertServiceCategorySchema.parse(req.body);
       const category = await storage.createServiceCategory(validatedData);
@@ -974,6 +1488,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Create service category error:", error);
       res.status(500).json({ error: "Failed to create service category" });
+    }
+  });
+
+  app.get("/api/site-settings", async (_req: Request, res: Response) => {
+    try {
+      const s = await storage.getSiteSettings();
+      res.json({ settings: s || { logoUrl: null, footerLinks: [] } });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get site settings" });
+    }
+  });
+
+  app.patch("/api/admin/site-settings", requireRole("admin"), async (req: Request, res: Response) => {
+    try {
+      const validated = updateSiteSettingsSchema.parse(req.body);
+      const s = await storage.upsertSiteSettings(validated as any);
+      res.json({ settings: s });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).message });
+      }
+      res.status(500).json({ error: "Failed to update site settings" });
     }
   });
 
@@ -1013,7 +1549,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Health and dev helpers
+  app.get("/api/health/db", async (_req: Request, res: Response) => {
+    try {
+      await storage.getAllServiceCategories(false);
+      res.json({ ok: true });
+    } catch (error: any) {
+      console.error("DB health error:", error);
+      res.status(500).json({ ok: false, error: error?.message || "DB error" });
+    }
+  });
+
+  app.post("/api/dev/ensure-admin", async (_req: Request, res: Response) => {
+    try {
+      if (process.env.NODE_ENV !== 'development') {
+        return res.status(404).json({ error: "Not available" });
+      }
+      const email = "admin@finddetectives.com";
+      const existing = await storage.getUserByEmail(email);
+      if (existing && existing.role === "admin") {
+        return res.json({ ok: true, user: { id: existing.id, email, role: existing.role } });
+      }
+      const password = "admin123";
+      const user = existing ?? await storage.createUser({ email, password, name: "Super Admin" });
+      await storage.updateUserRole(user.id, "admin");
+      res.json({ ok: true, user: { id: user.id, email, role: "admin" } });
+    } catch (error: any) {
+      console.error("Ensure admin error:", error);
+      res.status(500).json({ error: error?.message || "Failed to ensure admin" });
+    }
+  });
+
+  app.post("/api/dev/reset-admin", async (_req: Request, res: Response) => {
+    try {
+      if (process.env.NODE_ENV !== 'development') {
+        return res.status(404).json({ error: "Not available" });
+      }
+      const email = "admin@finddetectives.com";
+      const admin = await storage.getUserByEmail(email);
+      if (!admin) {
+        return res.status(404).json({ error: "Admin not found" });
+      }
+      const tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase();
+      await storage.setUserPassword(admin.id, tempPassword, false);
+      res.json({ ok: true, email, temporaryPassword: tempPassword });
+    } catch (error: any) {
+      console.error("Reset admin error:", error);
+      res.status(500).json({ error: error?.message || "Failed to reset admin" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
 }
+  const sendCachedJson = (req: Request, res: Response, payload: any) => {
+    const body = JSON.stringify(payload);
+    const tag = 'W/"' + createHash('sha1').update(body).digest('hex') + '"';
+    if (req.headers['if-none-match'] === tag) {
+      res.status(304).end();
+      return;
+    }
+    res.set('ETag', tag);
+    res.json(payload);
+  };

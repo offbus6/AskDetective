@@ -1,5 +1,5 @@
 import { db } from "./index";
-import { users, serviceCategories } from "@shared/schema";
+import { users, detectives, services, reviews, orders, serviceCategories } from "@shared/schema";
 import bcrypt from "bcrypt";
 
 async function seed() {
@@ -52,13 +52,120 @@ async function seed() {
 
   console.log("✅ Service categories created");
 
+  // Create a sample detective user
+  const detectivePassword = await bcrypt.hash("detective123", 10);
+  const [detectiveUser] = await db.insert(users).values({
+    email: "jane.doe@detectives.example",
+    password: detectivePassword,
+    name: "Jane Doe",
+    role: "detective",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=jane"
+  }).returning();
+
+  // Create detective profile
+  const [detective] = await db.insert(detectives).values({
+    userId: detectiveUser.id,
+    businessName: "Doe Investigations",
+    bio: "Licensed private investigator specializing in surveillance and background checks.",
+    country: "US",
+    location: "Austin, TX",
+    phone: "+1 512-555-0199",
+    subscriptionPlan: "pro",
+    status: "active",
+    isVerified: true,
+    isClaimed: true,
+    createdBy: "self"
+  }).returning();
+
+  // Create services
+  const [svc1] = await db.insert(services).values({
+    detectiveId: detective.id,
+    category: "Surveillance",
+    title: "Discrete Surveillance Operations",
+    description: "Professional surveillance for domestic and corporate cases with daily reporting.",
+    basePrice: "500.00",
+    isActive: true
+  }).returning();
+
+  const [svc2] = await db.insert(services).values({
+    detectiveId: detective.id,
+    category: "Background Checks",
+    title: "Comprehensive Background Check",
+    description: "In-depth background verification including employment, education, and litigation records.",
+    basePrice: "300.00",
+    isActive: true
+  }).returning();
+
+  // Create a sample user who orders and reviews
+  const userPassword = await bcrypt.hash("user12345", 10);
+  const [regularUser] = await db.insert(users).values({
+    email: "john.client@example.com",
+    password: userPassword,
+    name: "John Client",
+    role: "user",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=john"
+  }).returning();
+
+  // Create orders
+  const [order1] = await db.insert(orders).values({
+    orderNumber: "ORD-0001",
+    serviceId: svc1.id,
+    userId: regularUser.id,
+    detectiveId: detective.id,
+    amount: "500.00",
+    status: "completed",
+    requirements: "3 days surveillance, daily reports"
+  }).returning();
+
+  const [order2] = await db.insert(orders).values({
+    orderNumber: "ORD-0002",
+    serviceId: svc2.id,
+    userId: regularUser.id,
+    detectiveId: detective.id,
+    amount: "300.00",
+    status: "in_progress",
+    requirements: "Background check for employment"
+  }).returning();
+
+  // Create reviews
+  await db.insert(reviews).values([
+    {
+      serviceId: svc1.id,
+      userId: regularUser.id,
+      orderId: order1.id,
+      rating: 5,
+      comment: "Outstanding professionalism and timely updates. Highly recommended.",
+      isPublished: true
+    },
+    {
+      serviceId: svc2.id,
+      userId: regularUser.id,
+      orderId: order2.id,
+      rating: 4,
+      comment: "Thorough and detailed report. Slight delay but good overall.",
+      isPublished: true
+    }
+  ]);
+
+  console.log("✅ Demo detective, services, orders, and reviews created");
+
   console.log("\n🎉 Database seeding completed successfully!");
   console.log("\n📊 Summary:");
   console.log(`- 1 Admin user`);
+  console.log(`- 1 Detective user + profile`);
+  console.log(`- 2 Services`);
+  console.log(`- 2 Orders`);
+  console.log(`- 2 Reviews`);
   console.log(`- 6 Service categories`);
   console.log("\n🔐 Admin credentials:");
   console.log("Email: admin@finddetectives.com");
   console.log("Password: admin123");
+  console.log("\n👤 Detective credentials:");
+  console.log("Email: jane.doe@detectives.example");
+  console.log("Password: detective123");
+  console.log("\n👤 User credentials:");
+  console.log("Email: john.client@example.com");
+  console.log("Password: user12345");
 }
 
 seed()

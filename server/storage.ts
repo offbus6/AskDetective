@@ -11,7 +11,9 @@ import {
   type DetectiveApplication, type InsertDetectiveApplication,
   type ProfileClaim, type InsertProfileClaim,
   type BillingHistory,
-  type ServiceCategory, type InsertServiceCategory
+  type ServiceCategory, type InsertServiceCategory,
+  siteSettings, type SiteSettings,
+  searchStats
 } from "@shared/schema";
 import { eq, and, desc, sql, count, avg, or, ilike, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
@@ -19,10 +21,10 @@ import bcrypt from "bcrypt";
 const SALT_ROUNDS = 10;
 
 export interface IStorage {
-  // User operations
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  createUser(insertUser: InsertUser): Promise<User>;
+  createUserFromHashed(insertUser: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   updateUserRole(id: string, role: User['role']): Promise<User | undefined>;
 
@@ -33,6 +35,7 @@ export interface IStorage {
   updateDetective(id: string, updates: Partial<Detective>): Promise<Detective | undefined>;
   updateDetectiveAdmin(id: string, updates: Partial<Detective>): Promise<Detective | undefined>;
   resetDetectivePassword(userId: string, newPassword: string): Promise<User | undefined>;
+  setUserPassword(userId: string, newPassword: string, mustChangePassword?: boolean): Promise<User | undefined>;
   getAllDetectives(limit?: number, offset?: number): Promise<Detective[]>;
   searchDetectives(filters: {
     country?: string;
@@ -47,6 +50,7 @@ export interface IStorage {
   createService(service: InsertService): Promise<Service>;
   updateService(id: string, updates: Partial<Service>): Promise<Service | undefined>;
   deleteService(id: string): Promise<boolean>;
+  reassignService(serviceId: string, detectiveId: string): Promise<Service | undefined>;
   searchServices(filters: {
     category?: string;
     country?: string;
@@ -81,7 +85,8 @@ export interface IStorage {
 
   // Detective Application operations
   getDetectiveApplication(id: string): Promise<DetectiveApplication | undefined>;
-  getAllDetectiveApplications(status?: string, limit?: number): Promise<DetectiveApplication[]>;
+  getDetectiveApplicationByEmail(email: string): Promise<DetectiveApplication | undefined>;
+  getAllDetectiveApplications(status?: string, limit?: number, offset?: number, searchQuery?: string): Promise<DetectiveApplication[]>;
   createDetectiveApplication(application: InsertDetectiveApplication): Promise<DetectiveApplication>;
   updateDetectiveApplication(id: string, updates: Partial<DetectiveApplication>): Promise<DetectiveApplication | undefined>;
 
@@ -99,7 +104,6 @@ export interface IStorage {
   // Analytics
   getDetectiveStats(detectiveId: string): Promise<{
     totalOrders: number;
-    totalEarnings: string;
     avgRating: number;
     reviewCount: number;
   }>;
@@ -110,6 +114,9 @@ export interface IStorage {
   createServiceCategory(category: InsertServiceCategory): Promise<ServiceCategory>;
   updateServiceCategory(id: string, updates: Partial<ServiceCategory>): Promise<ServiceCategory | undefined>;
   deleteServiceCategory(id: string): Promise<boolean>;
+  // Admin destructive operations
+  deleteDetectiveAccount(detectiveId: string): Promise<boolean>;
+  getPublicServiceCountByDetective(detectiveId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -120,7 +127,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    const [user] = await db.select().from(users).where(ilike(users.email, email)).limit(1);
     return user;
   }
 
@@ -128,7 +135,17 @@ export class DatabaseStorage implements IStorage {
     const hashedPassword = await bcrypt.hash(insertUser.password, SALT_ROUNDS);
     const [user] = await db.insert(users).values({
       ...insertUser,
+      email: insertUser.email.toLowerCase().trim(),
       password: hashedPassword,
+    }).returning();
+    return user;
+  }
+
+  // Create a user when the password is already hashed (e.g., approved applications)
+  async createUserFromHashed(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values({
+      ...(insertUser as any),
+      email: (insertUser.email as string).toLowerCase().trim(),
     }).returning();
     return user;
   }
@@ -204,7 +221,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateDetective(id: string, updates: Partial<Detective>): Promise<Detective | undefined> {
     // Whitelist only allowed fields - prevent modification of protected columns
-    const allowedFields: (keyof Detective)[] = ['businessName', 'bio', 'location', 'phone', 'whatsapp', 'languages'];
+    const allowedFields: (keyof Detective)[] = ['businessName', 'bio', 'location', 'country', 'address', 'pincode', 'phone', 'whatsapp', 'contactEmail', 'languages', 'subscriptionPlan', 'mustCompleteOnboarding', 'onboardingPlanSelected', 'logo', 'businessDocuments', 'identityDocuments', 'yearsExperience', 'businessWebsite', 'licenseNumber', 'businessType', 'recognitions'];
     const safeUpdates: Partial<Detective> = {};
     
     for (const key of allowedFields) {
@@ -225,7 +242,7 @@ export class DatabaseStorage implements IStorage {
     // Admin can update more fields including status, plan, verification
     const allowedFields: (keyof Detective)[] = [
       'businessName', 'bio', 'location', 'phone', 'whatsapp', 'languages',
-      'status', 'subscriptionPlan', 'isVerified', 'country'
+      'status', 'subscriptionPlan', 'isVerified', 'country', 'level'
     ];
     const safeUpdates: Partial<Detective> = {};
     
@@ -246,7 +263,16 @@ export class DatabaseStorage implements IStorage {
   async resetDetectivePassword(userId: string, newPassword: string): Promise<User | undefined> {
     const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
     const [user] = await db.update(users)
-      .set({ password: hashedPassword, updatedAt: new Date() })
+      .set({ password: hashedPassword, mustChangePassword: true, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async setUserPassword(userId: string, newPassword: string, mustChangePassword: boolean = false): Promise<User | undefined> {
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    const [user] = await db.update(users)
+      .set({ password: hashedPassword, mustChangePassword, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
     return user;
@@ -298,6 +324,17 @@ export class DatabaseStorage implements IStorage {
   async getServicesByDetective(detectiveId: string): Promise<Service[]> {
     return await db.select()
       .from(services)
+      .where(and(
+        eq(services.detectiveId, detectiveId),
+        eq(services.isActive, true),
+        sql<boolean>`cardinality(${services.images}) > 0`
+      ))
+      .orderBy(desc(services.createdAt));
+  }
+
+  async getAllServicesByDetective(detectiveId: string): Promise<Service[]> {
+    return await db.select()
+      .from(services)
       .where(eq(services.detectiveId, detectiveId))
       .orderBy(desc(services.createdAt));
   }
@@ -330,21 +367,32 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount! > 0;
   }
 
+  async reassignService(serviceId: string, detectiveId: string): Promise<Service | undefined> {
+    const [service] = await db.update(services)
+      .set({ detectiveId, updatedAt: new Date() })
+      .where(eq(services.id, serviceId))
+      .returning();
+    return service;
+  }
+
   async searchServices(filters: {
     category?: string;
     country?: string;
     searchQuery?: string;
     minPrice?: number;
     maxPrice?: number;
+    ratingMin?: number;
   }, limit: number = 50, offset: number = 0, sortBy: string = 'recent'): Promise<Array<Service & { detective: Detective, avgRating: number, reviewCount: number }>> {
     
     const conditions = [
       eq(services.isActive, true),
-      eq(detectives.status, 'active')
+      eq(detectives.status, 'active'),
+      sql<boolean>`cardinality(${services.images}) > 0`
     ];
     
     if (filters.category) {
-      conditions.push(eq(services.category, filters.category));
+      const cat = `%${filters.category.trim()}%`;
+      conditions.push(ilike(services.category, cat));
     }
     
     if (filters.searchQuery) {
@@ -356,6 +404,11 @@ export class DatabaseStorage implements IStorage {
       if (searchCondition) {
         conditions.push(searchCondition);
       }
+    }
+
+    // country filter should be applied in WHERE conditions
+    if (filters.country) {
+      conditions.push(eq(detectives.country, filters.country));
     }
 
     let query = db.select({
@@ -370,15 +423,16 @@ export class DatabaseStorage implements IStorage {
     .where(and(...conditions))
     .groupBy(services.id, detectives.id);
 
-    if (filters.country) {
-      query = query.having(eq(detectives.country, filters.country)) as any;
+    // rating filter uses HAVING on aggregate
+    if (filters.ratingMin !== undefined) {
+      query = query.having(sql`COALESCE(AVG(${reviews.rating}), 0) >= ${filters.ratingMin}`) as any;
     }
 
     // Sort
     if (sortBy === 'popular') {
-      query = query.orderBy(desc(sql`${services.orderCount}`)) as any;
+      query = query.orderBy(desc(services.orderCount)) as any;
     } else if (sortBy === 'rating') {
-      query = query.orderBy(desc(sql`avg_rating`)) as any;
+      query = query.orderBy(desc(sql`COALESCE(AVG(${reviews.rating}), 0)`)) as any;
     } else {
       query = query.orderBy(desc(services.createdAt)) as any;
     }
@@ -393,10 +447,35 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
+  async getReviewsByDetective(detectiveId: string): Promise<Array<Review & { serviceTitle: string }>> {
+    const rows = await db.select({
+      review: reviews,
+      serviceTitle: services.title,
+    })
+    .from(reviews)
+    .innerJoin(services, eq(reviews.serviceId, services.id))
+    .where(eq(services.detectiveId, detectiveId))
+    .orderBy(desc(reviews.createdAt));
+    return rows.map(r => ({ ...(r.review as any), serviceTitle: r.serviceTitle }));
+  }
+
   async incrementServiceViews(id: string): Promise<void> {
     await db.update(services)
       .set({ viewCount: sql`${services.viewCount} + 1` })
       .where(eq(services.id, id));
+  }
+
+  async getPublicServiceCountByDetective(detectiveId: string): Promise<number> {
+    const [row] = await db.select({ c: count(services.id) })
+      .from(services)
+      .innerJoin(detectives, eq(services.detectiveId, detectives.id))
+      .where(and(
+        eq(services.detectiveId, detectiveId),
+        eq(services.isActive, true),
+        eq(detectives.status, 'active'),
+        sql<boolean>`cardinality(${services.images}) > 0`
+      ));
+    return Number((row as any)?.c) || 0;
   }
 
   // Review operations
@@ -413,17 +492,7 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
-  async getReviewsByDetective(detectiveId: string, limit: number = 50): Promise<Review[]> {
-    return await db.select({
-      review: reviews,
-    })
-    .from(reviews)
-    .leftJoin(services, eq(reviews.serviceId, services.id))
-    .where(and(eq(services.detectiveId, detectiveId), eq(reviews.isPublished, true)))
-    .orderBy(desc(reviews.createdAt))
-    .limit(limit)
-    .then((results: any) => results.map((r: any) => r.review));
-  }
+  
 
   async createReview(insertReview: InsertReview): Promise<Review> {
     const [review] = await db.insert(reviews).values(insertReview).returning();
@@ -568,14 +637,41 @@ export class DatabaseStorage implements IStorage {
     return application;
   }
 
-  async getAllDetectiveApplications(status?: string, limit: number = 50): Promise<DetectiveApplication[]> {
-    let query = db.select().from(detectiveApplications);
-    
-    if (status) {
-      query = query.where(eq(detectiveApplications.status, status as any)) as any;
+  async getDetectiveApplicationByEmail(email: string): Promise<DetectiveApplication | undefined> {
+    const [application] = await db.select()
+      .from(detectiveApplications)
+      .where(ilike(detectiveApplications.email, email))
+      .limit(1);
+    return application;
+  }
+
+  async getDetectiveApplicationByPhone(phoneCountryCode: string, phoneNumber: string): Promise<DetectiveApplication | undefined> {
+    const [application] = await db.select()
+      .from(detectiveApplications)
+      .where(and(
+        eq(detectiveApplications.phoneCountryCode, phoneCountryCode),
+        eq(detectiveApplications.phoneNumber, phoneNumber)
+      ))
+      .limit(1);
+    return application;
+  }
+
+  async getAllDetectiveApplications(status?: string, limit: number = 50, offset: number = 0, searchQuery?: string): Promise<DetectiveApplication[]> {
+    let base = db.select().from(detectiveApplications);
+
+    const conditions: any[] = [];
+    if (status) conditions.push(eq(detectiveApplications.status, status as any));
+    if (searchQuery) {
+      const q = `%${searchQuery}%`;
+      conditions.push(or(
+        ilike(detectiveApplications.fullName, q),
+        ilike(detectiveApplications.email, q),
+        ilike(detectiveApplications.companyName, q)
+      ));
     }
 
-    return await query.orderBy(desc(detectiveApplications.createdAt)).limit(limit);
+    let query = conditions.length > 0 ? (base.where(and(...conditions)) as any) : (base as any);
+    return await query.orderBy(desc(detectiveApplications.createdAt)).limit(limit).offset(offset);
   }
 
   async createDetectiveApplication(application: InsertDetectiveApplication): Promise<DetectiveApplication> {
@@ -627,7 +723,7 @@ export class DatabaseStorage implements IStorage {
     return claim;
   }
 
-  async approveProfileClaim(claimId: string, reviewedBy: string): Promise<{ claim: ProfileClaim; claimantUserId: string; wasNewUser: boolean }> {
+  async approveProfileClaim(claimId: string, reviewedBy: string): Promise<{ claim: ProfileClaim; claimantUserId: string; wasNewUser: boolean; temporaryPassword?: string; email: string }> {
     // Get the claim
     const claim = await this.getProfileClaim(claimId);
     if (!claim) {
@@ -648,13 +744,14 @@ export class DatabaseStorage implements IStorage {
     // Check if claimant already has a user account
     let claimantUser = await this.getUserByEmail(claim.claimantEmail);
     let wasNewUser = false;
+    let tempPassword: string | undefined;
     const originalRole = claimantUser?.role;
     
     // If not, create a user account for the claimant
     if (!claimantUser) {
       // Generate a temporary password (claimant will need to reset it)
       // TODO: Send password reset email to claimant so they can set their own password
-      const tempPassword = Math.random().toString(36).slice(-12);
+      tempPassword = Math.random().toString(36).slice(-12);
       
       claimantUser = await this.createUser({
         email: claim.claimantEmail,
@@ -734,10 +831,15 @@ export class DatabaseStorage implements IStorage {
       console.log(`NOTE: Claimant needs to log out and back in to access detective dashboard`);
     }
 
+    // Ensure detective is active after claim approval
+    await this.updateDetectiveAdmin(detective.id, { status: "active" });
+
     return {
       claim: updatedClaim,
       claimantUserId: claimantUser.id,
       wasNewUser,
+      temporaryPassword: wasNewUser ? tempPassword : undefined,
+      email: claim.claimantEmail,
     };
   }
 
@@ -760,13 +862,11 @@ export class DatabaseStorage implements IStorage {
   // Analytics
   async getDetectiveStats(detectiveId: string): Promise<{
     totalOrders: number;
-    totalEarnings: string;
     avgRating: number;
     reviewCount: number;
   }> {
     const [orderStats] = await db.select({
       totalOrders: count(orders.id),
-      totalEarnings: sql<string>`COALESCE(SUM(${orders.amount}), 0)`,
     })
     .from(orders)
     .where(eq(orders.detectiveId, detectiveId));
@@ -795,7 +895,6 @@ export class DatabaseStorage implements IStorage {
 
     return {
       totalOrders: Number(orderStats.totalOrders) || 0,
-      totalEarnings: orderStats.totalEarnings || "0",
       avgRating,
       reviewCount,
     };
@@ -840,11 +939,76 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteServiceCategory(id: string): Promise<boolean> {
-    const [category] = await db.update(serviceCategories)
-      .set({ isActive: false, updatedAt: new Date() })
-      .where(eq(serviceCategories.id, id))
+    const result = await db.delete(serviceCategories)
+      .where(eq(serviceCategories.id, id));
+    return result.rowCount! > 0;
+  }
+
+  async getPopularCategories(limit: number = 5): Promise<Array<{ category: string; count: number }>> {
+    const rows = await db
+      .select({ category: services.category, count: count() })
+      .from(services)
+      .groupBy(services.category)
+      .orderBy(desc(count()))
+      .limit(limit);
+    return rows.map((r: any) => ({ category: r.category, count: Number(r.count) }));
+  }
+
+  async getSiteSettings(): Promise<SiteSettings | undefined> {
+    const [row] = await db.select().from(siteSettings).limit(1);
+    return row;
+  }
+
+  async upsertSiteSettings(settings: Partial<SiteSettings>): Promise<SiteSettings> {
+    const current = await this.getSiteSettings();
+    if (!current) {
+      const [created] = await db.insert(siteSettings).values({
+        logoUrl: settings.logoUrl ?? null as any,
+        footerLinks: (settings.footerLinks as any) ?? sql`'[]'::jsonb`,
+      }).returning();
+      return created;
+    }
+    const [updated] = await db.update(siteSettings)
+      .set({
+        logoUrl: settings.logoUrl ?? current.logoUrl,
+        footerLinks: (settings.footerLinks as any) ?? current.footerLinks,
+        updatedAt: new Date(),
+      })
+      .where(eq(siteSettings.id, current.id))
       .returning();
-    return !!category;
+    return updated;
+  }
+
+  async recordSearch(query: string): Promise<void> {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return;
+    const existing = await db.select().from(searchStats).where(eq(searchStats.query, normalized)).limit(1);
+    if (existing && existing.length > 0) {
+      const row = existing[0] as any;
+      await db.update(searchStats)
+        .set({ count: (row.count as number) + 1, lastSearchedAt: new Date() })
+        .where(eq(searchStats.id, row.id));
+      return;
+    }
+    await db.insert(searchStats).values({ query: normalized, count: 1, lastSearchedAt: new Date() } as any);
+  }
+
+  async getPopularSearches(limit: number = 6): Promise<Array<{ query: string; count: number }>> {
+    const rows = await db.select().from(searchStats).orderBy(desc(searchStats.count)).limit(limit);
+    return (rows as any[]).map(r => ({ query: r.query as string, count: Number(r.count) }));
+  }
+
+  async deleteDetectiveAccount(detectiveId: string): Promise<boolean> {
+    const detective = await this.getDetective(detectiveId);
+    if (!detective) return false;
+
+    // Remove dependent records that do not cascade
+    await db.delete(orders).where(eq(orders.detectiveId, detectiveId));
+    await db.delete(profileClaims).where(eq(profileClaims.detectiveId, detectiveId));
+
+    // Delete the owning user; detectives table has ON DELETE CASCADE
+    const result = await db.delete(users).where(eq(users.id, detective.userId));
+    return result.rowCount! > 0;
   }
 }
 
