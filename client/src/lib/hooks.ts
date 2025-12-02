@@ -492,10 +492,11 @@ export function useUpdateClaimStatus() {
   });
 }
 
-export function useServiceCategories(activeOnly?: boolean) {
+export function useServiceCategories(activeOnly?: boolean, enabled: boolean = true) {
   return useQuery({
     queryKey: ["serviceCategories", activeOnly],
     queryFn: () => api.serviceCategories.getAll(activeOnly),
+    enabled,
   });
 }
 
@@ -511,8 +512,9 @@ export function useSiteSettings() {
   return useQuery({
     queryKey: ["settings", "site"],
     queryFn: () => api.settings.getSite(),
-    refetchOnMount: "always",
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

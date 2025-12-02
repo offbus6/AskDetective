@@ -28,7 +28,8 @@ export function Navbar({ transparentOnHome = true, overlayOnHome = true }: { tra
   const { selectedCountry, setCountry } = useCurrency();
   const { user, logout } = useUserSafe();
   const { data: siteData } = useSiteSettings();
-  const { data: categoriesData } = useServiceCategories(true);
+  const shouldLoadCats = focused || location.startsWith("/search");
+  const { data: categoriesData } = useServiceCategories(true, shouldLoadCats);
   const site = siteData?.settings;
   const categoryNames = useMemo(() => (categoriesData?.categories || []).map(c => c.name), [categoriesData]);
   const suggestions = useMemo(() => getCategorySuggestions(categoryNames, searchQuery, 6), [categoryNames, searchQuery]);
