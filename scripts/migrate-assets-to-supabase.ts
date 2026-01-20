@@ -21,13 +21,25 @@ async function main() {
   await ensureBucket("service-images");
   await ensureBucket("site-assets");
 
+  let migrated = 0;
+  let skipped = 0;
+  let failed = 0;
+
   const detectives = await db.select().from(schema.detectives);
   for (const d of detectives) {
     let changed = false;
     let logo = d.logo || undefined;
     if (logo && !logo.includes(".supabase.co/storage")) {
-      logo = await uploadFromUrlOrDataUrl("detective-assets", `logos/${d.id}.png`, logo);
-      changed = true;
+      try {
+        logo = await uploadFromUrlOrDataUrl("detective-assets", `logos/${d.id}.png`, logo);
+        changed = true;
+        migrated++;
+      } catch (e) {
+        console.error(`Failed to migrate detective logo for ${d.id}:`, e);
+        failed++;
+      }
+    } else if (logo) {
+      skipped++;
     }
     let businessDocuments = d.businessDocuments || undefined;
     if (Array.isArray(businessDocuments)) {
@@ -35,10 +47,19 @@ async function main() {
       for (let i = 0; i < businessDocuments.length; i++) {
         const doc = businessDocuments[i];
         if (doc && !doc.includes(".supabase.co/storage")) {
-          next.push(await uploadFromUrlOrDataUrl("detective-assets", `documents/${d.id}-${i}.pdf`, doc));
-          changed = true;
+          try {
+            const out = await uploadFromUrlOrDataUrl("detective-assets", `documents/${d.id}-${i}.pdf`, doc);
+            next.push(out);
+            changed = true;
+            migrated++;
+          } catch (e) {
+            console.error(`Failed to migrate detective business doc ${d.id}-${i}:`, e);
+            next.push(doc);
+            failed++;
+          }
         } else {
           next.push(doc);
+          if (doc) skipped++;
         }
       }
       businessDocuments = next as any;
@@ -49,10 +70,19 @@ async function main() {
       for (let i = 0; i < identityDocuments.length; i++) {
         const doc = identityDocuments[i];
         if (doc && !doc.includes(".supabase.co/storage")) {
-          next.push(await uploadFromUrlOrDataUrl("detective-assets", `identity/${d.id}-${i}.pdf`, doc));
-          changed = true;
+          try {
+            const out = await uploadFromUrlOrDataUrl("detective-assets", `identity/${d.id}-${i}.pdf`, doc);
+            next.push(out);
+            changed = true;
+            migrated++;
+          } catch (e) {
+            console.error(`Failed to migrate detective identity doc ${d.id}-${i}:`, e);
+            next.push(doc);
+            failed++;
+          }
         } else {
           next.push(doc);
+          if (doc) skipped++;
         }
       }
       identityDocuments = next as any;
@@ -76,10 +106,19 @@ async function main() {
     for (let i = 0; i < images.length; i++) {
       const u = images[i];
       if (u && !u.includes(".supabase.co/storage")) {
-        next.push(await uploadFromUrlOrDataUrl("service-images", `banners/${s.id}-${i}.jpg`, u));
-        changed = true;
+        try {
+          const out = await uploadFromUrlOrDataUrl("service-images", `banners/${s.id}-${i}.jpg`, u);
+          next.push(out);
+          changed = true;
+          migrated++;
+        } catch (e) {
+          console.error(`Failed to migrate service image ${s.id}-${i}:`, e);
+          next.push(u);
+          failed++;
+        }
       } else {
         next.push(u);
+        if (u) skipped++;
       }
     }
     if (changed && !dry) {
@@ -93,20 +132,28 @@ async function main() {
     const s = settings[0];
     let logoUrl = s.logoUrl || undefined;
     if (logoUrl && !logoUrl.includes(".supabase.co/storage")) {
-      logoUrl = await uploadFromUrlOrDataUrl("site-assets", `logos/site-logo.png`, logoUrl);
-      if (!dry) {
-        await db.update(schema.siteSettings).set({ logoUrl: logoUrl as any, updatedAt: new Date() }).where(schema.siteSettings.id.eq(s.id));
-        console.log("Updated site logo");
+      try {
+        logoUrl = await uploadFromUrlOrDataUrl("site-assets", `logos/site-logo.png`, logoUrl);
+        migrated++;
+        if (!dry) {
+          await db.update(schema.siteSettings).set({ logoUrl: logoUrl as any, updatedAt: new Date() }).where(schema.siteSettings.id.eq(s.id));
+          console.log("Updated site logo");
+        }
+      } catch (e) {
+        console.error(`Failed to migrate site logo:`, e);
+        failed++;
       }
+    } else if (logoUrl) {
+      skipped++;
     }
   }
 
   await pool.end();
   console.log("Migration complete");
+  console.log(`Summary: migrated=${migrated}, skipped=${skipped}, failed=${failed}`);
 }
 
 main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-
