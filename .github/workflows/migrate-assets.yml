@@ -6,24 +6,23 @@ on:
 jobs:
   migrate:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: 20
 
       - name: Install dependencies
-  run: npm install --ignore-scripts
-
+        run: npm install --ignore-scripts
 
       - name: Run asset migration
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: npx tsx scripts/migrate-assets-to-supabase.ts
-
+        run: |
+          node --import=tsx scripts/migrate-assets-to-supabase.ts
