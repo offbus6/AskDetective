@@ -24,6 +24,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { uploadDataUrl, deletePublicUrl, parsePublicUrl } from "./supabase";
 
 // Extend Express Session
 declare module "express-session" {
@@ -367,6 +368,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         userId: req.session.userId,
       });
+      if (typeof (validatedData as any).logo === "string" && (validatedData as any).logo.startsWith("data:")) {
+        (validatedData as any).logo = await uploadDataUrl("detective-assets", `logos/${Date.now()}-${Math.random()}.png`, (validatedData as any).logo);
+      }
+      if (Array.isArray((validatedData as any).businessDocuments)) {
+        (validatedData as any).businessDocuments = await Promise.all(((validatedData as any).businessDocuments || []).map(async (d: string, i: number) => {
+          return d && d.startsWith("data:") ? await uploadDataUrl("detective-assets", `documents/${Date.now()}-${i}.pdf`, d) : d;
+        }));
+      }
+      if (Array.isArray((validatedData as any).identityDocuments)) {
+        (validatedData as any).identityDocuments = await Promise.all(((validatedData as any).identityDocuments || []).map(async (d: string, i: number) => {
+          return d && d.startsWith("data:") ? await uploadDataUrl("detective-assets", `identity/${Date.now()}-${i}.pdf`, d) : d;
+        }));
+      }
 
       // Check if user already has a detective profile
       const existing = await storage.getDetectiveByUserId(req.session.userId!);
@@ -405,6 +419,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate request body - only allow whitelisted fields
       const validatedData = updateDetectiveSchema.parse(req.body);
+      if (typeof (validatedData as any).logo === "string" && (validatedData as any).logo.startsWith("data:")) {
+        (validatedData as any).logo = await uploadDataUrl("detective-assets", `logos/${Date.now()}-${Math.random()}.png`, (validatedData as any).logo);
+      }
+      if (Array.isArray((validatedData as any).businessDocuments)) {
+        (validatedData as any).businessDocuments = await Promise.all(((validatedData as any).businessDocuments || []).map(async (d: string, i: number) => {
+          return d && d.startsWith("data:") ? await uploadDataUrl("detective-assets", `documents/${Date.now()}-${i}.pdf`, d) : d;
+        }));
+      }
+      if (Array.isArray((validatedData as any).identityDocuments)) {
+        (validatedData as any).identityDocuments = await Promise.all(((validatedData as any).identityDocuments || []).map(async (d: string, i: number) => {
+          return d && d.startsWith("data:") ? await uploadDataUrl("detective-assets", `identity/${Date.now()}-${i}.pdf`, d) : d;
+        }));
+      }
+      if ((validatedData as any).logo && detective.logo && (validatedData as any).logo !== detective.logo) {
+        await deletePublicUrl(detective.logo as any);
+      }
+      if (Array.isArray((validatedData as any).businessDocuments) && Array.isArray(detective.businessDocuments)) {
+        for (const prev of (detective.businessDocuments as any[])) {
+          if (!(validatedData as any).businessDocuments.includes(prev)) {
+            await deletePublicUrl(prev as any);
+          }
+        }
+      }
+      if (Array.isArray((validatedData as any).identityDocuments) && Array.isArray(detective.identityDocuments)) {
+        for (const prev of (detective.identityDocuments as any[])) {
+          if (!(validatedData as any).identityDocuments.includes(prev)) {
+            await deletePublicUrl(prev as any);
+          }
+        }
+      }
       const updatedDetective = await storage.updateDetective(req.params.id, validatedData);
       res.json({ detective: updatedDetective });
     } catch (error) {
@@ -504,6 +548,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Detective not found" });
       }
 
+      if (detective.logo) {
+        await deletePublicUrl(detective.logo as any);
+      }
+      if (Array.isArray(detective.businessDocuments)) {
+        for (const u of detective.businessDocuments as any[]) {
+          await deletePublicUrl(u as any);
+        }
+      }
+      if (Array.isArray(detective.identityDocuments)) {
+        for (const u of detective.identityDocuments as any[]) {
+          await deletePublicUrl(u as any);
+        }
+      }
+      const services = await storage.getServicesByDetective(detective.id);
+      for (const s of services) {
+        if (Array.isArray(s.images)) {
+          for (const u of s.images as any[]) {
+            await deletePublicUrl(u as any);
+          }
+        }
+      }
       const ok = await storage.deleteDetectiveAccount(req.params.id);
       if (!ok) {
         return res.status(500).json({ error: "Failed to delete detective" });
@@ -621,6 +686,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid service category. Please select a valid category from the admin-managed list." });
       }
 
+      if (Array.isArray((validatedData as any).images)) {
+        (validatedData as any).images = await Promise.all(((validatedData as any).images || []).map(async (u: string, i: number) => {
+          return u && u.startsWith("data:") ? await uploadDataUrl("service-images", `banners/${Date.now()}-${i}.jpg`, u) : u;
+        }));
+      }
       const service = await storage.createService(validatedData);
       res.status(201).json({ service });
     } catch (error) {
@@ -662,6 +732,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate request body - only allow whitelisted fields
       const validatedData = updateServiceSchema.parse(req.body);
+      if (Array.isArray((validatedData as any).images)) {
+        (validatedData as any).images = await Promise.all(((validatedData as any).images || []).map(async (u: string, i: number) => {
+          return u && u.startsWith("data:") ? await uploadDataUrl("service-images", `banners/${Date.now()}-${i}.jpg`, u) : u;
+        }));
+      }
+      if (Array.isArray((validatedData as any).images) && Array.isArray(service.images)) {
+        for (const prev of (service.images as any[])) {
+          if (!(validatedData as any).images.includes(prev)) {
+            await deletePublicUrl(prev as any);
+          }
+        }
+      }
 
       const currentBase = validatedData.basePrice !== undefined ? parseFloat(validatedData.basePrice as any) : parseFloat((service as any).basePrice as any);
       if (!(currentBase > 0)) {
@@ -710,6 +792,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      if (Array.isArray(service.images)) {
+        for (const u of (service.images as any[])) {
+          await deletePublicUrl(u as any);
+        }
+      }
       await storage.deleteService(req.params.id);
       res.json({ message: "Service deleted successfully" });
     } catch (error) {
@@ -850,6 +937,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!(offer > 0) || !(offer < base)) {
             return res.status(400).json({ error: "Offer price must be positive and strictly lower than base price" });
           }
+        }
+        if (Array.isArray((validated as any).images)) {
+          (validated as any).images = await Promise.all(((validated as any).images || []).map(async (u: string, j: number) => {
+            return u && u.startsWith("data:") ? await uploadDataUrl("service-images", `banners/${Date.now()}-${j}.jpg`, u) : u;
+          }));
         }
         await storage.createService(validated);
       }
@@ -1503,6 +1595,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/site-settings", requireRole("admin"), async (req: Request, res: Response) => {
     try {
       const validated = updateSiteSettingsSchema.parse(req.body);
+      if (typeof (validated as any).logoUrl === "string" && (validated as any).logoUrl?.startsWith("data:")) {
+        (validated as any).logoUrl = await uploadDataUrl("site-assets", `logos/${Date.now()}-${Math.random()}.png`, (validated as any).logoUrl);
+      }
+      const current = await storage.getSiteSettings();
+      if ((validated as any).logoUrl && current?.logoUrl && (validated as any).logoUrl !== current.logoUrl) {
+        await deletePublicUrl(current.logoUrl as any);
+      }
       const s = await storage.upsertSiteSettings(validated as any);
       res.json({ settings: s });
     } catch (error) {
@@ -1596,6 +1695,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Reset admin error:", error);
       res.status(500).json({ error: error?.message || "Failed to reset admin" });
+    }
+  });
+
+  app.get("/api/dev/audit-storage", async (_req: Request, res: Response) => {
+    try {
+      if (process.env.NODE_ENV !== 'development') {
+        return res.status(404).json({ error: "Not available" });
+      }
+      const issues: Array<{ table: string; id: string; field: string; value: string }> = [];
+      const detectives = await storage.getAllDetectives();
+      for (const d of detectives) {
+        if (typeof (d as any).logo === "string" && (d as any).logo && !parsePublicUrl((d as any).logo)) {
+          issues.push({ table: "detectives", id: d.id as any, field: "logo", value: (d as any).logo });
+        }
+        const bd = (d as any).businessDocuments || [];
+        for (const v of bd) {
+          if (typeof v === "string" && v && !parsePublicUrl(v)) {
+            issues.push({ table: "detectives", id: d.id as any, field: "businessDocuments", value: v });
+          }
+        }
+        const idDocs = (d as any).identityDocuments || [];
+        for (const v of idDocs) {
+          if (typeof v === "string" && v && !parsePublicUrl(v)) {
+            issues.push({ table: "detectives", id: d.id as any, field: "identityDocuments", value: v });
+          }
+        }
+      }
+      const services = await storage.getAllServices();
+      for (const s of services) {
+        const imgs = (s as any).images || [];
+        for (const v of imgs) {
+          if (typeof v === "string" && v && !parsePublicUrl(v)) {
+            issues.push({ table: "services", id: s.id as any, field: "images", value: v });
+          }
+        }
+      }
+      const settings = await storage.getSiteSettings();
+      if (settings && typeof (settings as any).logoUrl === "string" && (settings as any).logoUrl && !parsePublicUrl((settings as any).logoUrl)) {
+        issues.push({ table: "siteSettings", id: (settings as any).id, field: "logoUrl", value: (settings as any).logoUrl });
+      }
+      res.json({ ok: issues.length === 0, issues });
+    } catch (error) {
+      console.error("Audit storage error:", error);
+      res.status(500).json({ error: "Failed to audit storage" });
     }
   });
 

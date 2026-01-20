@@ -7,7 +7,8 @@ import rateLimit from "express-rate-limit";
 import { randomBytes } from "node:crypto";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
-import { Pool } from "@neondatabase/serverless";
+import pkg from "pg";
+const { Pool } = pkg;
 import { registerRoutes } from "./routes";
 
 const PgSession = connectPgSimple(session);
@@ -56,7 +57,7 @@ const useMemorySession = process.env.NODE_ENV === 'development' || (process.env.
 const sessionStore = useMemorySession
   ? new (session as any).MemoryStore()
   : new PgSession({
-      pool: new Pool({ connectionString: process.env.DATABASE_URL }),
+      pool: new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }),
       tableName: "session",
       createTableIfMissing: true,
     });
